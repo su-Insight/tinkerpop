@@ -391,6 +391,10 @@ class GraphTraversal(Traversal):
         self.bytecode.add_step("coin", *args)
         return self
 
+    def combine(self, *args):
+        self.bytecode.add_step("combine", *args)
+        return self
+
     def concat(self, *args):
         self.bytecode.add_step("concat", *args)
         return self
@@ -435,6 +439,14 @@ class GraphTraversal(Traversal):
 
     def dedup(self, *args):
         self.bytecode.add_step("dedup", *args)
+        return self
+
+    def difference(self, *args):
+        self.bytecode.add_step("difference", *args)
+        return self
+
+    def disjunct(self, *args):
+        self.bytecode.add_step("disjunct", *args)
         return self
 
     def drop(self, *args):
@@ -603,8 +615,16 @@ class GraphTraversal(Traversal):
         self.bytecode.add_step("inject", *args)
         return self
 
+    def intersect(self, *args):
+        self.bytecode.add_step("intersect", *args)
+        return self
+
     def is_(self, *args):
         self.bytecode.add_step("is", *args)
+        return self
+
+    def join(self, *args):
+        self.bytecode.add_step("join", *args)
         return self
 
     def key(self, *args):
@@ -653,6 +673,10 @@ class GraphTraversal(Traversal):
 
     def mean(self, *args):
         self.bytecode.add_step("mean", *args)
+        return self
+
+    def merge(self, *args):
+        self.bytecode.add_step("merge", *args)
         return self
 
     def merge_e(self, *args):
@@ -752,6 +776,10 @@ class GraphTraversal(Traversal):
 
     def peer_pressure(self, *args):
         self.bytecode.add_step("peerPressure", *args)
+        return self
+
+    def product(self, *args):
+        self.bytecode.add_step("product", *args)
         return self
 
     def profile(self, *args):
@@ -1120,6 +1148,10 @@ class __(object, metaclass=MagicType):
         return cls.graph_traversal(None, None, Bytecode()).coin(*args)
 
     @classmethod
+    def combine(cls, *args):
+        return cls.graph_traversal(None, None, Bytecode()).combine(*args)
+
+    @classmethod
     def concat(cls, *args):
         return cls.graph_traversal(None, None, Bytecode()).concat(*args)
 
@@ -1154,6 +1186,14 @@ class __(object, metaclass=MagicType):
     @classmethod
     def dedup(cls, *args):
         return cls.graph_traversal(None, None, Bytecode()).dedup(*args)
+
+    @classmethod
+    def difference(cls, *args):
+        return cls.graph_traversal(None, None, Bytecode()).difference(*args)
+
+    @classmethod
+    def disjunct(cls, *args):
+        return cls.graph_traversal(None, None, Bytecode()).disjunct(*args)
 
     @classmethod
     def drop(cls, *args):
@@ -1328,6 +1368,10 @@ class __(object, metaclass=MagicType):
         return cls.graph_traversal(None, None, Bytecode()).inject(*args)
 
     @classmethod
+    def intersect(cls, *args):
+        return cls.graph_traversal(None, None, Bytecode()).intersect(*args)
+
+    @classmethod
     def is_(cls, *args):
         return cls.graph_traversal(None, None, Bytecode()).is_(*args)
 
@@ -1378,6 +1422,10 @@ class __(object, metaclass=MagicType):
     @classmethod
     def mean(cls, *args):
         return cls.graph_traversal(None, None, Bytecode()).mean(*args)
+
+    @classmethod
+    def merge(cls, *args):
+        return cls.graph_traversal(None, None, Bytecode()).merge(*args)
 
     @classmethod
     def merge_e(cls, *args):
@@ -1450,6 +1498,10 @@ class __(object, metaclass=MagicType):
     @classmethod
     def path(cls, *args):
         return cls.graph_traversal(None, None, Bytecode()).path(*args)
+
+    @classmethod
+    def product(cls, *args):
+        return cls.graph_traversal(None, None, Bytecode()).product(*args)
 
     @classmethod
     def project(cls, *args):

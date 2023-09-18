@@ -87,6 +87,8 @@ type AnonymousTraversal interface {
 	Coalesce(args ...interface{}) *GraphTraversal
 	// Coin adds the coin step to the GraphTraversal.
 	Coin(args ...interface{}) *GraphTraversal
+	// Combine adds the combine step to the GraphTraversal.
+	Combine(args ...interface{}) *GraphTraversal
 	// Concat adds the Concat step to the GraphTraversal.
 	Concat(args ...interface{}) *GraphTraversal
 	// ConnectedComponent adds the connectedComponent step to the GraphTraversal.
@@ -99,6 +101,10 @@ type AnonymousTraversal interface {
 	CyclicPath(args ...interface{}) *GraphTraversal
 	// Dedup adds the dedup step to the GraphTraversal.
 	Dedup(args ...interface{}) *GraphTraversal
+	// Difference adds the difference step to the GraphTraversal.
+	Difference(args ...interface{}) *GraphTraversal
+	// Disjunct adds the disjunct step to the GraphTraversal.
+	Disjunct(args ...interface{}) *GraphTraversal
 	// Drop adds the drop step to the GraphTraversal.
 	Drop(args ...interface{}) *GraphTraversal
 	// Element adds the element step to the GraphTraversal.
@@ -147,8 +153,12 @@ type AnonymousTraversal interface {
 	Index(args ...interface{}) *GraphTraversal
 	// Inject adds the inject step to the GraphTraversal.
 	Inject(args ...interface{}) *GraphTraversal
+	// Intersect adds the intersect step to the GraphTraversal.
+	Intersect(args ...interface{}) *GraphTraversal
 	// Is adds the is step to the GraphTraversal.
 	Is(args ...interface{}) *GraphTraversal
+	// Join adds the join step to the GraphTraversal.
+	Join(args ...interface{}) *GraphTraversal
 	// Key adds the key step to the GraphTraversal.
 	Key(args ...interface{}) *GraphTraversal
 	// Label adds the label step to the GraphTraversal.
@@ -173,6 +183,8 @@ type AnonymousTraversal interface {
 	Max(args ...interface{}) *GraphTraversal
 	// Mean adds the mean step to the GraphTraversal.
 	Mean(args ...interface{}) *GraphTraversal
+	// Merge adds the merge step to the GraphTraversal.
+	Merge(args ...interface{}) *GraphTraversal
 	// MergeE adds the mergeE step to the GraphTraversal.
 	MergeE(args ...interface{}) *GraphTraversal
 	// MergeV adds the mergeV step to the GraphTraversal.
@@ -205,6 +217,8 @@ type AnonymousTraversal interface {
 	Path(args ...interface{}) *GraphTraversal
 	// PeerPressure adds the peerPressure step to the GraphTraversal.
 	PeerPressure(args ...interface{}) *GraphTraversal
+	// Product adds the product step to the GraphTraversal.
+	Product(args ...interface{}) *GraphTraversal
 	// Profile adds the profile step to the GraphTraversal.
 	Profile(args ...interface{}) *GraphTraversal
 	// Program adds the program step to the GraphTraversal.
@@ -418,6 +432,11 @@ func (anonymousTraversal *anonymousTraversal) Coin(args ...interface{}) *GraphTr
 	return anonymousTraversal.graphTraversal().Coin(args...)
 }
 
+// Combine adds the combine step to the GraphTraversal.
+func (anonymousTraversal *anonymousTraversal) Combine(args ...interface{}) *GraphTraversal {
+	return anonymousTraversal.graphTraversal().Combine(args...)
+}
+
 // Concat adds the Concat step to the GraphTraversal.
 func (anonymousTraversal *anonymousTraversal) Concat(args ...interface{}) *GraphTraversal {
 	return anonymousTraversal.graphTraversal().Concat(args...)
@@ -456,6 +475,16 @@ func (anonymousTraversal *anonymousTraversal) DateDiff(args ...interface{}) *Gra
 // Dedup adds the dedup step to the GraphTraversal.
 func (anonymousTraversal *anonymousTraversal) Dedup(args ...interface{}) *GraphTraversal {
 	return anonymousTraversal.graphTraversal().Dedup(args...)
+}
+
+// Differece adds the differece step to the GraphTraversal.
+func (anonymousTraversal *anonymousTraversal) Differece(args ...interface{}) *GraphTraversal {
+	return anonymousTraversal.graphTraversal().Differece(args...)
+}
+
+// Disjunct adds the disjunct step to the GraphTraversal.
+func (anonymousTraversal *anonymousTraversal) Disjunct(args ...interface{}) *GraphTraversal {
+	return anonymousTraversal.graphTraversal().Disjunct(args...)
 }
 
 // Drop adds the drop step to the GraphTraversal.
@@ -578,9 +607,19 @@ func (anonymousTraversal *anonymousTraversal) Inject(args ...interface{}) *Graph
 	return anonymousTraversal.graphTraversal().Inject(args...)
 }
 
+// Intersect adds the intersect step to the GraphTraversal.
+func (anonymousTraversal *anonymousTraversal) Intersect(args ...interface{}) *GraphTraversal {
+	return anonymousTraversal.graphTraversal().Intersect(args...)
+}
+
 // Is adds the is step to the GraphTraversal.
 func (anonymousTraversal *anonymousTraversal) Is(args ...interface{}) *GraphTraversal {
 	return anonymousTraversal.graphTraversal().Is(args...)
+}
+
+// Join adds the join step to the GraphTraversal.
+func (anonymousTraversal *anonymousTraversal) Join(args ...interface{}) *GraphTraversal {
+	return anonymousTraversal.graphTraversal().Join(args...)
 }
 
 // Key adds the key step to the GraphTraversal.
@@ -641,6 +680,11 @@ func (anonymousTraversal *anonymousTraversal) Max(args ...interface{}) *GraphTra
 // Mean adds the mean step to the GraphTraversal.
 func (anonymousTraversal *anonymousTraversal) Mean(args ...interface{}) *GraphTraversal {
 	return anonymousTraversal.graphTraversal().Mean(args...)
+}
+
+// Merge adds the merge step to the GraphTraversal.
+func (anonymousTraversal *anonymousTraversal) Merge(args ...interface{}) *GraphTraversal {
+	return anonymousTraversal.graphTraversal().Merge(args...)
 }
 
 // MergeE adds the mergeE step to the GraphTraversal.
@@ -721,6 +765,11 @@ func (anonymousTraversal *anonymousTraversal) Path(args ...interface{}) *GraphTr
 // PeerPressure adds the peerPressure step to the GraphTraversal.
 func (anonymousTraversal *anonymousTraversal) PeerPressure(args ...interface{}) *GraphTraversal {
 	return anonymousTraversal.graphTraversal().PeerPressure(args...)
+}
+
+// Product adds the product step to the GraphTraversal.
+func (anonymousTraversal *anonymousTraversal) Product(args ...interface{}) *GraphTraversal {
+	return anonymousTraversal.graphTraversal().Product(args...)
 }
 
 // Profile adds the profile step to the GraphTraversal.

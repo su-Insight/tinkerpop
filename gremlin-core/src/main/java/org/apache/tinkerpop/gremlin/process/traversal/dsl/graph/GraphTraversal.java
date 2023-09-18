@@ -86,6 +86,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.AsDateStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.AsStringStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.CallStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.CoalesceStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.CombineStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.ConcatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.ConstantStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.CountGlobalStep;
@@ -93,6 +94,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.CountLocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.DateAddStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.DateDiffStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.DedupLocalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.DifferenceStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.DisjunctStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.ElementMapStep;
@@ -103,7 +106,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.GroupCountStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GroupStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.IdStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.IndexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.IntersectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.LTrimStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.JoinStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.LabelStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.LambdaCollectingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.LambdaFlatMapStep;
@@ -124,6 +129,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderLocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.ProductStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.ProjectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertyKeyStep;
@@ -146,6 +152,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.ToLowerStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.ToUpperStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.TraversalFlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.TraversalMapStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.TraversalMergeStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.TraversalSelectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.TreeStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.TrimStep;
@@ -197,6 +204,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -1549,15 +1557,13 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
     }
 
     /**
-     * Returns a reversed string of the incoming string traverser. Null values are not processed and
-     * remain as null when returned. If the incoming traverser is a non-String value then an
-     * {@code IllegalArgumentException} will be thrown.
+     * Returns the reverse of the incoming traverser. Null values are not processed and remain as null when returned.
      *
      * @return the traversal with an appended {@link ReverseStep}.
      * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#reverse-step" target="_blank">Reference Documentation - Reverse Step</a>
      * @since 3.7.1
      */
-    public default GraphTraversal<S, String> reverse() {
+    public default GraphTraversal<S, E> reverse() {
         this.asAdmin().getBytecode().addStep(Symbols.reverse);
         return this.asAdmin().addStep(new ReverseStep<>(this.asAdmin()));
     }
@@ -1670,6 +1676,162 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
     public default GraphTraversal<S, Long> dateDiff(final Traversal<?, Date> dateTraversal) {
         this.asAdmin().getBytecode().addStep(Symbols.dateDiff, dateTraversal);
         return this.asAdmin().addStep(new DateDiffStep<>(this.asAdmin(), dateTraversal));
+    }
+
+    /**
+     * Calculates the difference between the list traverser and list argument.
+     *
+     * @return the traversal with an appended {@link DifferenceStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#difference-step" target="_blank">Reference Documentation - Difference Step</a>
+     * @since 3.7.1
+     */
+    public default GraphTraversal<S, Set<?>> difference(final Object values) {
+        this.asAdmin().getBytecode().addStep(Symbols.difference);
+        return this.asAdmin().addStep(new DifferenceStep<>(this.asAdmin(), values));
+    }
+
+    /**
+     * Calculates the difference between the list traverser and list argument.
+     *
+     * @return the traversal with an appended {@link DifferenceStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#difference-step" target="_blank">Reference Documentation - Difference Step</a>
+     * @since 3.7.1
+     */
+    public default GraphTraversal<S, Set<?>> difference(final Traversal<?, ?> valuesTraversal) {
+        this.asAdmin().getBytecode().addStep(Symbols.difference);
+        return this.asAdmin().addStep(new DifferenceStep<>(this.asAdmin(), valuesTraversal));
+    }
+
+    /**
+     * Calculates the disjunction between the list traverser and list argument.
+     *
+     * @return the traversal with an appended {@link DisjunctStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#disjunct-step" target="_blank">Reference Documentation - Disjunct Step</a>
+     * @since 3.7.1
+     */
+    public default GraphTraversal<S, Set<?>> disjunct(final Object values) {
+        this.asAdmin().getBytecode().addStep(Symbols.disjunct);
+        return this.asAdmin().addStep(new DisjunctStep<>(this.asAdmin(), values));
+    }
+
+    /**
+     * Calculates the disjunction between the list traverser and list argument.
+     *
+     * @return the traversal with an appended {@link DisjunctStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#disjunct-step" target="_blank">Reference Documentation - Disjunct Step</a>
+     * @since 3.7.1
+     */
+    public default GraphTraversal<S, Set<?>> disjunct(final Traversal<?, ?> valuesTraversal) {
+        this.asAdmin().getBytecode().addStep(Symbols.disjunct);
+        return this.asAdmin().addStep(new DisjunctStep<>(this.asAdmin(), valuesTraversal));
+    }
+
+    /**
+     * Calculates the intersection between the list traverser and list argument.
+     *
+     * @return the traversal with an appended {@link IntersectStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#intersect-step" target="_blank">Reference Documentation - Intersect Step</a>
+     * @since 3.7.1
+     */
+    public default GraphTraversal<S, Set<?>> intersect(final Object values) {
+        this.asAdmin().getBytecode().addStep(Symbols.intersect);
+        return this.asAdmin().addStep(new IntersectStep<>(this.asAdmin(), values));
+    }
+
+    /**
+     * Calculates the intersection between the list traverser and list argument.
+     *
+     * @return the traversal with an appended {@link IntersectStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#intersect-step" target="_blank">Reference Documentation - Intersect Step</a>
+     * @since 3.7.1
+     */
+    public default GraphTraversal<S, Set<?>> intersect(final Traversal<?, ?> valuesTraversal) {
+        this.asAdmin().getBytecode().addStep(Symbols.intersect);
+        return this.asAdmin().addStep(new IntersectStep<>(this.asAdmin(), valuesTraversal));
+    }
+
+    /**
+     * Joins together the elements of the incoming list traverser together with the provided delimiter.
+     *
+     * @return the traversal with an appended {@link JoinStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#join-step" target="_blank">Reference Documentation - Join Step</a>
+     * @since 3.7.1
+     */
+    public default GraphTraversal<S, String> join(final String delimiter) {
+        this.asAdmin().getBytecode().addStep(Symbols.join);
+        return this.asAdmin().addStep(new JoinStep<>(this.asAdmin(), delimiter));
+    }
+
+    /**
+     * Merges the list traverser and list argument. Also known as union.
+     *
+     * @return the traversal with an appended {@link TraversalMergeStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#merge-step" target="_blank">Reference Documentation - Merge Step</a>
+     * @since 3.7.1
+     */
+    public default GraphTraversal<S, E> merge(final Object values) {
+        this.asAdmin().getBytecode().addStep(Symbols.merge);
+        return this.asAdmin().addStep(new TraversalMergeStep<>(this.asAdmin(), values));
+    }
+
+    /**
+     * Merges the list traverser and list argument. Also known as union.
+     *
+     * @return the traversal with an appended {@link TraversalMergeStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#merge-step" target="_blank">Reference Documentation - Merge Step</a>
+     * @since 3.7.1
+     */
+    public default GraphTraversal<S, ?> merge(final Traversal<?, ?> valuesTraversal) {
+        this.asAdmin().getBytecode().addStep(Symbols.merge);
+        return this.asAdmin().addStep(new TraversalMergeStep<>(this.asAdmin(), valuesTraversal));
+    }
+
+    /**
+     * Combines the list traverser and list argument. Also known as concatenation or append.
+     *
+     * @return the traversal with an appended {@link CombineStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#combine-step" target="_blank">Reference Documentation - Combine Step</a>
+     * @since 3.7.1
+     */
+    public default GraphTraversal<S, List<?>> combine(final Object values) {
+        this.asAdmin().getBytecode().addStep(Symbols.combine);
+        return this.asAdmin().addStep(new CombineStep<>(this.asAdmin(), values));
+    }
+
+    /**
+     * Combines the list traverser and list argument. Also known as concatenation or append.
+     *
+     * @return the traversal with an appended {@link CombineStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#combine-step" target="_blank">Reference Documentation - Combine Step</a>
+     * @since 3.7.1
+     */
+    public default GraphTraversal<S, List<?>> combine(final Traversal<?, ?> valuesTraversal) {
+        this.asAdmin().getBytecode().addStep(Symbols.combine);
+        return this.asAdmin().addStep(new CombineStep<>(this.asAdmin(), valuesTraversal));
+    }
+
+    /**
+     * Calculates the cartesian product between the list traverser and list argument.
+     *
+     * @return the traversal with an appended {@link ProductStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#product-step" target="_blank">Reference Documentation - Product Step</a>
+     * @since 3.7.1
+     */
+    public default GraphTraversal<S, List<List<?>>> product(final Object values) {
+        this.asAdmin().getBytecode().addStep(Symbols.product);
+        return this.asAdmin().addStep(new ProductStep<>(this.asAdmin(), values));
+    }
+
+    /**
+     * Calculates the cartesian product between the list traverser and list argument.
+     *
+     * @return the traversal with an appended {@link ProductStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#product-step" target="_blank">Reference Documentation - Product Step</a>
+     * @since 3.7.1
+     */
+    public default GraphTraversal<S, List<List<?>>> product(final Traversal<?, ?> valuesTraversal) {
+        this.asAdmin().getBytecode().addStep(Symbols.product);
+        return this.asAdmin().addStep(new ProductStep<>(this.asAdmin(), valuesTraversal));
     }
 
     ///////////////////// FILTER STEPS /////////////////////
@@ -3749,6 +3911,7 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
         public static final String hasKey = "hasKey";
         public static final String hasValue = "hasValue";
         public static final String is = "is";
+        public static final String join = "join";
         public static final String not = "not";
         public static final String range = "range";
         public static final String limit = "limit";
@@ -3777,6 +3940,12 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
         public static final String dateDiff = "dateDiff";
         public static final String all = "all";
         public static final String any = "any";
+        public static final String merge = "merge";
+        public static final String product = "product";
+        public static final String combine = "combine";
+        public static final String difference = "difference";
+        public static final String disjunct = "disjunct";
+        public static final String intersect = "intersect";
 
         public static final String timeLimit = "timeLimit";
         public static final String simplePath = "simplePath";

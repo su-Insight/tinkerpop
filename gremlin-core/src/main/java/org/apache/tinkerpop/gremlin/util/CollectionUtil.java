@@ -19,6 +19,8 @@
 
 package org.apache.tinkerpop.gremlin.util;
 
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;

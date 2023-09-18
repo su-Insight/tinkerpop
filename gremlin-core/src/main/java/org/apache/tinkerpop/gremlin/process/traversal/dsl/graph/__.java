@@ -41,6 +41,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -652,13 +653,19 @@ public class __ {
         return __.<A>start().rTrim();
     }
 
+    /**
+     * @see GraphTraversal#reverse()
+     */
+    public static <A> GraphTraversal<A, A> reverse() {
+        return __.<A>start().reverse();
+    }
 
     /**
      * @see GraphTraversal#reverse()
      */
-    public static <A> GraphTraversal<A, String> reverse() {
-        return __.<A>start().reverse();
-    }
+//    public static <A> GraphTraversal<A, List<?>> reverse() {
+//        return __.<A>start().reverse();
+//    }
 
     /**
      * @see GraphTraversal#replace(String, String)
@@ -714,6 +721,97 @@ public class __ {
      */
     public static <A> GraphTraversal<A, Long> dateDiff(final Traversal<?, Date> dateTraversal) {
         return __.<A>start().dateDiff(dateTraversal);
+    }
+
+    /**
+     * @see GraphTraversal#difference(Traversal)
+     */
+    public static <A> GraphTraversal<A, Set<?>> difference(final Object values) {
+        return __.<A>start().difference(values);
+    }
+
+    /**
+     * @see GraphTraversal#concat(String...)
+     */
+    public static <A> GraphTraversal<A, Set<?>> difference(final Traversal<?, Set<?>> valuesTraversal) {
+        return __.<A>start().difference(valuesTraversal);
+    }
+
+    /**
+     * @see GraphTraversal#concat(String...)
+     */
+    public static <A> GraphTraversal<A, Set<?>> disjunct(final Object values) {
+        return __.<A>start().disjunct(values);
+    }
+
+    /**
+     * @see GraphTraversal#concat(String...)
+     */
+    public static <A> GraphTraversal<A, Set<?>> disjunct(final Traversal<?, Set<?>> valuesTraversal) {
+        return __.<A>start().disjunct(valuesTraversal);
+    }
+
+    /**
+     * @see GraphTraversal#concat(String...)
+     */
+    public static <A> GraphTraversal<A, Set<?>> intersect(final Object values) {
+        return __.<A>start().intersect(values);
+    }
+
+    /**
+     * @see GraphTraversal#concat(String...)
+     */
+    public static <A> GraphTraversal<A, Set<?>> intersect(final Traversal<?, Set<?>> valuesTraversal) {
+        return __.<A>start().intersect(valuesTraversal);
+    }
+
+    /**
+     * @see GraphTraversal#concat(String...)
+     */
+    public static <A> GraphTraversal<A, String> join(final String values) {
+        return __.<A>start().join(values);
+    }
+
+    /**
+     * @see GraphTraversal#concat(String...)
+     */
+    public static <A> GraphTraversal<A, A> merge(final Object values) {
+        return __.<A>start().merge(values);
+    }
+
+    /**
+     * @see GraphTraversal#concat(String...)
+     */
+    public static <A> GraphTraversal<A, ?> merge(final Traversal<?, ?> valuesTraversal) {
+        return __.<A>start().merge(valuesTraversal);
+    }
+
+    /**
+     * @see GraphTraversal#concat(String...)
+     */
+    public static <A> GraphTraversal<A, List<?>> combine(final Object values) {
+        return __.<A>start().combine(values);
+    }
+
+    /**
+     * @see GraphTraversal#concat(String...)
+     */
+    public static <A> GraphTraversal<A, List<?>> combine(final Traversal<?, List<?>> valuesTraversal) {
+        return __.<A>start().combine(valuesTraversal);
+    }
+
+    /**
+     * @see GraphTraversal#concat(String...)
+     */
+    public static <A> GraphTraversal<A, List<List<?>>> product(final Object values) {
+        return __.<A>start().product(values);
+    }
+
+    /**
+     * @see GraphTraversal#concat(String...)
+     */
+    public static <A> GraphTraversal<A, List<List<?>>> product(final Traversal<?, List<List<?>>> valuesTraversal) {
+        return __.<A>start().product(valuesTraversal);
     }
 
     ///////////////////// FILTER STEPS /////////////////////

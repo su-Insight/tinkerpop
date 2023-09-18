@@ -15,136 +15,138 @@
 # specific language governing permissions and limitations
 # under the License.
 
-@StepClassMap @StepReverse
-Feature: Step - reverse()
+@StepClassMap @StepJoin
+Feature: Step - join()
 
   @GraphComputerVerificationInjectionNotSupported
-  Scenario: g_injectXfeature_test_nullX_reverse
+  Scenario: g_injectXnullX_joinX1X
     Given the empty graph
     And the traversal of
       """
-      g.inject("feature", "test one", null).reverse()
+      g.inject(null).join("1")
       """
     When iterated to list
-    Then the result should be unordered
-      | result |
-      | erutaef |
-      | eno tset |
-      | null |
+    Then the traversal will raise an error with message containing text of "Incoming traverser for join step can't be null"
 
-  Scenario: g_V_valuesXnameX_reverse
+  Scenario: g_V_valuesXnameX_joinX1X
     Given the modern graph
     And the traversal of
       """
-      g.V().values("name").reverse()
+      g.V().values("name").join("1")
       """
     When iterated to list
-    Then the result should be unordered
-      | result |
-      | okram |
-      | sadav |
-      | pol |
-      | hsoj |
-      | elppir |
-      | retep |
+    Then the traversal will raise an error with message containing text of "join step can only take an array or an Iterable type for incoming traversers, encountered "
 
-  Scenario: g_V_valuesXageX_reverse
+  Scenario: g_V_valuesXnonexistantX_fold_joinX_X
     Given the modern graph
     And the traversal of
       """
-      g.V().values("age").reverse()
+      g.V().values("nonexistant").fold().join(";")
       """
     When iterated to list
     Then the result should be unordered
       | result |
-      | d[29].i |
-      | d[27].i |
-      | d[32].i |
-      | d[35].i |
+      | str[] |
 
-  Scenario: g_V_out_path_byXnameX_reverse
+  Scenario: g_V_valuesXnameX_fold_joinX_X
     Given the modern graph
     And the traversal of
       """
-      g.V().out().path().by("name").reverse()
+      g.V().values("name").fold().join("_")
       """
     When iterated to list
     Then the result should be unordered
       | result |
-      | l[lop,marko] |
-      | l[vadas,marko] |
-      | l[josh,marko] |
-      | l[ripple,josh] |
-      | l[lop,josh] |
-      | l[lop,peter] |
+      | marko_vadas_lop_josh_ripple_peter |
 
-  Scenario: g_V_out_out_path_byXnameX_reverse
+  Scenario: g_V_valuesXageX_order_fold_joinX_X
     Given the modern graph
     And the traversal of
       """
-      g.V().out().out().path().by("name").reverse()
+      g.V().values("age").order().fold().join(";")
       """
     When iterated to list
     Then the result should be unordered
       | result |
-      | l[ripple,josh,marko] |
-      | l[lop,josh,marko] |
+      | 27;29;32;35 |
 
-  Scenario: g_V_valuesXageX_fold_orderXlocalX_byXdescX_reverse
+  Scenario: g_V_out_path_byXvaluesXnameX_toUpperX_joinXMARKOX
     Given the modern graph
     And the traversal of
       """
-      g.V().values("age").fold().order(local).by(desc).reverse()
+      g.V().out().path().by(values("name").toUpper()).join("MARKO")
       """
     When iterated to list
     Then the result should be unordered
       | result |
-      | l[d[27].i,d[29].i,d[32].i,d[35].i] |
-
-  Scenario: g_V_valuesXnameX_fold_orderXlocalX_by_reverse
-    Given the modern graph
-    And the traversal of
-      """
-      g.V().values("name").fold().order(local).by().reverse()
-      """
-    When iterated to list
-    Then the result should be unordered
-      | result |
-      | l[vadas,ripple,peter,marko,lop,josh] |
+      | MARKOMARKOLOP |
+      | MARKOMARKOVADAS |
+      | MARKOMARKOJOSH |
+      | JOSHMARKORIPPLE |
+      | JOSHMARKOLOP |
+      | PETERMARKOLOP |
 
   @GraphComputerVerificationInjectionNotSupported
-  Scenario: g_injectXnullX_reverse
+  Scenario: g_injectXxx1X_joinX_X
+    Given the modern graph
+    And using the parameter xx1 defined as "l[marko]"
+    And the traversal of
+      """
+      g.inject(xx1).join("-")
+      """
+    When iterated to list
+    Then the result should be unordered
+      | result |
+      | marko |
+
+  Scenario: g_V_valueMapXlocationX_selectXvaluesX_unfold_joinX1X
+    Given the crew graph
+    And the traversal of
+      """
+      g.V().valueMap("location").select(values).unfold().join("1")
+      """
+    When iterated to list
+    Then the result should be unordered
+      | result |
+      | san diego1santa cruz1brussels1santa fe |
+      | centreville1dulles1purcellville |
+      | bremen1baltimore1oakland1seattle |
+      | spremberg1kaiserslautern1aachen |
+
+  Scenario: g_V_out_out_path_byXnameX_joinXX
+    Given the modern graph
+    And the traversal of
+      """
+      g.V().out().out().path().by("name").join("")
+      """
+    When iterated to list
+    Then the result should be unordered
+      | result |
+      | markojoshripple |
+      | markojoshlop |
+
+  @GraphComputerVerificationInjectionNotSupported
+  Scenario: g_injectXxx1X_joinXxyzX
     Given the empty graph
+    And using the parameter xx1 defined as "l[a,null,b]"
     And the traversal of
       """
-      g.inject(null).reverse()
+      g.inject(xx1).join("xyz")
       """
     When iterated to list
     Then the result should be unordered
       | result |
-      | null |
+      | str[axyznullxyzb] |
 
   @GraphComputerVerificationInjectionNotSupported
-  Scenario: g_injectXbX_reverse
-    Given the empty graph
-    And the traversal of
-      """
-      g.inject("b").reverse()
-      """
-    When iterated to list
-    Then the result should be unordered
-      | result |
-      | b |
-
-  @GraphComputerVerificationInjectionNotSupported
-  Scenario: g_injectX3_threeX_reverse
+  Scenario: g_injectXxx1X_joinX_X
     Given the empty graph
     And using the parameter xx1 defined as "l[d[3].i,three]"
     And the traversal of
       """
-      g.inject(xx1).reverse()
+      g.inject(xx1).join(";")
       """
     When iterated to list
     Then the result should be unordered
       | result |
-      | l[three,d[3].i] |
+      | 3;three |

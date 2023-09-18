@@ -539,6 +539,24 @@ namespace Gremlin.Net.Process.Traversal
         }
 
         /// <summary>
+        ///     Adds the combine step to this <see cref="GraphTraversal{SType, EType}" />.
+        /// </summary>
+        public GraphTraversal<TStart, TEnd> Combine<TNewEnd> (ITraversal combineTraversal)
+        {
+            Bytecode.AddStep("combine", combineTraversal);
+            return Wrap<TStart, TEnd>(this);
+        }
+
+        /// <summary>
+        ///     Adds the combine step to this <see cref="GraphTraversal{SType, EType}" />.
+        /// </summary>
+        public GraphTraversal<TStart, TEnd> Combine<TNewEnd> (object combineObject)
+        {
+            Bytecode.AddStep("combine", combineObject);
+            return Wrap<TStart, TEnd>(this);
+        }
+
+        /// <summary>
         ///     Adds the concat step to this <see cref="GraphTraversal{SType, EType}" />.
         /// </summary>
         public GraphTraversal<TStart, TEnd> Concat<TNewEnd> (ITraversal concatTraversal)
@@ -655,6 +673,42 @@ namespace Gremlin.Net.Process.Traversal
             var args = new List<object?>(dedupLabels.Length);
             args.AddRange(dedupLabels);
             Bytecode.AddStep("dedup", args.ToArray());
+            return Wrap<TStart, TEnd>(this);
+        }
+
+        /// <summary>
+        ///     Adds the difference step to this <see cref="GraphTraversal{SType, EType}" />.
+        /// </summary>
+        public GraphTraversal<TStart, TEnd> Difference<TNewEnd> (ITraversal differenceTraversal)
+        {
+            Bytecode.AddStep("difference", differenceTraversal);
+            return Wrap<TStart, TEnd>(this);
+        }
+
+        /// <summary>
+        ///     Adds the difference step to this <see cref="GraphTraversal{SType, EType}" />.
+        /// </summary>
+        public GraphTraversal<TStart, TEnd> Difference<TNewEnd> (object differenceObject)
+        {
+            Bytecode.AddStep("difference", differenceObject);
+            return Wrap<TStart, TEnd>(this);
+        }
+
+        /// <summary>
+        ///     Adds the disjunct step to this <see cref="GraphTraversal{SType, EType}" />.
+        /// </summary>
+        public GraphTraversal<TStart, TEnd> Disjunct<TNewEnd> (ITraversal disjunctTraversal)
+        {
+            Bytecode.AddStep("disjunct", disjunctTraversal);
+            return Wrap<TStart, TEnd>(this);
+        }
+
+        /// <summary>
+        ///     Adds the disjunct step to this <see cref="GraphTraversal{SType, EType}" />.
+        /// </summary>
+        public GraphTraversal<TStart, TEnd> Disjunct<TNewEnd> (object disjunctObject)
+        {
+            Bytecode.AddStep("disjunct", disjunctObject);
             return Wrap<TStart, TEnd>(this);
         }
 
@@ -1145,6 +1199,24 @@ namespace Gremlin.Net.Process.Traversal
         }
 
         /// <summary>
+        ///     Adds the intersect step to this <see cref="GraphTraversal{SType, EType}" />.
+        /// </summary>
+        public GraphTraversal<TStart, TEnd> Intersect<TNewEnd> (ITraversal intersectTraversal)
+        {
+            Bytecode.AddStep("intersect", intersectTraversal);
+            return Wrap<TStart, TEnd>(this);
+        }
+
+        /// <summary>
+        ///     Adds the intersect step to this <see cref="GraphTraversal{SType, EType}" />.
+        /// </summary>
+        public GraphTraversal<TStart, TEnd> Intersect<TNewEnd> (object intersectObject)
+        {
+            Bytecode.AddStep("intersect", intersectObject);
+            return Wrap<TStart, TEnd>(this);
+        }
+
+        /// <summary>
         ///     Adds the is step to this <see cref="GraphTraversal{SType, EType}" />.
         /// </summary>
         public GraphTraversal<TStart, TEnd> Is (object? value)
@@ -1159,6 +1231,15 @@ namespace Gremlin.Net.Process.Traversal
         public GraphTraversal<TStart, TEnd> Is (P? predicate)
         {
             Bytecode.AddStep("is", predicate);
+            return Wrap<TStart, TEnd>(this);
+        }
+
+        /// <summary>
+        ///     Adds the join step to this <see cref="GraphTraversal{SType, EType}" />.
+        /// </summary>
+        public GraphTraversal<TStart, TEnd> Join<TNewEnd> (string delimiter)
+        {
+            Bytecode.AddStep("join", delimiter);
             return Wrap<TStart, TEnd>(this);
         }
 
@@ -1317,6 +1398,24 @@ namespace Gremlin.Net.Process.Traversal
         {
             Bytecode.AddStep("mean", scope);
             return Wrap<TStart, TNewEnd>(this);
+        }
+
+        /// <summary>
+        ///     Adds the merge step to this <see cref="GraphTraversal{SType, EType}" />.
+        /// </summary>
+        public GraphTraversal<TStart, TEnd> Merge<TNewEnd> (ITraversal mergeTraversal)
+        {
+            Bytecode.AddStep("merge", mergeTraversal);
+            return Wrap<TStart, TEnd>(this);
+        }
+
+        /// <summary>
+        ///     Adds the merge step to this <see cref="GraphTraversal{SType, EType}" />.
+        /// </summary>
+        public GraphTraversal<TStart, TEnd> Merge<TNewEnd> (object mergeObject)
+        {
+            Bytecode.AddStep("merge", mergeObject);
+            return Wrap<TStart, TEnd>(this);
         }
 
         /// <summary>
@@ -1566,6 +1665,24 @@ namespace Gremlin.Net.Process.Traversal
         }
 
         /// <summary>
+        ///     Adds the product step to this <see cref="GraphTraversal{SType, EType}" />.
+        /// </summary>
+        public GraphTraversal<TStart, TEnd> Product<TNewEnd> (ITraversal productTraversal)
+        {
+            Bytecode.AddStep("product", productTraversal);
+            return Wrap<TStart, TEnd>(this);
+        }
+
+        /// <summary>
+        ///     Adds the product step to this <see cref="GraphTraversal{SType, EType}" />.
+        /// </summary>
+        public GraphTraversal<TStart, TEnd> Product<TNewEnd> (object productObject)
+        {
+            Bytecode.AddStep("product", productObject);
+            return Wrap<TStart, TEnd>(this);
+        }
+
+        /// <summary>
         ///     Adds the profile step to this <see cref="GraphTraversal{SType, EType}" />.
         /// </summary>
         public GraphTraversal<TStart, TNewEnd> Profile<TNewEnd> ()
@@ -1721,10 +1838,10 @@ namespace Gremlin.Net.Process.Traversal
         /// <summary>
         ///     Adds the reverse step to this <see cref="GraphTraversal{SType, EType}" />.
         /// </summary>
-        public GraphTraversal<TStart, string?> Reverse ()
+        public GraphTraversal<TStart, TEnd> Reverse ()
         {
             Bytecode.AddStep("reverse");
-            return Wrap<TStart, string?>(this);
+            return Wrap<TStart, TEnd>(this);
         }
 
         /// <summary>

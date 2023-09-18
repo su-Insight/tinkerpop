@@ -1140,6 +1140,25 @@ g.V().coin(1.0)
 
 link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#coin-double-++[`coin(double)`]
 
+[[combine-step]]
+=== Combine Step
+
+The `combine()`-step (*map*) combines the elements of the incoming list traverser and the provided list argument into
+one list. This is also known as appending or concatenating. This step only expects list data (array or Iterable) and
+will throw an `IllegalArgumentException` if any other type is encountered (including null). This differs from the
+`merge` step in that it allows duplicates to exist.
+
+[gremlin-groovy,modern]
+----
+g.V().values("name").fold().combine(["james","jen","marko","vadas"])
+----
+
+*Additional References*
+
+link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#combine-Object++[`combine(Object)`]
+link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#combine-Traversal++[`combine(Traversal)`]
+link:++https://tinkerpop.apache.org/docs/x.y.z/dev/provider/#combine-step++[`Semantics`]
+
 [[concat-step]]
 === Concat Step
 
@@ -1381,6 +1400,45 @@ link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gre
 link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#dedup-java.lang.String...-++[`dedup(String...)`],
 link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/Scope.html++[`Scope`],
 link:++https://tinkerpop.apache.org/docs/x.y.z/dev/provider/#dedup-step++[`Semantics`]
+
+[[difference-step]]
+=== Difference Step
+
+The `difference()`-step (*map*) calculates the difference between the incoming list traverser and the provided list
+argument. More specifically, this provides the set operation A-B where A is the traverser and B is the argument. This
+step only expects list data (array or Iterable) and will throw an `IllegalArgumentException` if any other type is
+encountered (including null).
+
+[gremlin-groovy,modern]
+----
+g.V().values("name").fold().difference(["lop","ripple"])
+----
+
+*Additional References*
+
+link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#difference-Object++[`difference(Object)`]
+link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#difference-Traversal++[`difference(Traversal)`]
+link:++https://tinkerpop.apache.org/docs/x.y.z/dev/provider/#difference-step++[`Semantics`]
+
+[[disjunct-step]]
+=== Disjunct Step
+
+The `disjunct()`-step (*map*) calculates the disjunct set between the incoming list traverser and the provided list
+argument. This step only expects list data (array or Iterable) and will throw an `IllegalArgumentException` if any other
+type is encountered (including null).
+
+[gremlin-groovy,modern]
+----
+g.V().values("name").fold().disjunct(["lop","peter","sam"]) <1>
+----
+
+<1> Find the unique names between two group of names
+
+*Additional References*
+
+link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#disjunct-Object++[`disjunct(Object)`]
+link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#disjunct-Traversal++[`disjunct(Traversal)`]
+link:++https://tinkerpop.apache.org/docs/x.y.z/dev/provider/#disjunct-step++[`Semantics`]
 
 [[drop-step]]
 === Drop Step
@@ -1881,6 +1939,24 @@ inject(1,2).map {it.get() + 1}.map {g.V(it.get()).next()}.values('name')
 
 link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#inject-E...-++[`inject(Object)`]
 
+[[intersect-step]]
+=== Intersect Step
+
+The `intersect()`-step (*map*) calculates the intersection between the incoming list traverser and the provided list
+argument. This step only expects list data (array or Iterable) and will throw an `IllegalArgumentException` if any other
+type is encountered (including null).
+
+[gremlin-groovy,modern]
+----
+g.V().values("name").fold().intersect(["marko","josh","james","jen"])
+----
+
+*Additional References*
+
+link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#intersect-Object++[`intersect(Object)`]
+link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#intersect-Traversal++[`intersect(Traversal)`]
+link:++https://tinkerpop.apache.org/docs/x.y.z/dev/provider/#intersect-step++[`Semantics`]
+
 anchor:_gremlin_i_o[]
 [[io-step]]
 === IO Step
@@ -2088,6 +2164,24 @@ g.V().where(__.in('created').values('age').
 link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#is-java.lang.Object-++[`is(Object)`],
 link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#is-org.apache.tinkerpop.gremlin.process.traversal.P-++[`is(P)`],
 link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/P.html++[`P`]
+
+[[join-step]]
+=== Join Step
+
+The `join()`-step (*map*) joins together the elements in the incoming list traverser together with the provided argument
+as a delimiter. The resulting `String` is added to the Traversal Stream. This step only expects list data (array or
+Iterable) in the incoming traverser and will throw an `IllegalArgumentException` if any other type is encountered
+(including null). However, null is allowed as an element within the list and is converted to "null".
+
+[gremlin-groovy,modern]
+----
+g.V().values("name").fold().join("+")
+----
+
+*Additional References*
+
+link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#join-String++[`join(String)`]
+link:++https://tinkerpop.apache.org/docs/x.y.z/dev/provider/#join-step++[`Semantics`]
 
 [[key-step]]
 === Key Step
@@ -2613,6 +2707,25 @@ g.inject([null,null,null]).mean(local)
 link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#mean--++[`mean()`],
 link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#mean-org.apache.tinkerpop.gremlin.process.traversal.Scope-++[`mean(Scope)`],
 link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/Scope.html++[`Scope`]
+
+[[merge-step]]
+=== Merge Step
+
+The `merge()`-step (*map*) merges the elements of the incoming list traverser and the provided list argument into one
+list. This is also known as the union operation. This step only expects list data (array or Iterable) and will throw
+an `IllegalArgumentException` if any other type is encountered (including null). This differs from the `combine`
+step in that it doesn't allow duplicates.
+
+[gremlin-groovy,modern]
+----
+g.V().values("name").fold().merge(["james","jen","marko","vadas"])
+----
+
+*Additional References*
+
+link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#merge-Object++[`merge(Object)`]
+link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#merge-Traversal++[`merge(Traversal)`]
+link:++https://tinkerpop.apache.org/docs/x.y.z/dev/provider/#merge-step++[`Semantics`]
 
 [[mergeedge-step]]
 === MergeEdge Step
@@ -3347,6 +3460,24 @@ configuration keys from the `PeerPressure` class and is automatically imported t
 
 link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#peerPressure--++[`peerPressure()`]
 
+[[product-step]]
+=== Product Step
+
+The `product()`-step (*map*) calculates the cartesian product between the incoming list traverser and the provided list
+argument. This step only expects list data (array or Iterable) and will throw an `IllegalArgumentException` if any
+other type is encountered (including null).
+
+[gremlin-groovy,modern]
+----
+g.V().values("name").fold().product(["james","jen"])
+----
+
+*Additional References*
+
+link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#product-Object++[`product(Object)`]
+link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#product-Traversal++[`product(Traversal)`]
+link:++https://tinkerpop.apache.org/docs/x.y.z/dev/provider/#product-step++[`Semantics`]
+
 [[profile-step]]
 === Profile Step
 
@@ -3759,12 +3890,14 @@ link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gre
 [[reverse-step]]
 === Reverse Step
 
-The `reverse()`-step (*map*) returns a reversed string of the incoming string traverser. Null values are not processed and remain
-as null when returned. If the incoming traverser is a non-String value then an `IllegalArgumentException` will be thrown.
+The `reverse()`-step (*map*) returns a reversed of the incoming list traverser. Single values (including null) are not
+processed and are added back to the Traversal Stream unchanged. If the incoming traverser is a String value then the
+reversed String will be returned.
 
 [gremlin-groovy,modern]
 ----
 g.V().values("name").reverse()
+g.V().values("name").fold().reverse()
 ----
 
 link:++https://tinkerpop.apache.org/javadocs/x.y.z/core/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html#reverse--++[`reverse()`]
