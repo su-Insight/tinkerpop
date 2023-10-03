@@ -31,6 +31,7 @@ Feature: Step - dedup()
       | josh  |
       | peter |
 
+  @GraphComputerVerificationStarGraphExceeded
   Scenario: g_V_out_in_valuesXnameX_fold_dedupXlocalX
     Given the modern graph
     And the traversal of
