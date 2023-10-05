@@ -54,7 +54,7 @@ const parsers = [
   [ 'vp\\[(.+)\\]', toVertexProperty ],
   [ 'p\\[(.+)\\]', toPath ],
   [ 'l\\[(.*)\\]', toArray ],
-  [ 's\\[(.*)\\]', toArray ],
+  [ 's\\[(.*)\\]', toSet ],
   [ 'm\\[(.+)\\]', toMap ],
   [ 'c\\[(.+)\\]', toLambda ],
   [ 't\\[(.+)\\]', toT ],
@@ -366,6 +366,13 @@ function toArray(stringList) {
 
 function toMap(stringMap) {
   return parseMapValue.call(this, JSON.parse(stringMap));
+}
+
+function toSet(stringSet) {
+  if (stringSet === '') {
+    return new Set();
+  }
+  return new Set(stringSet.split(',').map(x => parseValue.call(this, x)));
 }
 
 function parseMapValue(value) {
