@@ -183,7 +183,7 @@ class Translator:
                     script += 'WithOptions.tokens'
                     with_opts = True
                 elif isinstance(p, str):
-                    script += f'\'{p}\''
+                    script += f'{p!r}'  # use repr() format for canonical string rep
                 elif type(p) == bool:
                     script += 'true' if p else 'false'
                 elif isinstance(p, type(lambda: None)) and p.__name__ == (lambda: None).__name__:
