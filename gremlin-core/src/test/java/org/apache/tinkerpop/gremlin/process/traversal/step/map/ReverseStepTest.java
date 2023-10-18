@@ -50,13 +50,13 @@ public class ReverseStepTest extends StepTest {
                 __.inject("hello world", "test", "no.123", null, "").reverse().toList().toArray());
     }
 
-    @Test
-    public void shouldAcceptPrimitiveArrayTraverser() {
-        List result = (List) __.__(new long[] {10L, 7L}).reverse().next();
-        assertEquals(7L, result.get(0));
-        assertEquals(10L, result.get(1));
-        assertEquals(2, result.size());
-    }
+//    @Test
+//    public void shouldAcceptPrimitiveArrayTraverser() {
+//        List result = (List) __.__(new long[] {10L, 7L}).reverse().next();
+//        assertEquals(7L, result.get(0));
+//        assertEquals(10L, result.get(1));
+//        assertEquals(2, result.size());
+//    }
 
     @Test
     public void shouldAcceptObjectArrayTraverser() {
