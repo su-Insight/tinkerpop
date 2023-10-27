@@ -46,6 +46,10 @@ module.exports = class UuidSerializer {
       .replace(/^urn:uuid:/, '')
       .replace(/[{}-]/g, '');
 
+    if (!uuid_str.match('[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')) {
+      throw new Error(uuid_str + ' is not a valid UUID.');
+    }
+
     const bufs = [];
     if (fullyQualifiedFormat) {
       bufs.push(Buffer.from([this.ioc.DataType.UUID, 0x00]));

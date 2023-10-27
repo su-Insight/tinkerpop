@@ -117,8 +117,17 @@ describe('Client', function () {
         }
       } catch (e) {
         assert.ok(e);
-        assert.ok(e.statusMessage);
-        assert.ok(e.statusMessage.includes("UUID has to be represented by standard 36-char representation"));
+
+        // GraphBinary and GraphSON return different errors.
+        if (e.statusMessage) {
+          // Invalid UUID for GraphSON is parsed on the server side.
+          assert.ok(e.statusMessage);
+          assert.ok(e.statusMessage.includes("UUID has to be represented by standard 36-char representation"));
+        } else {
+          // Invalid UUID for GraphBinary is checked by the driver.
+          assert.ok(e.message);
+          assert.ok(e.message.includes("malformed is not a valid UUID."));
+        }
       }
     });
 
