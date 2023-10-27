@@ -108,6 +108,20 @@ describe('Client', function () {
       assert.ok(output[0] instanceof graphModule.Vertex);
     });
 
+    it("should get informative error message for malformed requestId", async () => {
+      const readable = client.stream('g.V()', {}, {requestId: 'malformed'});
+
+      try {
+        for await (const result of readable) {
+          assert.fail("malformed requestId should throw");
+        }
+      } catch (e) {
+        assert.ok(e);
+        assert.ok(e.statusMessage);
+        assert.ok(e.statusMessage.includes("UUID has to be represented by standard 36-char representation"));
+      }
+    });
+
     it("should reject pending traversal promises if connection closes", async () => {
       const closingClient = helper.getClient('gmodern');
       await closingClient.open();
