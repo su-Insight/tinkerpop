@@ -24,6 +24,8 @@ image::https://raw.githubusercontent.com/apache/tinkerpop/master/docs/static/ima
 === TinkerPop 4.0.0 (NOT OFFICIALLY RELEASED YET)
 
 * Added support for deserialization of `Set` for `gremlin-javascript`.
+* Made `SeedStrategy` construction consistent with the builder pattern and removed the public constructor.
+* Added grammar-based `Translator`.
 * Added integer overflow checks for `sum()`.
 * Gremlin Server only supports instantiation of `authentication.authenticationHandler` with three-arg constructor.
 * Removed previously deprecated two-arg constructors for `authentication.authenticationHandler` implementations.

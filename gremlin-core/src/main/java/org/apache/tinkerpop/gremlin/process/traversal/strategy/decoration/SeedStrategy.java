@@ -44,7 +44,7 @@ public class SeedStrategy extends AbstractTraversalStrategy<TraversalStrategy.De
 
     private final long seed;
 
-    public SeedStrategy(final long seed) {
+    private SeedStrategy(final long seed) {
         this.seed = seed;
     }
 
@@ -75,5 +75,22 @@ public class SeedStrategy extends AbstractTraversalStrategy<TraversalStrategy.De
         map.put(STRATEGY, SeedStrategy.class.getCanonicalName());
         map.put(ID_SEED, this.seed);
         return new MapConfiguration(map);
+    }
+
+    public static Builder build() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private long seed = 0;
+
+        public Builder seed(final long seed) {
+            this.seed = seed;
+            return this;
+        }
+
+        public SeedStrategy create() {
+            return new SeedStrategy(seed);
+        }
     }
 }

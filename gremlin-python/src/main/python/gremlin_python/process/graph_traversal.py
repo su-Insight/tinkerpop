@@ -541,6 +541,10 @@ class GraphTraversal(Traversal):
         self.bytecode.add_step("hasKey", *args)
         return self
 
+    def has_key(self, *args):
+        self.bytecode.add_step("hasKey", *args)
+        return self
+
     def hasLabel(self, *args):
         warnings.warn(
             "gremlin_python.process.GraphTraversalSource.hasLabel will be replaced by "
@@ -1425,6 +1429,10 @@ class __(object, metaclass=MagicType):
         return cls.graph_traversal(None, None, Bytecode()).l_trim(*args)
 
     @classmethod
+    def l_trim(cls, *args):
+        return cls.graph_traversal(None, None, Bytecode()).l_trim(*args)
+
+    @classmethod
     def map(cls, *args):
         return cls.graph_traversal(None, None, Bytecode()).map(*args)
 
@@ -1575,6 +1583,10 @@ class __(object, metaclass=MagicType):
             "gremlin_python.process.__.r_trim.",
             DeprecationWarning)
         return cls.r_trim(*args)
+
+    @classmethod
+    def r_trim(cls, *args):
+        return cls.graph_traversal(None, None, Bytecode()).r_trim(*args)
 
     @classmethod
     def r_trim(cls, *args):
@@ -2112,6 +2124,9 @@ def l_trim(*args):
     return __.l_trim(*args)
 
 
+def l_trim(*args):
+    return __.l_trim(*args)
+
 def map(*args):
     return __.map(*args)
 
@@ -2229,6 +2244,10 @@ def reverse(*args):
 
 
 def rTrim(*args):
+    return __.r_trim(*args)
+
+
+def r_trim(*args):
     return __.r_trim(*args)
 
 
