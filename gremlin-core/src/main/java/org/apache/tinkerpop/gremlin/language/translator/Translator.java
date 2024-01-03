@@ -36,6 +36,11 @@ public enum Translator {
     ANONYMIZED("Anonymized", AnonymizedTranslatorVisitor::new),
 
     /**
+     * Translates to gremlin-groovy.
+     */
+    GROOVY("Groovy", GroovyTranslateVisitor::new),
+
+    /**
      * Translates to gremlin-java.
      */
     JAVA("Java", JavaTranslateVisitor::new),

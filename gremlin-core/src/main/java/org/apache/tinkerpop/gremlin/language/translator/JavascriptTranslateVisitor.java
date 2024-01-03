@@ -30,6 +30,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Converts a Gremlin traversal string into a Javascript source code representation of that traversal with an aim at
+ * sacrificing some formatting for the ability to compile correctly.
+ * <ul>
+ *     <li>Range syntax has no direct support</li>
+ *     <li>Normalizes whitespace</li>
+ *     <li>Makes anonymous traversals explicit with double underscore</li>
+ *     <li>Makes enums explicit with their proper name</li>
+ * </ul>
+ */
 public class JavascriptTranslateVisitor extends AbstractTranslateVisitor {
     public JavascriptTranslateVisitor() {
         this("g");

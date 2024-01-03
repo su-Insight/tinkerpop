@@ -44,6 +44,7 @@ import java.util.Set;
  * A Gremlin to Gremlin translator. Makes no changes to input except:
  * <ul>
  *     <li>Normalizes whitespace</li>
+ *     <li>Normalize numeric suffixes to lower case</li>
  *     <li>Makes anonymous traversals explicit with double underscore</li>
  *     <li>Makes enums explicit with their proper name</li>
  * </ul>
@@ -2269,13 +2270,13 @@ public class TranslateVisitor extends AbstractParseTreeVisitor<Void> implements 
 
     @Override
     public Void visitIntegerLiteral(final GremlinParser.IntegerLiteralContext ctx) {
-        sb.append(ctx.getText());
+        sb.append(ctx.getText().toLowerCase());
         return null;
     }
 
     @Override
     public Void visitFloatLiteral(final GremlinParser.FloatLiteralContext ctx) {
-        sb.append(ctx.getText());
+        sb.append(ctx.getText().toLowerCase());
         return null;
     }
 

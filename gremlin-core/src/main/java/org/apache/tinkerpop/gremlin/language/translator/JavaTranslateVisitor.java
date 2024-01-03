@@ -31,6 +31,8 @@ import java.util.List;
  * sacrificing some formatting for the ability to compile correctly.
  * <ul>
  *     <li>Range syntax has no direct support</li>
+ *     <li>Normalizes whitespace</li>
+ *     <li>Normalize numeric suffixes to lower case</li>
  *     <li>If floats are not suffixed they will translate as BigDecimal</li>
  *     <li>Makes anonymous traversals explicit with double underscore</li>
  *     <li>Makes enums explicit with their proper name</li>
