@@ -30,6 +30,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Pick;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
+import org.apache.tinkerpop.gremlin.process.traversal.SackFunctions;
 import org.apache.tinkerpop.gremlin.process.traversal.Scope;
 import org.apache.tinkerpop.gremlin.process.traversal.TextP;
 import org.apache.tinkerpop.gremlin.structure.Column;
@@ -272,7 +273,7 @@ public class TranslateVisitor extends AbstractParseTreeVisitor<Void> implements 
 
     @Override
     public Void visitNestedTraversal(final GremlinParser.NestedTraversalContext ctx) {
-        if (!ctx.getChild(0).getText().equals("__"))
+        if (ctx.ANON_TRAVERSAL_ROOT() == null)
             sb.append("__.");
         return visitChildren(ctx);
     }
@@ -1538,6 +1539,12 @@ public class TranslateVisitor extends AbstractParseTreeVisitor<Void> implements 
     @Override
     public Void visitTraversalOrder(final GremlinParser.TraversalOrderContext ctx) {
         appendExplicitNaming(ctx.getText(), Order.class.getSimpleName());
+        return null;
+    }
+
+    @Override
+    public Void visitTraversalBarrier(final GremlinParser.TraversalBarrierContext ctx) {
+        appendExplicitNaming(ctx.getText(), SackFunctions.Barrier.class.getSimpleName());
         return null;
     }
 

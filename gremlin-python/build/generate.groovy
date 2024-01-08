@@ -64,6 +64,7 @@ radishGremlinFile.withWriter('UTF-8') { Writer writer ->
                     'from gremlin_python.structure.graph import Graph\n' +
                     'from gremlin_python.process.traversal import Barrier, Cardinality, CardinalityValue, P, TextP, Pop, Scope, Column, Order, Direction, DT, Merge, T, Pick, Operator, IO, WithOptions\n')
 
+    // some traversals may require a static translation if the translator can't handle them for some reason
     def staticTranslate = [:]
     // SAMPLE: g_injectXnull_nullX: "    'g_injectXnull_nullX': [(lambda g: g.inject(None,None))], ",
 

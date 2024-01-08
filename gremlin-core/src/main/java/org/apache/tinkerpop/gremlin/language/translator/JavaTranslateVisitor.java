@@ -224,6 +224,22 @@ public class JavaTranslateVisitor extends AbstractTranslateVisitor {
     }
 
     @Override
+    public Void visitStringLiteralList(final GremlinParser.StringLiteralListContext ctx) {
+        sb.append("new ArrayList<String>() {{ ");
+        for (int ix = 0; ix < ctx.getChild(1).getChildCount(); ix++) {
+            if (ctx.getChild(ix).getChild(ix) instanceof TerminalNode)
+                continue;
+            sb.append("add(");
+            visit(ctx.getChild(1).getChild(ix));
+            sb.append(");");
+            if (ix < ctx.getChild(1).getChildCount() - 1)
+                sb.append(" ");
+        }
+        sb.append(" }}");
+        return null;
+    }
+
+    @Override
     protected Void appendStrategyArguments(final ParseTree ctx) {
         sb.append(ctx.getChild(0)).append("(");
         visit(ctx.getChild(2));

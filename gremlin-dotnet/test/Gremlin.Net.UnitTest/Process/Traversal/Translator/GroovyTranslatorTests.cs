@@ -24,7 +24,6 @@
 using System;
 using System.Collections.Generic;
 using Gremlin.Net.Process.Traversal;
-using Gremlin.Net.Process.Traversal.Step.Util;
 using Gremlin.Net.Process.Traversal.Strategy.Decoration;
 using Gremlin.Net.Process.Traversal.Strategy.Verification;
 using Gremlin.Net.Process.Traversal.Translator;

@@ -1770,6 +1770,18 @@ namespace Gremlin.Net.Process.Traversal
         }
 
         /// <summary>
+        ///     Adds the property step to this <see cref="GraphTraversal{SType, EType}" />.
+        /// </summary>
+        public GraphTraversal<TStart, TEnd> Property (IDictionary<object, object> map)
+        {
+            if (map == null) throw new ArgumentNullException(nameof(map));
+
+            Bytecode.AddStep("property", map);
+            return Wrap<TStart, TEnd>(this);
+        }
+
+
+        /// <summary>
         ///     Adds the propertyMap step to this <see cref="GraphTraversal{SType, EType}" />.
         /// </summary>
         public GraphTraversal<TStart, IDictionary<string, TNewEnd>> PropertyMap<TNewEnd> (params string?[] propertyKeys)
