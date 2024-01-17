@@ -32,7 +32,7 @@ RUN apt-get update
 # include both java 8/11 so that we can use the same docker image for future builds on that version of the jdk as we do
 # for the older release branches. the java version to use is just controlled by JAVA_HOME hardcoded below
 RUN apt-get install -y openjdk-8-jdk openjdk-11-jdk gawk git maven openssh-server subversion zip
-RUN apt-get install -y --force-yes dotnet-sdk-6.0 mono-devel
+RUN apt-get install -y --force-yes dotnet-sdk-8.0 mono-devel
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get install -y python3 python3.8 python3-dev python3.8-dev python3-pip build-essential checkinstall zlib1g-dev libreadline-gplv2-dev \
