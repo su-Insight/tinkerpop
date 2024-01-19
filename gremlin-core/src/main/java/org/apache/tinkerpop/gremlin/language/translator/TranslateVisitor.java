@@ -274,7 +274,7 @@ public class TranslateVisitor extends AbstractParseTreeVisitor<Void> implements 
     @Override
     public Void visitNestedTraversal(final GremlinParser.NestedTraversalContext ctx) {
         if (ctx.ANON_TRAVERSAL_ROOT() == null)
-            sb.append("__.");
+            appendAnonymousSpawn();
         return visitChildren(ctx);
     }
 
@@ -1668,7 +1668,7 @@ public class TranslateVisitor extends AbstractParseTreeVisitor<Void> implements 
         return null;
     }
 
-    private void visitP(final ParserRuleContext ctx, final Class<?> clazzOfP, final String methodName) {
+    protected void visitP(final ParserRuleContext ctx, final Class<?> clazzOfP, final String methodName) {
         sb.append(clazzOfP.getSimpleName());
         appendStepSeparator();
         sb.append(processGremlinSymbol(methodName));
@@ -2368,5 +2368,9 @@ public class TranslateVisitor extends AbstractParseTreeVisitor<Void> implements 
             sb.append(processGremlinSymbol(split[0])).append(".");
             sb.append(processGremlinSymbol(split[1]));
         }
+    }
+
+    protected void appendAnonymousSpawn() {
+        sb.append("__.");
     }
 }

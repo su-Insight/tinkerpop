@@ -61,8 +61,36 @@ public class GremlinTranslatorTest {
         }
 
         @Test
+        public void shouldExtractVariablesFromDotNet() {
+            final Translation translation = GremlinTranslator.translate(query, Translator.DOTNET);
+            assertEquals(expectedVariables.size(), translation.getParameters().size());
+            assertThat(translation.getParameters().toArray(), arrayContainingInAnyOrder(expectedVariables.toArray()));
+        }
+
+        @Test
+        public void shouldExtractVariablesFromGo() {
+            final Translation translation = GremlinTranslator.translate(query, Translator.GO);
+            assertEquals(expectedVariables.size(), translation.getParameters().size());
+            assertThat(translation.getParameters().toArray(), arrayContainingInAnyOrder(expectedVariables.toArray()));
+        }
+
+        @Test
+        public void shouldExtractVariablesFromGroovy() {
+            final Translation translation = GremlinTranslator.translate(query, Translator.GROOVY);
+            assertEquals(expectedVariables.size(), translation.getParameters().size());
+            assertThat(translation.getParameters().toArray(), arrayContainingInAnyOrder(expectedVariables.toArray()));
+        }
+
+        @Test
         public void shouldExtractVariablesFromJava() {
             final Translation translation = GremlinTranslator.translate(query, Translator.JAVA);
+            assertEquals(expectedVariables.size(), translation.getParameters().size());
+            assertThat(translation.getParameters().toArray(), arrayContainingInAnyOrder(expectedVariables.toArray()));
+        }
+
+        @Test
+        public void shouldExtractVariablesFromJavascript() {
+            final Translation translation = GremlinTranslator.translate(query, Translator.JAVASCRIPT);
             assertEquals(expectedVariables.size(), translation.getParameters().size());
             assertThat(translation.getParameters().toArray(), arrayContainingInAnyOrder(expectedVariables.toArray()));
         }
@@ -81,6 +109,7 @@ public class GremlinTranslatorTest {
         private final String expectedForLang;
         private final String expectedForAnonymized;
         private final String expectedForDotNet;
+        private final String expectedForGo;
         private final String expectedForGroovy;
         private final String expectedForJava;
         private final String expectedForJavascript;
@@ -93,6 +122,7 @@ public class GremlinTranslatorTest {
          *     <li>Language</li>
          *     <li>Anonymized</li>
          *     <li>.NET</li>
+         *     <li>Go</li>
          *     <li>Groovy</li>
          *     <li>Java</li>
          *     <li>Javascript</li>
@@ -104,16 +134,18 @@ public class GremlinTranslatorTest {
         public static Collection<Object[]> data() {
             return Arrays.asList(new Object[][]{
                     {"g",
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null},
+                            null,   // language
+                            null,   // anonymized
+                            null,   // .NET
+                            null,   // Go
+                            null,   // Groovy
+                            null,   // Java
+                            null,   // Javascript
+                            null},  // Python
                     {"g.with(\"x\")",
                             null,
                             "g.with(string0)",
+                            "g.With(\"x\")",
                             "g.With(\"x\")",
                             null,
                             null,
@@ -123,6 +155,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0)",
                             "g.With(\"x\n\\\"yz\")",
+                            "g.With(\"x\n\\\"yz\")",
                             null,
                             null,
                             "g.with_(\"x\n\\\"yz\")",
@@ -130,6 +163,7 @@ public class GremlinTranslatorTest {
                     {"g.with('x', 'xyz')",
                             null,
                             "g.with(string0, string1)",
+                            "g.With(\"x\", \"xyz\")",
                             "g.With(\"x\", \"xyz\")",
                             null,
                             "g.with(\"x\", \"xyz\")",
@@ -139,6 +173,7 @@ public class GremlinTranslatorTest {
                             "g.with('x', 'xyz')",
                             "g.with(string0, string1)",
                             "g.With(\"x\", \"xyz\")",
+                            "g.With(\"x\", \"xyz\")",
                             "g.with('x', 'xyz')",
                             "g.with(\"x\", \"xyz\")",
                             "g.with_(\"x\", \"xyz\")",
@@ -146,6 +181,7 @@ public class GremlinTranslatorTest {
                     {"g.with('x', '')",
                             null,
                             "g.with(string0, string1)",
+                            "g.With(\"x\", \"\")",
                             "g.With(\"x\", \"\")",
                             null,
                             "g.with(\"x\", \"\")",
@@ -155,6 +191,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, string1)",
                             "g.With(\"x\", \"     \")",
+                            "g.With(\"x\", \"     \")",
                             null,
                             "g.with(\"x\", \"     \")",
                             "g.with_(\"x\", \"     \")",
@@ -162,6 +199,7 @@ public class GremlinTranslatorTest {
                     {"g.with('x', 'x')",
                             null,
                             "g.with(string0, string0)",
+                            "g.With(\"x\", \"x\")",
                             "g.With(\"x\", \"x\")",
                             null,
                             "g.with(\"x\", \"x\")",
@@ -171,6 +209,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, object0)",
                             "g.With(\"x\", null)",
+                            "g.With(\"x\", nil)",
                             null,
                             "g.with(\"x\", null)",
                             "g.with_(\"x\", null)",
@@ -179,6 +218,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, number0)",
                             "g.With(\"x\", Double.NaN)",
+                            "g.With(\"x\", math.NaN())",
                             null,
                             "g.with(\"x\", Double.NaN)",
                             "g.with_(\"x\", Number.NaN)",
@@ -187,6 +227,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, number0)",
                             "g.With(\"x\", Double.PositiveInfinity)",
+                            "g.With(\"x\", math.Inf(1))",
                             null,
                             "g.with(\"x\", Double.POSITIVE_INFINITY)",
                             "g.with_(\"x\", Number.POSITIVE_INFINITY)",
@@ -195,6 +236,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, number0)",
                             "g.With(\"x\", Double.NegativeInfinity)",
+                            "g.With(\"x\", math.Inf(-11))",
                             null,
                             "g.with(\"x\", Double.NEGATIVE_INFINITY)",
                             "g.with_(\"x\", Number.NEGATIVE_INFINITY)",
@@ -202,6 +244,7 @@ public class GremlinTranslatorTest {
                     {"g.with('x', 1.0)",
                             null,
                             "g.with(string0, number0)",
+                            "g.With(\"x\", 1.0)",
                             "g.With(\"x\", 1.0)",
                             null,
                             "g.with(\"x\", 1.0)",
@@ -211,6 +254,7 @@ public class GremlinTranslatorTest {
                             "g.with('x', 1.0d)",
                             "g.with(string0, double0)",
                             "g.With(\"x\", 1.0d)",
+                            "g.With(\"x\", 1.0)",
                             "g.with('x', 1.0d)",
                             "g.with(\"x\", 1.0d)",
                             "g.with_(\"x\", 1.0)",
@@ -219,6 +263,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, double0)",
                             "g.With(\"x\", 1.0d)",
+                            "g.With(\"x\", 1.0)",
                             null,
                             "g.with(\"x\", 1.0d)",
                             "g.with_(\"x\", 1.0)",
@@ -227,6 +272,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, double0)",
                             "g.With(\"x\", -1.0d)",
+                            "g.With(\"x\", -1.0)",
                             null,
                             "g.with(\"x\", -1.0d)",
                             "g.with_(\"x\", -1.0)",
@@ -235,6 +281,7 @@ public class GremlinTranslatorTest {
                             "g.with('x', 1.0f)",
                             "g.with(string0, float0)",
                             "g.With(\"x\", 1.0f)",
+                            "g.With(\"x\", 1.0)",
                             "g.with('x', 1.0f)",
                             "g.with(\"x\", 1.0f)",
                             "g.with_(\"x\", 1.0)",
@@ -243,6 +290,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, float0)",
                             "g.With(\"x\", 1.0f)",
+                            "g.With(\"x\", 1.0)",
                             null,
                             "g.with(\"x\", 1.0f)",
                             "g.with_(\"x\", 1.0)",
@@ -251,6 +299,7 @@ public class GremlinTranslatorTest {
                             "g.with('x', -1.0f)",
                             "g.with(string0, float0)",
                             "g.With(\"x\", -1.0f)",
+                            "g.With(\"x\", -1.0)",
                             "g.with('x', -1.0f)",
                             "g.with(\"x\", -1.0f)",
                             "g.with_(\"x\", -1.0)",
@@ -259,6 +308,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, bigdecimal0)",
                             "g.With(\"x\", (decimal) 1.0)",
+                            "g.With(\"x\", 1.0)",
                             "g.with('x', 1.0g)",
                             "g.with(\"x\", new BigDecimal(\"1.0\"))",
                             "g.with_(\"x\", 1.0)",
@@ -267,6 +317,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, bigdecimal0)",
                             "g.With(\"x\", (decimal) -1.0)",
+                            "g.With(\"x\", -1.0)",
                             "g.with('x', -1.0g)",
                             "g.with(\"x\", new BigDecimal(\"-1.0\"))",
                             "g.with_(\"x\", -1.0)",
@@ -275,6 +326,7 @@ public class GremlinTranslatorTest {
                             "g.with('x', -1.0m)",
                             "g.with(string0, bigdecimal0)",
                             "g.With(\"x\", (decimal) -1.0)",
+                            "g.With(\"x\", -1.0)",
                             "g.with('x', -1.0g)",
                             "g.with(\"x\", new BigDecimal(\"-1.0\"))",
                             "g.with_(\"x\", -1.0)",
@@ -283,6 +335,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, byte0)",
                             "g.With(\"x\", (byte) 1)",
+                            "g.With(\"x\", 1)",
                             "g.with('x', new Byte(1))",
                             "g.with(\"x\", new Byte(1))",
                             "g.with_(\"x\", 1)",
@@ -291,6 +344,7 @@ public class GremlinTranslatorTest {
                             "g.with('x', 1b)",
                             "g.with(string0, byte0)",
                             "g.With(\"x\", (byte) 1)",
+                            "g.With(\"x\", 1)",
                             "g.with('x', new Byte(1))",
                             "g.with(\"x\", new Byte(1))",
                             "g.with_(\"x\", 1)",
@@ -299,6 +353,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, byte0)",
                             "g.With(\"x\", (byte) -1)",
+                            "g.With(\"x\", -1)",
                             "g.with('x', new Byte(-1))",
                             "g.with(\"x\", new Byte(-1))",
                             "g.with_(\"x\", -1)",
@@ -307,6 +362,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, short0)",
                             "g.With(\"x\", (short) 1)",
+                            "g.With(\"x\", 1)",
                             "g.with('x', new Short(1))",
                             "g.with(\"x\", new Short(1))",
                             "g.with_(\"x\", 1)",
@@ -315,6 +371,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, short0)",
                             "g.With(\"x\", (short) -1)",
+                            "g.With(\"x\", -1)",
                             "g.with('x', new Short(-1))",
                             "g.with(\"x\", new Short(-1))",
                             "g.with_(\"x\", -1)",
@@ -323,6 +380,7 @@ public class GremlinTranslatorTest {
                             "g.with('x', 1s)",
                             "g.with(string0, short0)",
                             "g.With(\"x\", (short) 1)",
+                            "g.With(\"x\", 1)",
                             "g.with('x', new Short(1))",
                             "g.with(\"x\", new Short(1))",
                             "g.with_(\"x\", 1)",
@@ -330,6 +388,7 @@ public class GremlinTranslatorTest {
                     {"g.with('x', 1i)",
                             null,
                             "g.with(string0, integer0)",
+                            "g.With(\"x\", 1)",
                             "g.With(\"x\", 1)",
                             null,
                             "g.with(\"x\", 1)",
@@ -339,6 +398,7 @@ public class GremlinTranslatorTest {
                             "g.with('x', 1i)",
                             "g.with(string0, integer0)",
                             "g.With(\"x\", 1)",
+                            "g.With(\"x\", 1)",
                             "g.with('x', 1i)",
                             "g.with(\"x\", 1)",
                             "g.with_(\"x\", 1)",
@@ -346,6 +406,7 @@ public class GremlinTranslatorTest {
                     {"g.with('x', -1i)",
                             null,
                             "g.with(string0, integer0)",
+                            "g.With(\"x\", -1)",
                             "g.With(\"x\", -1)",
                             null,
                             "g.with(\"x\", -1)",
@@ -355,6 +416,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, long0)",
                             "g.With(\"x\", 1l)",
+                            "g.With(\"x\", 1)",
                             null,
                             "g.with(\"x\", 1l)",
                             "g.with_(\"x\", 1)",
@@ -363,6 +425,7 @@ public class GremlinTranslatorTest {
                             "g.with('x', 1l)",
                             "g.with(string0, long0)",
                             "g.With(\"x\", 1l)",
+                            "g.With(\"x\", 1)",
                             "g.with('x', 1l)",
                             "g.with(\"x\", 1l)",
                             "g.with_(\"x\", 1)",
@@ -371,6 +434,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, long0)",
                             "g.With(\"x\", -1l)",
+                            "g.With(\"x\", -1)",
                             null,
                             "g.with(\"x\", -1l)",
                             "g.with_(\"x\", -1)",
@@ -378,6 +442,7 @@ public class GremlinTranslatorTest {
                     {"g.with('x', 1n)",
                             null,
                             "g.with(string0, biginteger0)",
+                            "g.With(\"x\", 1)",
                             "g.With(\"x\", 1)",
                             "g.with('x', 1g)",
                             "g.with(\"x\", new BigInteger(\"1\"))",
@@ -387,6 +452,7 @@ public class GremlinTranslatorTest {
                             "g.with('x', 1n)",
                             "g.with(string0, biginteger0)",
                             "g.With(\"x\", 1)",
+                            "g.With(\"x\", 1)",
                             "g.with('x', 1g)",
                             "g.with(\"x\", new BigInteger(\"1\"))",
                             "g.with_(\"x\", 1)",
@@ -394,6 +460,7 @@ public class GremlinTranslatorTest {
                     {"g.with('x', -1n)",
                             null,
                             "g.with(string0, biginteger0)",
+                            "g.With(\"x\", -1)",
                             "g.With(\"x\", -1)",
                             "g.with('x', -1g)",
                             "g.with(\"x\", new BigInteger(\"-1\"))",
@@ -403,6 +470,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, date0)",
                             "g.With(\"x\", DateTimeOffset.FromUnixTimeMilliseconds(1690934400000))",
+                            "g.With(\"x\", time.UnixMilli(1690934400000))",
                             null,
                             "g.with(\"x\", new Date(1690934400000))",
                             "g.with_(\"x\", new Date(1690934400000))",
@@ -411,6 +479,7 @@ public class GremlinTranslatorTest {
                             "g.with('x', [x:1])",
                             "g.with(string0, map0)",
                             "g.With(\"x\", new Dictionary<object, object> {{ \"x\", 1 }})",
+                            "g.With(\"x\", map[interface{}]interface{}{\"x\": 1 })",
                             "g.with('x', [x:1])",
                             "g.with(\"x\", new LinkedHashMap<Object, Object>() {{ put(\"x\", 1); }})",
                             "g.with_(\"x\", new Map([[\"x\", 1]]))",
@@ -419,6 +488,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, map0)",
                             "g.With(\"x\", new Dictionary<object, object> {{ \"x\", 1 }, { \"new\", 2 }})",
+                            "g.With(\"x\", map[interface{}]interface{}{\"x\": 1, \"new\": 2 })",
                             null,
                             "g.with(\"x\", new LinkedHashMap<Object, Object>() {{ put(\"x\", 1); put(\"new\", 2); }})",
                             "g.with_(\"x\", new Map([[\"x\", 1], [\"new\", 2]]))",
@@ -427,6 +497,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, map0)",
                             "g.With(\"x\", new Dictionary<object, object> {{ \"x\", 1 }})",
+                            "g.With(\"x\", map[interface{}]interface{}{\"x\": 1 })",
                             null,
                             "g.with(\"x\", new LinkedHashMap<Object, Object>() {{ put(\"x\", 1); }})",
                             "g.with_(\"x\", new Map([[\"x\", 1]]))",
@@ -435,6 +506,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, map0)",
                             "g.With(\"x\", new Dictionary<object, object> {{ 1, \"x\" }})",
+                            "g.With(\"x\", map[interface{}]interface{}{1: \"x\" })",
                             null,
                             "g.with(\"x\", new LinkedHashMap<Object, Object>() {{ put(1, \"x\"); }})",
                             "g.with_(\"x\", new Map([[1, \"x\"]]))",
@@ -443,6 +515,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, list0)",
                             "g.With(\"x\", new List<object> { 1, \"x\" })",
+                            "g.With(\"x\", []interface{}{1, \"x\"})",
                             null,
                             "g.with(\"x\", new ArrayList<Object>() {{ add(1); add(\"x\"); }})",
                             "g.with_(\"x\", [1, \"x\"])",
@@ -451,6 +524,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.with(string0, number0..number1)",
                             ".NET does not support range literals",
+                            "Go does not support range literals",
                             "g.with('x', 0..5)",
                             "Java does not support range literals",
                             "Javascript does not support range literals",
@@ -458,6 +532,7 @@ public class GremlinTranslatorTest {
                     {"g.withBulk(false)",
                             null,
                             "g.withBulk(boolean0)",
+                            "g.WithBulk(false)",
                             "g.WithBulk(false)",
                             null,
                             null,
@@ -467,6 +542,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.withBulk(boolean0)",
                             "g.WithBulk(true)",
+                            "g.WithBulk(true)",
                             null,
                             null,
                             null,
@@ -474,6 +550,7 @@ public class GremlinTranslatorTest {
                     {"g.withBulk( true )",
                             "g.withBulk(true)",
                             "g.withBulk(boolean0)",
+                            "g.WithBulk(true)",
                             "g.WithBulk(true)",
                             "g.withBulk(true)",
                             "g.withBulk(true)",
@@ -483,6 +560,7 @@ public class GremlinTranslatorTest {
                             null,
                             null,
                             "g.WithBulk(x)",
+                            "g.WithBulk(x)",
                             null,
                             null,
                             null,
@@ -491,6 +569,7 @@ public class GremlinTranslatorTest {
                             null,
                             null,
                             "g.WithStrategies(new ReadOnlyStrategy())",
+                            "g.WithStrategies(gremlingo.ReadOnlyStrategy())",
                             null,
                             "g.withStrategies(ReadOnlyStrategy.instance())",
                             "g.withStrategies(new ReadOnlyStrategy())",
@@ -499,6 +578,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.withStrategies(new SeedStrategy(seed:number0))",
                             "g.WithStrategies(new SeedStrategy(seed: 10000))",
+                            "g.WithStrategies(gremlingo.SeedStrategy(gremlingo.SeedStrategyConfig{Seed: 10000}))",
                             null,
                             "g.withStrategies(SeedStrategy.build().seed(10000).create())",
                             "g.withStrategies(new SeedStrategy({seed: 10000}))",
@@ -507,6 +587,7 @@ public class GremlinTranslatorTest {
                             "g.withStrategies(new PartitionStrategy(includeMetaProperties:true, partitionKey:'x'))",
                             "g.withStrategies(new PartitionStrategy(includeMetaProperties:boolean0, partitionKey:string0))",
                             "g.WithStrategies(new PartitionStrategy(includeMetaProperties: true, partitionKey: \"x\"))",
+                            "g.WithStrategies(gremlingo.PartitionStrategy(gremlingo.PartitionStrategyConfig{IncludeMetaProperties: true, PartitionKey: \"x\"}))",
                             "g.withStrategies(new PartitionStrategy(includeMetaProperties:true, partitionKey:'x'))",
                             "g.withStrategies(PartitionStrategy.build().includeMetaProperties(true).partitionKey(\"x\").create())",
                             "g.withStrategies(new PartitionStrategy({includeMetaProperties: true, partitionKey: \"x\"}))",
@@ -515,6 +596,7 @@ public class GremlinTranslatorTest {
                             "g.withStrategies(new SubgraphStrategy(vertices:__.has('name', 'vadas'), edges:__.has('weight', P.gt(0.5))))",
                             "g.withStrategies(new SubgraphStrategy(vertices:__.has(string0, string1), edges:__.has(string2, P.gt(number0))))",
                             "g.WithStrategies(new SubgraphStrategy(vertices: __.Has(\"name\", \"vadas\"), edges: __.Has(\"weight\", P.Gt(0.5))))",
+                            "g.WithStrategies(gremlingo.SubgraphStrategy(gremlingo.SubgraphStrategyConfig{Vertices: gremlingo.T__.Has(\"name\", \"vadas\"), Edges: gremlingo.T__.Has(\"weight\", gremlingo.P.Gt(0.5))}))",
                             "g.withStrategies(new SubgraphStrategy(vertices:__.has('name', 'vadas'), edges:__.has('weight', P.gt(0.5))))",
                             "g.withStrategies(SubgraphStrategy.build().vertices(__.has(\"name\", \"vadas\")).edges(__.has(\"weight\", P.gt(0.5))).create())",
                             "g.withStrategies(new SubgraphStrategy({vertices: __.has(\"name\", \"vadas\"), edges: __.has(\"weight\", P.gt(0.5))}))",
@@ -526,6 +608,7 @@ public class GremlinTranslatorTest {
                             "g.withStrategies(new SubgraphStrategy(checkAdjacentVertices:false, vertices:__.has(\"name\", P.within(\"josh\", \"lop\", \"ripple\")), edges:__.or(__.has(\"weight\", 0.4).hasLabel(\"created\"), __.has(\"weight\", 1.0).hasLabel(\"created\")))).E()",
                             "g.withStrategies(new SubgraphStrategy(checkAdjacentVertices:boolean0, vertices:__.has(string0, P.within(string1, string2, string3)), edges:__.or(__.has(string4, number0).hasLabel(string5), __.has(string4, number1).hasLabel(string5)))).E()",
                             "g.WithStrategies(new SubgraphStrategy(checkAdjacentVertices: false, vertices: __.Has(\"name\", P.Within(\"josh\", \"lop\", \"ripple\")), edges: __.Or(__.Has(\"weight\", 0.4).HasLabel(\"created\"), __.Has(\"weight\", 1.0).HasLabel(\"created\")))).E()",
+                            "g.WithStrategies(gremlingo.SubgraphStrategy(gremlingo.SubgraphStrategyConfig{CheckAdjacentVertices: false, Vertices: gremlingo.T__.Has(\"name\", gremlingo.P.Within(\"josh\", \"lop\", \"ripple\")), Edges: gremlingo.T__.Or(gremlingo.T__.Has(\"weight\", 0.4).HasLabel(\"created\"), gremlingo.T__.Has(\"weight\", 1.0).HasLabel(\"created\"))})).E()",
                             "g.withStrategies(new SubgraphStrategy(checkAdjacentVertices:false, vertices:__.has(\"name\", P.within(\"josh\", \"lop\", \"ripple\")), edges:__.or(__.has(\"weight\", 0.4).hasLabel(\"created\"), __.has(\"weight\", 1.0).hasLabel(\"created\")))).E()",
                             "g.withStrategies(SubgraphStrategy.build().checkAdjacentVertices(false).vertices(__.has(\"name\", P.within(\"josh\", \"lop\", \"ripple\"))).edges(__.or(__.has(\"weight\", 0.4).hasLabel(\"created\"), __.has(\"weight\", 1.0).hasLabel(\"created\"))).create()).E()",
                             "g.withStrategies(new SubgraphStrategy({checkAdjacentVertices: false, vertices: __.has(\"name\", P.within(\"josh\", \"lop\", \"ripple\")), edges: __.or(__.has(\"weight\", 0.4).hasLabel(\"created\"), __.has(\"weight\", 1.0).hasLabel(\"created\"))})).E()",
@@ -534,6 +617,7 @@ public class GremlinTranslatorTest {
                             "g.withStrategies(new PartitionStrategy(partitionKey:\"_partition\", writePartition:\"a\", readPartitions:[\"a\", \"b\"])).V().values(\"name\")",
                             "g.withStrategies(new PartitionStrategy(partitionKey:string0, writePartition:string1, readPartitions:[string1, string2])).V().values(string3)",
                             "g.WithStrategies(new PartitionStrategy(partitionKey: \"_partition\", writePartition: \"a\", readPartitions: new HashSet<string> { \"a\", \"b\" })).V().Values<object>(\"name\")",
+                            "g.WithStrategies(gremlingo.PartitionStrategy(gremlingo.PartitionStrategyConfig{PartitionKey: \"_partition\", WritePartition: \"a\", ReadPartitions: [\"a\", \"b\"]})).V().Values(\"name\")",
                             "g.withStrategies(new PartitionStrategy(partitionKey:\"_partition\", writePartition:\"a\", readPartitions:[\"a\", \"b\"])).V().values(\"name\")",
                             "g.withStrategies(PartitionStrategy.build().partitionKey(\"_partition\").writePartition(\"a\").readPartitions(new ArrayList<String>() {{ add(\"a\"); add(\"b\"); }}).create()).V().values(\"name\")",
                             "g.withStrategies(new PartitionStrategy({partitionKey: \"_partition\", writePartition: \"a\", readPartitions: [\"a\", \"b\"]})).V().values(\"name\")",
@@ -542,6 +626,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.inject(number0..number1)",
                             ".NET does not support range literals",
+                            "Go does not support range literals",
                             "g.inject(0..5)",
                             "Java does not support range literals",
                             "Javascript does not support range literals",
@@ -550,6 +635,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.inject(number0).asDate()",
                             "g.Inject<object>(1694017707000).AsDate()",
+                            "g.Inject(1694017707000).AsDate()",
                             null,
                             null,
                             null,
@@ -558,6 +644,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().hasLabel(string0)",
                             "g.V().HasLabel((string) null)",
+                            "g.V().HasLabel(nil)",
                             null,
                             null,
                             null,
@@ -565,6 +652,7 @@ public class GremlinTranslatorTest {
                     {"g.V().hasLabel('person')",
                             null,
                             "g.V().hasLabel(string0)",
+                            "g.V().HasLabel(\"person\")",
                             "g.V().HasLabel(\"person\")",
                             "g.V().hasLabel('person')",
                             "g.V().hasLabel(\"person\")",
@@ -574,6 +662,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().hasLabel(string0, string1, string2)",
                             "g.V().HasLabel(\"person\", \"software\", \"class\")",
+                            "g.V().HasLabel(\"person\", \"software\", \"class\")",
                             "g.V().hasLabel('person', 'software', 'class')",
                             "g.V().hasLabel(\"person\", \"software\", \"class\")",
                             "g.V().hasLabel(\"person\", \"software\", \"class\")",
@@ -582,6 +671,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().hasLabel(string0, string1, string2)",
                             "g.V().HasLabel(null, \"software\", \"class\")",
+                            "g.V().HasLabel(nil, \"software\", \"class\")",
                             "g.V().hasLabel(null, 'software', 'class')",
                             "g.V().hasLabel(null, \"software\", \"class\")",
                             "g.V().hasLabel(null, \"software\", \"class\")",
@@ -590,6 +680,7 @@ public class GremlinTranslatorTest {
                             null,
                             null,
                             "g.V().Map<object>(__.Out().Count())",
+                            "g.V().Map(gremlingo.T__.Out().Count())",
                             null,
                             null,
                             null,
@@ -598,6 +689,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().has(string0, object0)",
                             "g.V().Has((string) null, (object) null)",
+                            "g.V().Has(nil, nil)",
                             null,
                             null,
                             null,
@@ -606,6 +698,7 @@ public class GremlinTranslatorTest {
                             "g.V().map(__.out().count())",
                             "g.V().map(__.out().count())",
                             "g.V().Map<object>(__.Out().Count())",
+                            "g.V().Map(gremlingo.T__.Out().Count())",
                             "g.V().map(__.out().count())",
                             "g.V().map(__.out().count())",
                             "g.V().map(__.out().count())",
@@ -614,6 +707,7 @@ public class GremlinTranslatorTest {
                             "g.V().fold().count(Scope.local)",
                             "g.V().fold().count(Scope.local)",
                             "g.V().Fold().Count(Scope.Local)",
+                            "g.V().Fold().Count(gremlingo.Scope.Local)",
                             "g.V().fold().count(Scope.local)",
                             "g.V().fold().count(Scope.local)",
                             "g.V().fold().count(Scope.local)",
@@ -622,6 +716,7 @@ public class GremlinTranslatorTest {
                             null,
                             null,
                             "g.V().Fold().Count(Scope.Local)",
+                            "g.V().Fold().Count(gremlingo.Scope.Local)",
                             null,
                             null,
                             null,
@@ -630,6 +725,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().has(T.id, number0)",
                             "g.V().Has(T.Id, 1)",
+                            "g.V().Has(gremlingo.T.Id, 1)",
                             null,
                             null,
                             null,
@@ -638,6 +734,7 @@ public class GremlinTranslatorTest {
                             "g.V().has(T.id, 1)",
                             "g.V().has(T.id, number0)",
                             "g.V().Has(T.Id, 1)",
+                            "g.V().Has(gremlingo.T.Id, 1)",
                             "g.V().has(T.id, 1)",
                             "g.V().has(T.id, 1)",
                             "g.V().has(T.id, 1)",
@@ -646,6 +743,7 @@ public class GremlinTranslatorTest {
                             "g.V().has(\"name\", P.within(\"josh\", \"stephen\"))",
                             "g.V().has(string0, P.within(string1, string2))",
                             "g.V().Has(\"name\", P.Within(\"josh\", \"stephen\"))",
+                            "g.V().Has(\"name\", gremlingo.P.Within(\"josh\", \"stephen\"))",
                             "g.V().has(\"name\", P.within(\"josh\", \"stephen\"))",
                             "g.V().has(\"name\", P.within(\"josh\", \"stephen\"))",
                             "g.V().has(\"name\", P.within(\"josh\", \"stephen\"))",
@@ -654,6 +752,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().has(string0, P.eq(string1))",
                             "g.V().Has(\"name\", P.Eq(\"josh\"))",
+                            "g.V().Has(\"name\", gremlingo.P.Eq(\"josh\"))",
                             null,
                             null,
                             null,
@@ -662,6 +761,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().has(string0, P.eq(string1).negate())",
                             "g.V().Has(\"name\", P.Eq(\"josh\").Negate())",
+                            "g.V().Has(\"name\", gremlingo.P.Eq(\"josh\").Negate())",
                             null,
                             null,
                             null,
@@ -670,6 +770,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().has(string0, P.within())",
                             "g.V().Has(\"name\", P.Within())",
+                            "g.V().Has(\"name\", gremlingo.P.Within())",
                             null,
                             null,
                             null,
@@ -678,6 +779,7 @@ public class GremlinTranslatorTest {
                             "g.V().has(\"name\", P.within(\"josh\", \"stephen\").or(P.eq(\"vadas\")))",
                             "g.V().has(string0, P.within(string1, string2).or(P.eq(string3)))",
                             "g.V().Has(\"name\", P.Within(\"josh\", \"stephen\").Or(P.Eq(\"vadas\")))",
+                            "g.V().Has(\"name\", gremlingo.P.Within(\"josh\", \"stephen\").Or(gremlingo.P.Eq(\"vadas\")))",
                             "g.V().has(\"name\", P.within(\"josh\", \"stephen\").or(P.eq(\"vadas\")))",
                             "g.V().has(\"name\", P.within(\"josh\", \"stephen\").or(P.eq(\"vadas\")))",
                             "g.V().has(\"name\", P.within(\"josh\", \"stephen\").or(P.eq(\"vadas\")))",
@@ -686,6 +788,7 @@ public class GremlinTranslatorTest {
                             "g.V().has(\"name\", P.within(\"josh\", \"stephen\"))",
                             "g.V().has(string0, P.within(string1, string2))",
                             "g.V().Has(\"name\", P.Within(\"josh\", \"stephen\"))",
+                            "g.V().Has(\"name\", gremlingo.P.Within(\"josh\", \"stephen\"))",
                             "g.V().has(\"name\", P.within(\"josh\", \"stephen\"))",
                             "g.V().has(\"name\", P.within(\"josh\", \"stephen\"))",
                             "g.V().has(\"name\", P.within(\"josh\", \"stephen\"))",
@@ -694,6 +797,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().has(string0, TextP.containing(string1).negate())",
                             "g.V().Has(\"name\", TextP.Containing(\"j\").Negate())",
+                            "g.V().Has(\"name\", gremlingo.TextP.Containing(\"j\").Negate())",
                             null,
                             null,
                             null,
@@ -702,6 +806,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().hasLabel(string0).has(string1, P.not(P.lte(number0).and(P.not(P.between(number1, number2)))).and(P.lt(number3).or(P.eq(number4)))).values(string2)",
                             "g.V().HasLabel(\"person\").Has(\"age\", P.Not(P.Lte(10).And(P.Not(P.Between(11, 20)))).And(P.Lt(29).Or(P.Eq(35)))).Values<object>(\"name\")",
+                            "g.V().HasLabel(\"person\").Has(\"age\", gremlingo.P.Not(gremlingo.P.Lte(10).And(gremlingo.P.Not(gremlingo.P.Between(11, 20)))).And(gremlingo.P.Lt(29).Or(gremlingo.P.Eq(35)))).Values(\"name\")",
                             null,
                             null,
                             null,
@@ -710,6 +815,7 @@ public class GremlinTranslatorTest {
                             "g.V().has(\"name\", TextP.containing(\"j\"))",
                             "g.V().has(string0, TextP.containing(string1))",
                             "g.V().Has(\"name\", TextP.Containing(\"j\"))",
+                            "g.V().Has(\"name\", gremlingo.TextP.Containing(\"j\"))",
                             "g.V().has(\"name\", TextP.containing(\"j\"))",
                             "g.V().has(\"name\", TextP.containing(\"j\"))",
                             "g.V().has(\"name\", TextP.containing(\"j\"))",
@@ -718,6 +824,7 @@ public class GremlinTranslatorTest {
                             "g.V().property(Cardinality.set, \"name\", \"stephen\")",
                             "g.V().property(Cardinality.set, string0, string1)",
                             "g.V().Property(Cardinality.Set, \"name\", \"stephen\")",
+                            "g.V().Property(gremlingo.Cardinality.Set, \"name\", \"stephen\")",
                             "g.V().property(Cardinality.set, \"name\", \"stephen\")",
                             "g.V().property(Cardinality.set, \"name\", \"stephen\")",
                             "g.V().property(Cardinality.set, \"name\", \"stephen\")",
@@ -726,6 +833,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().property(Cardinality.set, string0, string1)",
                             "g.V().Property(Cardinality.Set, \"name\", \"stephen\")",
+                            "g.V().Property(gremlingo.Cardinality.Set, \"name\", \"stephen\")",
                             null,
                             null,
                             null,
@@ -734,6 +842,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().has(string0, string1).property(map0)",
                             "g.V().Has(\"name\", \"foo\").Property(new Dictionary<object, object> {{ \"name\", CardinalityValue.Set(\"bar\") }, { \"age\", 43 }})",
+                            "g.V().Has(\"name\", \"foo\").Property(map[interface{}]interface{}{\"name\": gremlingo.CardinalityValue.Set(\"bar\"), \"age\": 43 })",
                             null,
                             "g.V().has(\"name\", \"foo\").property(new LinkedHashMap<Object, Object>() {{ put(\"name\", Cardinality.set(\"bar\")); put(\"age\", 43); }})",
                             "g.V().has(\"name\", \"foo\").property(new Map([[\"name\", CardinalityValue.set(\"bar\")], [\"age\", 43]]))",
@@ -742,6 +851,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V(new Vertex(number0, string0)).limit(number0)",
                             "g.V(new Vertex(1, \"person\")).Limit<object>(1)",
+                            "g.V(gremlingo.Vertex{Element{1, \"person\"}}).Limit(1)",
                             "g.V(new DetachedVertex(1, \"person\")).limit(1)",
                             "g.V(new DetachedVertex(1, \"person\")).limit(1)",
                             "g.V(new Vertex(1, \"person\")).limit(1)",
@@ -750,6 +860,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().both().properties().dedup().hasKey(string0).value()",
                             "g.V().Both().Properties<object>().Dedup().HasKey(\"age\").Value<object>()",
+                            "g.V().Both().Properties().Dedup().HasKey(\"age\").Value()",
                             null,
                             null,
                             null,
@@ -757,6 +868,7 @@ public class GremlinTranslatorTest {
                     {"g.V().connectedComponent().with(ConnectedComponent.propertyName, \"component\")",
                             "g.V().connectedComponent().with(ConnectedComponent.propertyName, \"component\")",
                             "g.V().connectedComponent().with(ConnectedComponent.propertyName, string0)",
+                            "g.V().ConnectedComponent().With(ConnectedComponent.PropertyName, \"component\")",
                             "g.V().ConnectedComponent().With(ConnectedComponent.PropertyName, \"component\")",
                             "g.V().connectedComponent().with(ConnectedComponent.propertyName, \"component\")",
                             "g.V().connectedComponent().with(ConnectedComponent.propertyName, \"component\")",
@@ -766,6 +878,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.withSideEffect(string0, xx2).withSideEffect(string1, xx3).mergeE(map0).option(Merge.onCreate, __.select(string0)).option(Merge.onMatch, __.select(string1))",
                             "g.WithSideEffect(\"c\", xx2).WithSideEffect(\"m\", xx3).MergeE((IDictionary<object, object>) xx1).Option(Merge.OnCreate, (ITraversal) __.Select<object>(\"c\")).Option(Merge.OnMatch, (ITraversal) __.Select<object>(\"m\"))",
+                            "g.WithSideEffect(\"c\", xx2).WithSideEffect(\"m\", xx3).MergeE(xx1).Option(gremlingo.Merge.OnCreate, gremlingo.T__.Select(\"c\")).Option(gremlingo.Merge.OnMatch, gremlingo.T__.Select(\"m\"))",
                             null,
                             null,
                             null,
@@ -774,6 +887,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.withSack(number0, Operator.sum).V(vid1).local(__.out(string0).barrier(Barrier.normSack)).in(string0).barrier().sack()",
                             "g.WithSack(1.0, Operator.Sum).V(vid1).Local<object>(__.Out(\"knows\").Barrier(Barrier.NormSack)).In(\"knows\").Barrier().Sack<object>()",
+                            "g.WithSack(1.0, gremlingo.Operator.Sum).V(vid1).Local(gremlingo.T__.Out(\"knows\").Barrier(gremlingo.Barrier.NormSack)).In(\"knows\").Barrier().Sack()",
                             null,
                             null,
                             "g.withSack(1.0, Operator.sum).V(vid1).local(__.out(\"knows\").barrier(Barrier.normSack)).in_(\"knows\").barrier().sack()",
@@ -785,11 +899,13 @@ public class GremlinTranslatorTest {
                             null,
                             null,
                             null,
+                            null,
                             null},
                     {"g.io(\"data/tinkerpop-modern.xml\").with(IO.reader, IO.graphml).read()",
                             null,
                             "g.io(string0).with(IO.reader, IO.graphml).read()",
                             "g.Io<object>(\"data/tinkerpop-modern.xml\").With(IO.Reader, IO.GraphML).Read()",
+                            "g.Io(\"data/tinkerpop-modern.xml\").With(IO.Reader, IO.Graphml).Read()",
                             null,
                             null,
                             "g.io(\"data/tinkerpop-modern.xml\").with_(IO.reader, IO.graphml).read()",
@@ -798,6 +914,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().limit(number0)",
                             "g.V().Limit<object>(1)",
+                            "g.V().Limit(1)",
                             null,
                             null,
                             null,
@@ -806,6 +923,7 @@ public class GremlinTranslatorTest {
                             null,
                             null,
                             "g.V().Group<object, object>()",
+                            "g.V().Group()",
                             null,
                             null,
                             null,
@@ -814,6 +932,7 @@ public class GremlinTranslatorTest {
                             "g.V().project(\"k\", \"v\").by().by(__.fold())",
                             "g.V().project(string0, string1).by().by(__.fold())",
                             "g.V().Project<object>(\"k\", \"v\").By().By(__.Fold<object>())",
+                            "g.V().Project(\"k\", \"v\").By().By(gremlingo.T__.Fold())",
                             "g.V().project(\"k\", \"v\").by().by(__.fold())",
                             "g.V().project(\"k\", \"v\").by().by(__.fold())",
                             "g.V().project(\"k\", \"v\").by().by(__.fold())",
@@ -822,6 +941,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().project(string0, string1).by().by(__.fold())",
                             "g.V().Project<object>(\"k\", \"v\").By().By(__.Fold<object>())",
+                            "g.V().Project(\"k\", \"v\").By().By(gremlingo.T__.Fold())",
                             null,
                             null,
                             null,
@@ -830,6 +950,7 @@ public class GremlinTranslatorTest {
                             null,
                             "g.V().project(string0, string1).by().by(__.values().fold())",
                             "g.V().Project<object>(\"k\", \"v\").By().By(__.Values<object>().Fold())",
+                            "g.V().Project(\"k\", \"v\").By().By(gremlingo.T__.Values().Fold())",
                             null,
                             null,
                             null,
@@ -838,6 +959,7 @@ public class GremlinTranslatorTest {
                             null,
                             null,
                             "g.V().ValueMap<object, object>()",
+                            "g.V().ValueMap()",
                             null,
                             null,
                             null,
@@ -846,6 +968,7 @@ public class GremlinTranslatorTest {
                             "g.V().limit(1l)",
                             "g.V().limit(long0)",
                             "g.V().Limit<object>(1l)",
+                            "g.V().Limit(1)",
                             "g.V().limit(1l)",
                             "g.V().limit(1l)",
                             "g.V().limit(1)",
@@ -854,6 +977,7 @@ public class GremlinTranslatorTest {
                             null,
                             null,
                             "g.V().Limit<object>(x)",
+                            "g.V().Limit(x)",
                             null,
                             null,
                             null,
@@ -861,6 +985,7 @@ public class GremlinTranslatorTest {
                     {"g.V().toList()",
                             null,
                             null,
+                            "g.V().ToList()",
                             "g.V().ToList()",
                             null,
                             null,
@@ -870,6 +995,7 @@ public class GremlinTranslatorTest {
                             null,
                             null,
                             "g.V().Iterate()",
+                            "g.V().Iterate()",
                             null,
                             null,
                             null,
@@ -877,6 +1003,7 @@ public class GremlinTranslatorTest {
                     {"g.tx().commit()",
                             null,
                             null,
+                            "g.Tx().Commit()",
                             "g.Tx().Commit()",
                             null,
                             null,
@@ -888,6 +1015,7 @@ public class GremlinTranslatorTest {
         public TranslationTest(final String query, final String expectedForLang,
                                final String expectedForAnonymized,
                                final String expectedForDotNet,
+                               final String expectedForGo,
                                final String expectedForGroovy,
                                final String expectedForJava,
                                final String expectedForJavascript,
@@ -896,6 +1024,7 @@ public class GremlinTranslatorTest {
             this.expectedForLang = expectedForLang != null ? expectedForLang : query;
             this.expectedForAnonymized = expectedForAnonymized != null ? expectedForAnonymized : query;
             this.expectedForDotNet = expectedForDotNet != null ? expectedForDotNet : query;
+            this.expectedForGo = expectedForGo != null ? expectedForGo : query;
             this.expectedForGroovy = expectedForGroovy != null ? expectedForGroovy : query;
             this.expectedForJava = expectedForJava != null ? expectedForJava : query;
             this.expectedForJavascript = expectedForJavascript != null ? expectedForJavascript : query;
@@ -921,6 +1050,16 @@ public class GremlinTranslatorTest {
                 assertEquals(expectedForDotNet, translatedQuery);
             } catch (TranslatorException e) {
                 assertThat(e.getMessage(), startsWith(expectedForDotNet));
+            }
+        }
+
+        @Test
+        public void shouldTranslateForGo() {
+            try {
+                final String translatedQuery = GremlinTranslator.translate(query, "g", Translator.GO).getTranslated();
+                assertEquals(expectedForGo, translatedQuery);
+            } catch (TranslatorException e) {
+                assertThat(e.getMessage(), startsWith(expectedForGo));
             }
         }
 

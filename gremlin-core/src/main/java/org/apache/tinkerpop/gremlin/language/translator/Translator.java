@@ -43,6 +43,11 @@ public enum Translator {
     /**
      * Translates to gremlin-groovy.
      */
+    GO("Go", GoTranslateVisitor::new),
+
+    /**
+     * Translates to gremlin-groovy.
+     */
     GROOVY("Groovy", GroovyTranslateVisitor::new),
 
     /**

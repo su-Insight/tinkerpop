@@ -20,6 +20,7 @@ package org.apache.tinkerpop.gremlin.language.translator;
 
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.language.grammar.GremlinParser;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
@@ -1163,11 +1164,11 @@ public class DotNetTranslateVisitor extends AbstractTranslateVisitor {
         }
 
         public static String toCSharp(final String symbol) {
-            return TO_CS_MAP.getOrDefault(symbol, symbol.substring(0,1).toUpperCase() + symbol.substring(1));
+            return TO_CS_MAP.getOrDefault(symbol, StringUtils.capitalize(symbol));
         }
 
         public static String toJava(final String symbol) {
-            return FROM_CS_MAP.getOrDefault(symbol, symbol.substring(0,1).toLowerCase() + symbol.substring(1));
+            return FROM_CS_MAP.getOrDefault(symbol, StringUtils.uncapitalize(symbol));
         }
 
     }
