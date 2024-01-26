@@ -64,7 +64,7 @@ public enum Translator {
      * Translates to gremlin-python.
      */
     PYTHON("Python", PythonTranslateVisitor::new),
-    //GROOVY("Groovy", "org.apache.tinkerpop.gremlin.language.translator.GroovyTranslateVisitor"),
+
     ;
 
     private final String name;

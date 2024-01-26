@@ -49,7 +49,6 @@ import java.util.Set;
  *     <li>Makes anonymous traversals explicit with double underscore</li>
  *     <li>Makes enums explicit with their proper name</li>
  * </ul>
- *
  */
 public class TranslateVisitor extends AbstractParseTreeVisitor<Void> implements GremlinVisitor<Void> {
 

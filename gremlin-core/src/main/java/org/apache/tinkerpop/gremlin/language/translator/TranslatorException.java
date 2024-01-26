@@ -18,6 +18,9 @@
  */
 package org.apache.tinkerpop.gremlin.language.translator;
 
+/**
+ * Exception produced by the {@link Translator} when it encounters an error.
+ */
 public class TranslatorException extends RuntimeException {
     public TranslatorException(final String message) {
         super(message);
