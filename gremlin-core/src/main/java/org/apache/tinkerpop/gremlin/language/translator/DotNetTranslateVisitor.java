@@ -191,7 +191,7 @@ public class DotNetTranslateVisitor extends AbstractTranslateVisitor {
     public Void visitStringLiteralList(final GremlinParser.StringLiteralListContext ctx) {
         sb.append("new List<string> { ");
         for (int ix = 0; ix < ctx.getChild(1).getChildCount(); ix++) {
-            if (ctx.getChild(ix).getChild(ix) instanceof TerminalNode)
+            if (ctx.getChild(1).getChild(ix) instanceof TerminalNode)
                 continue;
             visit(ctx.getChild(1).getChild(ix));
             if (ix < ctx.getChild(1).getChildCount() - 1)

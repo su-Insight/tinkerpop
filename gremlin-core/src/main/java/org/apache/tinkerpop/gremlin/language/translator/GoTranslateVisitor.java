@@ -196,6 +196,23 @@ public class GoTranslateVisitor extends AbstractTranslateVisitor {
     }
 
     @Override
+    public Void visitTraversalStrategyArgs_PartitionStrategy(final GremlinParser.TraversalStrategyArgs_PartitionStrategyContext ctx) {
+        appendStrategyArguments(ctx);
+
+        if (ctx.getChild(0).getText().equals("readPartitions")) {
+            final int ix = sb.lastIndexOf("ReadPartitions: [");
+            if (ix > 0) {
+                final int endIx = sb.indexOf("\"]", ix);
+                sb.replace(endIx, endIx + 2, "\")");
+                sb.replace(ix, ix + 17, "ReadPartitions: gremlingo.NewSimpleSet(");
+            }
+
+        }
+
+        return null;
+    }
+
+    @Override
     public Void visitTraversalCardinality(final GremlinParser.TraversalCardinalityContext ctx) {
         // handle the enum style of cardinality if there is one child, otherwise it's the function call style
         if (ctx.getChildCount() == 1)
@@ -251,6 +268,8 @@ public class GoTranslateVisitor extends AbstractTranslateVisitor {
             TO_GO_MAP.put("OUT", "Out");
             TO_GO_MAP.put("IN", "In");
             TO_GO_MAP.put("BOTH", "Both");
+            TO_GO_MAP.put("WithOptions", GO_PACKAGE_NAME + "WithOptions");
+            TO_GO_MAP.put("IO", GO_PACKAGE_NAME + "IO");
             TO_GO_MAP.put("__", GO_PACKAGE_NAME + "T__");
             TO_GO_MAP.forEach((k, v) -> FROM_GO_MAP.put(v, k));
         }
