@@ -23,7 +23,16 @@ import org.apache.tinkerpop.gremlin.process.computer.traversal.strategy.finaliza
 import org.apache.tinkerpop.gremlin.process.computer.traversal.strategy.optimization.GraphFilterStrategy;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.strategy.optimization.MessagePassingReductionStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.ConnectiveStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.ElementIdStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.HaltedTraverserStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.OptionsStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.PartitionStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SackStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SeedStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.finalization.ProfileStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.finalization.ReferenceElementStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.AdjacentToIncidentStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.CountStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.EarlyLimitStrategy;
@@ -37,8 +46,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.Matc
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.OrderLimitStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathProcessorStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.ProductiveByStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.RepeatUnrollStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ComputerVerificationStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.EdgeLabelVerificationStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.LambdaRestrictionStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReservedKeysVerificationStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.StandardVerificationStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -214,6 +228,33 @@ public interface TraversalStrategies extends Serializable, Cloneable, Iterable<T
         private static final Map<Class<? extends Graph>, TraversalStrategies> GRAPH_CACHE = new HashMap<>();
         private static final Map<Class<? extends GraphComputer>, TraversalStrategies> GRAPH_COMPUTER_CACHE = new HashMap<>();
 
+        /**
+         * A register of the simple names for all strategies that can be constructed by the user.
+         */
+        private static final Map<String, Class<? extends TraversalStrategy>> GREMLIN_CONSTRUCTED = new HashMap<String, Class<? extends TraversalStrategy>>() {{
+            // decorations
+            put(ConnectiveStrategy.class.getSimpleName(), ConnectiveStrategy.class);
+            put(ElementIdStrategy.class.getSimpleName(), ElementIdStrategy.class);
+            put(EventStrategy.class.getSimpleName(), EventStrategy.class);
+            put(HaltedTraverserStrategy.class.getSimpleName(), HaltedTraverserStrategy.class);
+            put(OptionsStrategy.class.getSimpleName(), OptionsStrategy.class);
+            put(PartitionStrategy.class.getSimpleName(), PartitionStrategy.class);
+            put(SeedStrategy.class.getSimpleName(), SeedStrategy.class);
+            put(SubgraphStrategy.class.getSimpleName(), SubgraphStrategy.class);
+
+            // finalization
+            put(ReferenceElementStrategy.class.getSimpleName(), ReferenceElementStrategy.class);
+
+            // optimizations
+            put(ProductiveByStrategy.class.getSimpleName(), ProductiveByStrategy.class);
+
+            // verification
+            put(EdgeLabelVerificationStrategy.class.getSimpleName(), EdgeLabelVerificationStrategy.class);
+            put(LambdaRestrictionStrategy.class.getSimpleName(), LambdaRestrictionStrategy.class);
+            put(ReadOnlyStrategy.class.getSimpleName(), ReadOnlyStrategy.class);
+            put(ReservedKeysVerificationStrategy.class.getSimpleName(), ReservedKeysVerificationStrategy.class);
+        }};
+
         static {
             final TraversalStrategies graphStrategies = new DefaultTraversalStrategies();
             graphStrategies.addStrategies(
@@ -255,6 +296,26 @@ public interface TraversalStrategies extends Serializable, Cloneable, Iterable<T
                 GRAPH_COMPUTER_CACHE.put(graphOrGraphComputerClass, traversalStrategies);
             else
                 throw new IllegalArgumentException("The TraversalStrategies.GlobalCache only supports Graph and GraphComputer strategy caching: " + graphOrGraphComputerClass.getCanonicalName());
+        }
+
+        /**
+         * Looks up a strategy by its simple name.
+         */
+        public static Optional<? extends Class<? extends TraversalStrategy>> getRegisteredStrategyClass(final String strategyName) {
+            if (GREMLIN_CONSTRUCTED.containsKey(strategyName))
+                return Optional.of(GREMLIN_CONSTRUCTED.get(strategyName));
+
+            final Optional<? extends Class<? extends TraversalStrategy>> optFromGraph = GRAPH_CACHE.values().stream().flatMap(strategies -> strategies.toList().stream()).
+                    filter(strategy -> strategy.getClass().getSimpleName().equals(strategyName)).map(strategy -> strategy.getClass()).findAny();
+            if (optFromGraph.isPresent())
+                return optFromGraph;
+
+            final Optional<? extends Class<? extends TraversalStrategy>> optFromGraphComputer = GRAPH_COMPUTER_CACHE.values().stream().flatMap(strategies -> strategies.toList().stream()).
+                    filter(strategy -> strategy.getClass().getSimpleName().equals(strategyName)).map(strategy -> strategy.getClass()).findAny();
+            if (optFromGraphComputer.isPresent())
+                return optFromGraphComputer;
+
+            return Optional.empty();
         }
 
         public static TraversalStrategies getStrategies(final Class graphOrGraphComputerClass) {

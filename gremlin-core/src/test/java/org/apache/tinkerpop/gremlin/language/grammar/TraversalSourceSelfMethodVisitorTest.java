@@ -23,6 +23,10 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.CountStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.EarlyLimitStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.RepeatUnrollStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.EdgeLabelVerificationStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
@@ -61,6 +65,10 @@ public class TraversalSourceSelfMethodVisitorTest {
                 {"withStrategies(new EdgeLabelVerificationStrategy(logWarning: true, throwException: true))", g.withStrategies(EdgeLabelVerificationStrategy.build().logWarning(true).throwException(true).create())},
                 {"withStrategies(ReadOnlyStrategy, new EdgeLabelVerificationStrategy(logWarning: true, throwException: true))", g.withStrategies(ReadOnlyStrategy.instance(), EdgeLabelVerificationStrategy.build().logWarning(true).throwException(true).create())},
                 {"withStrategies(new EdgeLabelVerificationStrategy(logWarning: true, throwException: true), ReadOnlyStrategy)", g.withStrategies(EdgeLabelVerificationStrategy.build().logWarning(true).throwException(true).create(), ReadOnlyStrategy.instance())},
+                {"withoutStrategies(CountStrategy)", g.withoutStrategies(CountStrategy.class)},
+                {"withoutStrategies(CountStrategy, EarlyLimitStrategy)", g.withoutStrategies(CountStrategy.class, EarlyLimitStrategy.class)},
+                {"withoutStrategies(CountStrategy, EarlyLimitStrategy, PathRetractionStrategy)", g.withoutStrategies(CountStrategy.class, EarlyLimitStrategy.class, PathRetractionStrategy.class)},
+                {"withoutStrategies(CountStrategy, EarlyLimitStrategy, PathRetractionStrategy, RepeatUnrollStrategy)", g.withoutStrategies(CountStrategy.class, EarlyLimitStrategy.class, PathRetractionStrategy.class, RepeatUnrollStrategy.class)},
                 {"with('requestId', '7c55d4d7-809a-4f84-9720-63b48cb2fd14')", g.with("requestId", "7c55d4d7-809a-4f84-9720-63b48cb2fd14")},
                 {"with('requestId')", g.with("requestId")},
                 {"withSideEffect('hello', ['one':1])", g.withSideEffect("hello", map)},
