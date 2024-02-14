@@ -240,7 +240,7 @@ class GraphBinarySerializersV1(object):
     def finalize_message(self, message, mime_len, mime_type):
         ba = bytearray()
 
-        request_id = uuid.UUID(message['requestId'])
+        request_id = message['requestId']
         ba.extend(self.header_pack(mime_len, mime_type, 0x81,
                                    (request_id.int >> 64) & self.max_int64, request_id.int & self.max_int64))
 
@@ -275,7 +275,7 @@ class GraphBinarySerializersV1(object):
 
         b.read(1)  # version
 
-        request_id = str(self._graphbinary_reader.to_object(b, graphbinaryV1.DataType.uuid))
+        request_id = self._graphbinary_reader.to_object(b, graphbinaryV1.DataType.uuid)
         status_code = self.int32_unpack(b.read(4))[0]
         status_msg = self._graphbinary_reader.to_object(b, graphbinaryV1.DataType.string)
         status_attrs = self._graphbinary_reader.to_object(b, graphbinaryV1.DataType.map, nullable=False)
