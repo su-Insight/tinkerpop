@@ -43,7 +43,7 @@ import org.javatuples.Pair;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -93,7 +93,7 @@ public final class FilterRankingStrategy extends AbstractTraversalStrategy<Trave
             // so that the cache can be constructed with parent's knowing their children were processed first
             final Map<TraversalParent, List<Step<?,?>>> m =
                     TraversalHelper.getStepsOfAssignableClassRecursivelyFromDepth(traversal, TraversalParent.class).stream().
-                    collect(Collectors.groupingBy(step -> ((Step) step).getTraversal().getParent(), LinkedHashMap::new, Collectors.toList()));
+                    collect(Collectors.groupingBy(step -> ((Step) step).getTraversal().getParent(), IdentityHashMap::new, Collectors.toList()));
 
             // build the cache and use it to detect if any children impact the Pair in any way. in the case of a
             // child with a lambda, the parent would simply inherit that true. in the case of additional labels they
