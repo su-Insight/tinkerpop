@@ -17,23 +17,28 @@
  *  under the License.
  */
 
-'use strict';
 
-const Authenticator = require('./authenticator');
+import Authenticator from './authenticator.js';
+import SaslMechanismPlain from './mechanisms/sasl-mechanism-plain.js';
 
-class SaslAuthenticator extends Authenticator {
+export default class PlainTextSaslAuthenticator extends Authenticator {
   /**
-   * Creates a new instance of SaslAuthenticator.
-   * @param {Object} [options] The authentication options.
-   * @param {Object} [options.mechanism] The mechanism to be used for authentication.
+   * Creates a new instance of PlainTextSaslAuthenticator.
+   * @param {string} username Username to log into the server.
+   * @param {string} password Password for the user.
+   * @param {string} [authzid] Optional id
    * @constructor
    */
-  constructor(options) {
-    super(options);
+  constructor(username: string, password: string, authzid: string) {
+    const options = {
+      mechanism: new SaslMechanismPlain({
+        username: username,
+        password: password,
+        authzid: authzid,
+      }),
+    };
 
-    if (options.mechanism === null || options.mechanism === undefined) {
-      throw new Error('No Sasl Mechanism Specified');
-    }
+    super(options);
   }
 
   /**
@@ -41,9 +46,7 @@ class SaslAuthenticator extends Authenticator {
    * @param {String} challenge Challenge string presented by the server.
    * @return {Object} A Promise that resolves to a valid sasl response object.
    */
-  evaluateChallenge(challenge) {
-    return this._options.mechanism.evaluateChallenge(challenge);
+  evaluateChallenge(challenge: string): any {
+    return this.options.mechanism.evaluateChallenge(challenge);
   }
 }
-
-module.exports = SaslAuthenticator;

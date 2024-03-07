@@ -19,7 +19,7 @@
 
 import Color from "colorjs.io";
 import cytoscape from "cytoscape";
-import gremlin from "gremlin";
+import * as gremlin from "gremlin";
 import { createRandomColorGenerator } from "./utils";
 
 const randomColor = createRandomColorGenerator();

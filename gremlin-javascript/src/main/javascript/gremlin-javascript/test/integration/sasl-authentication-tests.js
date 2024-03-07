@@ -17,15 +17,14 @@
  *  under the License.
  */
 
-'use strict';
+import assert from 'assert';
+import AssertionError from 'assert';
+import AnonymousTraversal from '../../lib/process/anonymous-traversal.js';
+import Bytecode from '../../lib/process/bytecode.js';
+import { getSecureConnectionWithPlainTextSaslAuthenticator, getDriverRemoteConnection } from '../helper.js';
+import PlainTextSaslAuthenticator from '../../lib/driver/auth/plain-text-sasl-authenticator.js';
 
-const assert = require('assert');
-const AssertionError = require('assert');
-const { traversal } = require('../../lib/process/anonymous-traversal');
-const Bytecode = require('../../lib/process/bytecode');
-const helper = require('../helper');
-const DriverRemoteConnection = require('../../lib/driver/driver-remote-connection');
-const PlainTextSaslAuthenticator = require('../../lib/driver/auth/plain-text-sasl-authenticator');
+const { traversal } = AnonymousTraversal;
 
 let connection;
 let badServerAuthUrl;
@@ -45,21 +44,21 @@ describe('DriverRemoteConnection', function () {
 
     describe('#submit()', function () {
       it('should send the request with valid credentials and parse the response', function () {
-        connection = helper.getSecureConnectionWithPlainTextSaslAuthenticator(null, 'stephen', 'password');
+        connection = getSecureConnectionWithPlainTextSaslAuthenticator(null, 'stephen', 'password');
 
-        return connection.submit(new Bytecode().addStep('V', []).addStep('tail', []))
-          .then(function (response) {
-            assert.ok(response);
-            assert.ok(response.traversers);
-          });
+        return connection.submit(new Bytecode().addStep('V', []).addStep('tail', [])).then(function (response) {
+          assert.ok(response);
+          assert.ok(response.traversers);
+        });
       });
 
       it('should send the request with invalid credentials and parse the response error', function () {
-        connection = helper.getSecureConnectionWithPlainTextSaslAuthenticator(null, 'Bob', 'password');
+        connection = getSecureConnectionWithPlainTextSaslAuthenticator(null, 'Bob', 'password');
 
-        return connection.submit(new Bytecode().addStep('V', []).addStep('tail', []))
-          .then(function() {
-            assert.fail("invalid credentials should throw");
+        return connection
+          .submit(new Bytecode().addStep('V', []).addStep('tail', []))
+          .then(function () {
+            assert.fail('invalid credentials should throw');
           })
           .catch(function (err) {
             assert.ok(err);
@@ -69,38 +68,43 @@ describe('DriverRemoteConnection', function () {
 
       it('should return error when using ws:// for a TLS configured server', function () {
         const authenticator = new PlainTextSaslAuthenticator('stephen', 'password');
-        connection =  helper.getDriverRemoteConnection(badServerAuthUrl, {
+        connection = getDriverRemoteConnection(badServerAuthUrl, {
           authenticator: authenticator,
-          rejectUnauthorized: false
+          rejectUnauthorized: false,
         });
 
-        return connection.submit(new Bytecode().addStep('V', []).addStep('tail', []))
-            .then(function() {
-              assert.fail("server is running TLS and trying to connect with ws:// so this should result in error thrown");
-            })
-            .catch(function (err) {
-              if (err instanceof AssertionError) throw err;
-              assert.ok(err);
-              assert.ok(err.message === 'socket hang up');
-            });
+        return connection
+          .submit(new Bytecode().addStep('V', []).addStep('tail', []))
+          .then(function () {
+            assert.fail('server is running TLS and trying to connect with ws:// so this should result in error thrown');
+          })
+          .catch(function (err) {
+            if (err instanceof AssertionError) throw err;
+            assert.ok(err);
+            assert.ok(err.message === 'socket hang up');
+          });
       });
 
       it('should return error when using ws:// for a TLS configured server', function () {
         const authenticator = new PlainTextSaslAuthenticator('stephen', 'password');
-        connection =  helper.getDriverRemoteConnection(badServerAuthUrl, {
+        connection = getDriverRemoteConnection(badServerAuthUrl, {
           authenticator: authenticator,
-          rejectUnauthorized: false
+          rejectUnauthorized: false,
         });
 
         const g = traversal().with_(connection);
-        return g.V().toList().then(function() {
-          assert.fail("server is running TLS and trying to connect with ws:// so this should result in error thrown");
-        }).catch(function(err) {
-        if (err instanceof AssertionError) throw err;
-              assert.ok(err);
-              assert.ok(err.message === 'socket hang up');
+        return g
+          .V()
+          .toList()
+          .then(function () {
+            assert.fail('server is running TLS and trying to connect with ws:// so this should result in error thrown');
+          })
+          .catch(function (err) {
+            if (err instanceof AssertionError) throw err;
+            assert.ok(err);
+            assert.ok(err.message === 'socket hang up');
           });
-        });
+      });
     });
   });
 });
