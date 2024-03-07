@@ -17,21 +17,19 @@
  *  under the License.
  */
 
-'use strict';
 
-const assert = require('assert');
-const { TraversalStrategies, OptionsStrategy, ConnectiveStrategy } = require('../../lib/process/traversal-strategy');
+import assert from 'assert';
+import { TraversalStrategies, OptionsStrategy, ConnectiveStrategy } from '../../lib/process/traversal-strategy.js';
 
 describe('TraversalStrategies', function () {
-
   describe('#removeStrategy()', function () {
     it('should remove strategy', function () {
-      const ts = new TraversalStrategies()
+      const ts = new TraversalStrategies();
       ts.addStrategy(new ConnectiveStrategy());
-      ts.addStrategy(new OptionsStrategy({x: 123}));
+      ts.addStrategy(new OptionsStrategy({ x: 123 }));
       assert.strictEqual(ts.strategies.length, 2);
 
-      const c = new OptionsStrategy({x: 123});
+      const c = new OptionsStrategy({ x: 123 });
       const os = ts.removeStrategy(c);
       assert.strictEqual(os.fqcn, c.fqcn);
       assert.strictEqual(ts.strategies.length, 1);
@@ -41,8 +39,8 @@ describe('TraversalStrategies', function () {
     });
 
     it('should not find anything to remove', function () {
-      const ts = new TraversalStrategies()
-      ts.addStrategy(new OptionsStrategy({x: 123}));
+      const ts = new TraversalStrategies();
+      ts.addStrategy(new OptionsStrategy({ x: 123 }));
       assert.strictEqual(ts.strategies.length, 1);
       ts.removeStrategy(new ConnectiveStrategy());
       assert.strictEqual(ts.strategies.length, 1);

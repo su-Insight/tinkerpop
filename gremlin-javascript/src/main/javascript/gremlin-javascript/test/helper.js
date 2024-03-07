@@ -20,15 +20,15 @@
 /**
  * @author Jorge Bay Gondra
  */
-'use strict';
 
-const utils = require('../lib/utils');
-const DriverRemoteConnection = require('../lib/driver/driver-remote-connection');
-const Client = require('../lib/driver/client');
-const PlainTextSaslAuthenticator = require('../lib/driver/auth/plain-text-sasl-authenticator');
+import { getUuid } from '../lib/utils.js';
+import DriverRemoteConnection from '../lib/driver/driver-remote-connection.js';
+import Client from '../lib/driver/client.js';
+import PlainTextSaslAuthenticator from '../lib/driver/auth/plain-text-sasl-authenticator.js';
 
-const yaml = require('js-yaml');
-const fs   = require('fs');
+import jsYaml from 'js-yaml';
+const { load } = jsYaml;
+import { readFileSync } from 'fs';
 
 let serverUrl;
 let serverAuthUrl;
@@ -47,11 +47,11 @@ if (process.env.DOCKER_ENVIRONMENT === 'true') {
 }
 
 /** @returns {DriverRemoteConnection} */
-exports.getConnection = function getConnection(traversalSource) {
+export function getConnection(traversalSource) {
   return new DriverRemoteConnection(serverUrl, { traversalSource, mimeType: process.env.CLIENT_MIMETYPE });
-};
+}
 
-exports.getSecureConnectionWithPlainTextSaslAuthenticator = (traversalSource, username, password) => {
+export function getSecureConnectionWithPlainTextSaslAuthenticator(traversalSource, username, password) {
   const authenticator = new PlainTextSaslAuthenticator(username, password);
   return new DriverRemoteConnection(serverAuthUrl, {
     traversalSource,
@@ -59,35 +59,35 @@ exports.getSecureConnectionWithPlainTextSaslAuthenticator = (traversalSource, us
     rejectUnauthorized: false,
     mimeType: process.env.CLIENT_MIMETYPE,
   });
-};
+}
 
-exports.getDriverRemoteConnection = (url, options) => {
+export function getDriverRemoteConnection(url, options) {
   return new DriverRemoteConnection(url, { ...options, mimeType: process.env.CLIENT_MIMETYPE });
-};
+}
 
-exports.getClient = function getClient(traversalSource) {
+export function getClient(traversalSource) {
   return new Client(serverUrl, { traversalSource, mimeType: process.env.CLIENT_MIMETYPE });
-};
+}
 
-exports.getSessionClient = function getSessionClient(traversalSource) {
-  const sessionId = utils.getUuid();
+export function getSessionClient(traversalSource) {
+  const sessionId = getUuid();
   return new Client(serverUrl, {
-    'traversalSource': traversalSource,
-    'session': sessionId.toString(),
+    traversalSource: traversalSource,
+    session: sessionId.toString(),
     mimeType: process.env.CLIENT_MIMETYPE,
   });
-};
+}
 
 function getMimeTypeFromSocketServerSettings(socketServerSettings) {
   let mimeType;
-  switch(socketServerSettings.SERIALIZER) {
-    case "GraphSONV2":
+  switch (socketServerSettings.SERIALIZER) {
+    case 'GraphSONV2':
       mimeType = 'application/vnd.gremlin-v2.0+json';
       break;
-    case "GraphSONV3":
+    case 'GraphSONV3':
       mimeType = 'application/vnd.gremlin-v3.0+json';
       break;
-    case "GraphBinaryV1":
+    case 'GraphBinaryV1':
     default:
       mimeType = 'application/vnd.graphbinary-v1.0';
       break;
@@ -95,21 +95,21 @@ function getMimeTypeFromSocketServerSettings(socketServerSettings) {
   return mimeType;
 }
 
-exports.getGremlinSocketServerClient = function getGremlinSocketServerClient(traversalSource) {
-  const settings = exports.getGremlinSocketServerSettings();
+export function getGremlinSocketServerClient(traversalSource) {
+  const settings = getGremlinSocketServerSettings();
   const url = socketServerUrl + settings.PORT + '/gremlin';
-  let mimeType = getMimeTypeFromSocketServerSettings(settings)
+  let mimeType = getMimeTypeFromSocketServerSettings(settings);
   return new Client(url, { traversalSource, mimeType });
-};
+}
 
-exports.getGremlinSocketServerClientNoUserAgent = function getGremlinSocketServerClient(traversalSource) {
-  const settings = exports.getGremlinSocketServerSettings();
+export const getGremlinSocketServerClientNoUserAgent = function getGremlinSocketServerClient(traversalSource) {
+  const settings = getGremlinSocketServerSettings();
   const url = socketServerUrl + settings.PORT + '/gremlin';
-  let mimeType = getMimeTypeFromSocketServerSettings(settings)
-  return new Client(url, { traversalSource, mimeType, enableUserAgentOnConnect:false });
+  let mimeType = getMimeTypeFromSocketServerSettings(settings);
+  return new Client(url, { traversalSource, mimeType, enableUserAgentOnConnect: false });
 };
 
-exports.getGremlinSocketServerSettings = function getGremlinSocketServerSettings() {
-  const settings = yaml.load(fs.readFileSync(sockerServerConfigPath, 'utf8'));
+export function getGremlinSocketServerSettings() {
+  const settings = load(readFileSync(sockerServerConfigPath, 'utf8'));
   return settings;
-};
+}
