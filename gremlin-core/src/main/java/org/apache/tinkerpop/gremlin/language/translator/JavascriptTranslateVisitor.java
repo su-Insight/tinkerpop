@@ -22,6 +22,8 @@ package org.apache.tinkerpop.gremlin.language.translator;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.tinkerpop.gremlin.language.grammar.GremlinParser;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.util.DatetimeHelper;
 
@@ -29,6 +31,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Converts a Gremlin traversal string into a Javascript source code representation of that traversal with an aim at
@@ -68,19 +72,28 @@ public class JavascriptTranslateVisitor extends AbstractTranslateVisitor {
         else {
             sb.append(ctx.getChild(1).getText()).append("({");
 
-            // get a list of all the arguments to the strategy - i.e. anything not a terminal node
-            final List<ParseTree> strategyArgs = ctx.children.stream()
-                    .filter(c -> !(c instanceof TerminalNode))
-                    .collect(java.util.stream.Collectors.toList());
+            final List<ParseTree> configs = ctx.children.stream().
+                    filter(c -> c instanceof GremlinParser.ConfigurationContext).collect(Collectors.toList());
 
-            for (int i = 0; i < strategyArgs.size(); i++) {
-                visit(strategyArgs.get(i));
-                if (i < strategyArgs.size() - 1)
+            // the rest are the arguments to the strategy
+            for (int ix = 0; ix < configs.size(); ix++) {
+                visit(configs.get(ix));
+                if (ix < configs.size() - 1)
                     sb.append(", ");
             }
+
             sb.append("})");
         }
 
+        return null;
+    }
+
+    @Override
+    public Void visitConfiguration(final GremlinParser.ConfigurationContext ctx) {
+        // form of three tokens of key:value to become key=value
+        sb.append(SymbolHelper.toJavascript(ctx.getChild(0).getText()));
+        sb.append(": ");
+        visit(ctx.getChild(2));
         return null;
     }
 
@@ -99,16 +112,19 @@ public class JavascriptTranslateVisitor extends AbstractTranslateVisitor {
 
     @Override
     public Void visitMapEntry(final GremlinParser.MapEntryContext ctx) {
-        // if it is a terminal node then it has to be processed as a string for Java but otherwise it can
-        // just be handled as a generic literal
+        // if it is a terminal node that isn't a starting form like "(T.id)" then it has to be processed as a string
+        // for Java but otherwise it can just be handled as a generic literal
+        final boolean isKeyWrappedInParens = ctx.getChild(0).getText().equals("(");
         sb.append("[");
-        if (ctx.getChild(0) instanceof TerminalNode) {
+        if (ctx.getChild(0) instanceof TerminalNode && !isKeyWrappedInParens) {
             wrapTextInQuotes(ctx.getChild(0).getText());
         }  else {
-            visit(ctx.getChild(0));
+            final int indexOfActualKey = isKeyWrappedInParens ? 1 : 0;
+            visit(ctx.getChild(indexOfActualKey));
         }
         sb.append(", ");
-        visit(ctx.getChild(2)); // value
+        final int indexOfValue = isKeyWrappedInParens ? 4 : 2;
+        visit(ctx.getChild(indexOfValue)); // value
         sb.append("]");
         return null;
     }
@@ -211,13 +227,6 @@ public class JavascriptTranslateVisitor extends AbstractTranslateVisitor {
     @Override
     protected String processGremlinSymbol(final String step) {
         return SymbolHelper.toJavascript(step);
-    }
-
-    @Override
-    protected Void appendStrategyArguments(final ParseTree ctx) {
-        sb.append(SymbolHelper.toJavascript(ctx.getChild(0).getText())).append(": ");
-        visit(ctx.getChild(2));
-        return null;
     }
 
     private void wrapTextInQuotes(final String text) {

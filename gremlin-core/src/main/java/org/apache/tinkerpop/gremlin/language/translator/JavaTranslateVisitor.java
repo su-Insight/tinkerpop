@@ -21,10 +21,14 @@ package org.apache.tinkerpop.gremlin.language.translator;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.tinkerpop.gremlin.language.grammar.GremlinParser;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.util.DatetimeHelper;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Converts a Gremlin traversal string into a Java source code representation of that traversal with an aim at
@@ -62,19 +66,42 @@ public class JavaTranslateVisitor extends AbstractTranslateVisitor {
         if (ctx.getChildCount() == 1)
             sb.append(ctx.getText()).append(".instance()");
         else {
-            sb.append(ctx.getChild(1).getText()).append(".build()");
+            visit(ctx.classType());
+            sb.append(".build()");
 
-            // get a list of all the arguments to the strategy - i.e. anything not a terminal node
-            final List<ParseTree> strategyArgs = ctx.children.stream()
-                    .filter(c -> !(c instanceof TerminalNode))
-                    .collect(java.util.stream.Collectors.toList());
+            final List<ParseTree> configs = ctx.children.stream().
+                    filter(c -> c instanceof GremlinParser.ConfigurationContext).collect(Collectors.toList());
 
-            for (ParseTree arg : strategyArgs) {
+            // the rest are the arguments to the strategy
+            for (ParseTree config : configs) {
                 sb.append(".");
-                visit(arg);
+                visit(config);
             }
+
             sb.append(".create()");
         }
+
+        return null;
+    }
+
+    @Override
+    public Void visitConfiguration(final GremlinParser.ConfigurationContext ctx) {
+        // form of three tokens of key:value to become key(value)
+        sb.append(ctx.getChild(0).getText()).append("(");
+        visit(ctx.getChild(2));
+        sb.append(")");
+        return null;
+    }
+
+    @Override
+    public Void visitClassType(final GremlinParser.ClassTypeContext ctx) {
+        // require different handling based on the parent. if used inside of withoutStrategies() then it needs
+        // a class reference, otherwise it's just a keyword.
+        if (ctx.getParent() instanceof GremlinParser.TraversalSourceSelfMethod_withoutStrategiesContext ||
+            ctx.getParent() instanceof GremlinParser.ClassTypeExprContext)
+            sb.append(ctx.getText()).append(".class");
+        else
+            sb.append(ctx.getText());
 
         return null;
     }
@@ -95,15 +122,18 @@ public class JavaTranslateVisitor extends AbstractTranslateVisitor {
     @Override
     public Void visitMapEntry(final GremlinParser.MapEntryContext ctx) {
         sb.append("put(");
-        // if it is a terminal node then it has to be processed as a string for Java but otherwise it can 
-        // just be handled as a generic literal 
-        if (ctx.getChild(0) instanceof TerminalNode) {
+        // if it is a terminal node that isn't a starting form like "(T.id)" then it has to be processed as a string
+        // for Java but otherwise it can just be handled as a generic literal
+        final boolean isKeyWrappedInParens = ctx.getChild(0).getText().equals("(");
+        if (ctx.getChild(0) instanceof TerminalNode && !isKeyWrappedInParens) {
             handleStringLiteralText(ctx.getChild(0).getText());
         }  else {
-            visit(ctx.getChild(0));
+            final int indexOfActualKey = isKeyWrappedInParens ? 1 : 0;
+            visit(ctx.getChild(indexOfActualKey));
         }
         sb.append(", ");
-        visit(ctx.getChild(2)); // value
+        final int indexOfValue = isKeyWrappedInParens ? 4 : 2;
+        visit(ctx.getChild(indexOfValue)); // value
         sb.append(");");
         return null;
     }
@@ -238,13 +268,4 @@ public class JavaTranslateVisitor extends AbstractTranslateVisitor {
         sb.append(" }}");
         return null;
     }
-
-    @Override
-    protected Void appendStrategyArguments(final ParseTree ctx) {
-        sb.append(ctx.getChild(0)).append("(");
-        visit(ctx.getChild(2));
-        sb.append(")");
-        return null;
-    }
-
 }

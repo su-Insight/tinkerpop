@@ -1488,36 +1488,6 @@ public class TranslateVisitor extends AbstractParseTreeVisitor<Void> implements 
     }
 
     @Override
-    public Void visitTraversalStrategyArgs_ProductiveByStrategy(final GremlinParser.TraversalStrategyArgs_ProductiveByStrategyContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    @Override
-    public Void visitTraversalStrategyArgs_PartitionStrategy(final GremlinParser.TraversalStrategyArgs_PartitionStrategyContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    @Override
-    public Void visitTraversalStrategyArgs_SubgraphStrategy(final GremlinParser.TraversalStrategyArgs_SubgraphStrategyContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    @Override
-    public Void visitTraversalStrategyArgs_EdgeLabelVerificationStrategy(final GremlinParser.TraversalStrategyArgs_EdgeLabelVerificationStrategyContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    @Override
-    public Void visitTraversalStrategyArgs_ReservedKeysVerificationStrategy(final GremlinParser.TraversalStrategyArgs_ReservedKeysVerificationStrategyContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    @Override
-    public Void visitTraversalStrategyArgs_SeedStrategy(final GremlinParser.TraversalStrategyArgs_SeedStrategyContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    @Override
     public Void visitTraversalScope(final GremlinParser.TraversalScopeContext ctx) {
         appendExplicitNaming(ctx.getText(), Scope.class.getSimpleName());
         return null;
@@ -2329,6 +2299,47 @@ public class TranslateVisitor extends AbstractParseTreeVisitor<Void> implements 
     }
 
     @Override
+    public Void visitTraversalSourceSelfMethod_withoutStrategies(final GremlinParser.TraversalSourceSelfMethod_withoutStrategiesContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    @Override
+    public Void visitConfiguration(final GremlinParser.ConfigurationContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    @Override
+    public Void visitClassTypeList(final GremlinParser.ClassTypeListContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    @Override
+    public Void visitClassTypeExpr(final GremlinParser.ClassTypeExprContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    @Override
+    public Void visitClassType(final GremlinParser.ClassTypeContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    @Override
+    public Void visitKeyword(final GremlinParser.KeywordContext ctx) {
+        final String keyword = ctx.getText();
+
+        // translate differently based on the context of the keyword's parent.
+        if (ctx.getParent() instanceof GremlinParser.MapEntryContext || ctx.getParent() instanceof GremlinParser.ConfigurationContext) {
+            // if the keyword is a key in a map, then it's a string literal essentially
+            sb.append(keyword);
+        } else {
+            // in all other cases it's used more like "new Class()"
+            sb.append(keyword).append(" ");
+        }
+
+        return null;
+    }
+
+    @Override
     public Void visitTerminal(final TerminalNode node) {
         // skip EOF node
         if (null == node || node.getSymbol().getType() == -1) return null;
@@ -2348,6 +2359,8 @@ public class TranslateVisitor extends AbstractParseTreeVisitor<Void> implements 
                 appendStepSeparator();
                 break;
             case "new":
+                // seems we still sometimes interpret this as a TerminalNode like when newing up a class
+                // which is optional syntax and will go away in the future.
                 sb.append("new");
                 if (!(node.getParent() instanceof GremlinParser.MapEntryContext))
                     sb.append(" "); // includes a space for when not use in context of a Map entry key...one off

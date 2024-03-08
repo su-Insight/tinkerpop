@@ -30,6 +30,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class GoTranslateVisitor extends AbstractTranslateVisitor {
     private final static String GO_PACKAGE_NAME = "gremlingo.";
@@ -125,15 +126,18 @@ public class GoTranslateVisitor extends AbstractTranslateVisitor {
 
     @Override
     public Void visitMapEntry(final GremlinParser.MapEntryContext ctx) {
-        // if it is a terminal node then it has to be processed as a string for Java but otherwise it can
-        // just be handled as a generic literal
-        if (ctx.getChild(0) instanceof TerminalNode) {
+        // if it is a terminal node that isn't a starting form like "(T.id)" then it has to be processed as a string
+        // for Java but otherwise it can just be handled as a generic literal
+        final boolean isKeyWrappedInParens = ctx.getChild(0).getText().equals("(");
+        if (ctx.getChild(0) instanceof TerminalNode && !isKeyWrappedInParens) {
             handleStringLiteralText(ctx.getChild(0).getText());
         }  else {
-            visit(ctx.getChild(0));
+            final int indexOfActualKey = isKeyWrappedInParens ? 1 : 0;
+            visit(ctx.getChild(indexOfActualKey));
         }
         sb.append(": ");
-        visit(ctx.getChild(2)); // value
+        final int indexOfValue = isKeyWrappedInParens ? 4 : 2;
+        visit(ctx.getChild(indexOfValue)); // value
         return null;
     }
 
@@ -180,15 +184,16 @@ public class GoTranslateVisitor extends AbstractTranslateVisitor {
             sb.append(GO_PACKAGE_NAME + ctx.getChild(1).getText() + "Config{");
 
             // get a list of all the arguments to the strategy - i.e. anything not a terminal node
-            final List<ParseTree> strategyArgs = ctx.children.stream()
-                    .filter(c -> !(c instanceof TerminalNode))
-                    .collect(java.util.stream.Collectors.toList());
+            final List<ParseTree> configs = ctx.children.stream().
+                    filter(c -> c instanceof GremlinParser.ConfigurationContext).collect(Collectors.toList());
 
-            for (int i = 0; i < strategyArgs.size(); i++) {
-                visit(strategyArgs.get(i));
-                if (i < strategyArgs.size() - 1)
+            // the rest are the arguments to the strategy
+            for (int ix = 0; ix < configs.size(); ix++) {
+                visit(configs.get(ix));
+                if (ix < configs.size() - 1)
                     sb.append(", ");
             }
+
             sb.append("})");
         }
 
@@ -196,15 +201,19 @@ public class GoTranslateVisitor extends AbstractTranslateVisitor {
     }
 
     @Override
-    public Void visitTraversalStrategyArgs_PartitionStrategy(final GremlinParser.TraversalStrategyArgs_PartitionStrategyContext ctx) {
-        appendStrategyArguments(ctx);
+    public Void visitConfiguration(final GremlinParser.ConfigurationContext ctx) {
+        // form of three tokens of key:value to become key=value
+        sb.append(SymbolHelper.toGo(ctx.getChild(0).getText()));
+        sb.append(": ");
+        visit(ctx.getChild(2));
 
+        // need to convert List to Set for readPartitions until TINKERPOP-3032
         if (ctx.getChild(0).getText().equals("readPartitions")) {
             final int ix = sb.lastIndexOf("ReadPartitions: [");
             if (ix > 0) {
-                final int endIx = sb.indexOf("\"]", ix);
+                final int endIx = sb.indexOf("\"}", ix);
                 sb.replace(endIx, endIx + 2, "\")");
-                sb.replace(ix, ix + 17, "ReadPartitions: gremlingo.NewSimpleSet(");
+                sb.replace(ix, ix + "ReadPartitions: []interface{}{".length(), "ReadPartitions: gremlingo.NewSimpleSet(");
             }
 
         }
@@ -239,13 +248,6 @@ public class GoTranslateVisitor extends AbstractTranslateVisitor {
     @Override
     protected String processGremlinSymbol(final String step) {
         return SymbolHelper.toGo(step);
-    }
-
-    @Override
-    protected Void appendStrategyArguments(final ParseTree ctx) {
-        sb.append(SymbolHelper.toGo(ctx.getChild(0).getText())).append(": ");
-        visit(ctx.getChild(2));
-        return null;
     }
 
     @Override

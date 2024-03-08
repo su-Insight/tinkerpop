@@ -47,44 +47,25 @@ public abstract class AbstractTranslateVisitor extends TranslateVisitor {
         return null;
     }
 
-    @Override
-    public Void visitTraversalStrategyArgs_ProductiveByStrategy(final GremlinParser.TraversalStrategyArgs_ProductiveByStrategyContext ctx) {
-        return appendStrategyArguments(ctx);
-    }
-
-    @Override
-    public Void visitTraversalStrategyArgs_PartitionStrategy(final GremlinParser.TraversalStrategyArgs_PartitionStrategyContext ctx) {
-        return appendStrategyArguments(ctx);
-    }
-
-    @Override
-    public Void visitTraversalStrategyArgs_SubgraphStrategy(final GremlinParser.TraversalStrategyArgs_SubgraphStrategyContext ctx) {
-        return appendStrategyArguments(ctx);
-    }
-
-    @Override
-    public Void visitTraversalStrategyArgs_EdgeLabelVerificationStrategy(final GremlinParser.TraversalStrategyArgs_EdgeLabelVerificationStrategyContext ctx) {
-        return appendStrategyArguments(ctx);
-    }
-
-    @Override
-    public Void visitTraversalStrategyArgs_ReservedKeysVerificationStrategy(final GremlinParser.TraversalStrategyArgs_ReservedKeysVerificationStrategyContext ctx) {
-        return appendStrategyArguments(ctx);
-    }
-
-    @Override
-    public Void visitTraversalStrategyArgs_SeedStrategy(final GremlinParser.TraversalStrategyArgs_SeedStrategyContext ctx) {
-        return appendStrategyArguments(ctx);
-    }
-
     protected void handleStringLiteralText(final String text) {
         sb.append("\"");
         sb.append(text);
         sb.append("\"");
     }
 
-    /**
-     * Translate an argument pair for a traversal strategy.
-     */
-    protected abstract Void appendStrategyArguments(final ParseTree ctx);
+    @Override
+    public Void visitKeyword(final GremlinParser.KeywordContext ctx) {
+        final String keyword = ctx.getText();
+
+        // translate differently based on the context of the keyword's parent.
+        if (ctx.getParent() instanceof GremlinParser.MapEntryContext) {
+            // if the keyword is a key in a map, then it's a string literal essentially
+            handleStringLiteralText(keyword);
+        } else {
+            // in all other cases it's used more like "new Class()"
+            sb.append(keyword).append(" ");
+        }
+
+        return null;
+    }
 }

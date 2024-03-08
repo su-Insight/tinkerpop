@@ -30,6 +30,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Converts a Gremlin traversal string into a C# source code representation of that traversal with an aim at
@@ -204,15 +205,18 @@ public class DotNetTranslateVisitor extends AbstractTranslateVisitor {
     @Override
     public Void visitMapEntry(final GremlinParser.MapEntryContext ctx) {
         sb.append("{ ");
-        // if it is a terminal node then it has to be processed as a string for Java but otherwise it can
-        // just be handled as a generic literal
-        if (ctx.getChild(0) instanceof TerminalNode) {
+        // if it is a terminal node that isn't a starting form like "(T.id)" then it has to be processed as a string
+        // for Java but otherwise it can just be handled as a generic literal
+        final boolean isKeyWrappedInParens = ctx.getChild(0).getText().equals("(");
+        if (ctx.getChild(0) instanceof TerminalNode && !isKeyWrappedInParens) {
             handleStringLiteralText(ctx.getChild(0).getText());
         }  else {
-            visit(ctx.getChild(0));
+            final int indexOfActualKey = isKeyWrappedInParens ? 1 : 0;
+            visit(ctx.getChild(indexOfActualKey));
         }
         sb.append(", ");
-        visit(ctx.getChild(2)); // value
+        final int indexOfValue = isKeyWrappedInParens ? 4 : 2;
+        visit(ctx.getChild(indexOfValue)); // value
         sb.append(" }");
         return null;
     }
@@ -225,30 +229,33 @@ public class DotNetTranslateVisitor extends AbstractTranslateVisitor {
         else {
             sb.append("new ").append(ctx.getChild(1).getText()).append("(");
 
-            // get a list of all the arguments to the strategy - i.e. anything not a terminal node
-            final List<ParseTree> strategyArgs = ctx.children.stream()
-                    .filter(c -> !(c instanceof TerminalNode))
-                    .collect(java.util.stream.Collectors.toList());
+            final List<ParseTree> configs = ctx.children.stream().
+                    filter(c -> c instanceof GremlinParser.ConfigurationContext).collect(Collectors.toList());
 
-            for (int ix = 0; ix < strategyArgs.size(); ix++) {
-                visit(strategyArgs.get(ix));
-                if (ix < strategyArgs.size() - 1)
+            // the rest are the arguments to the strategy
+            for (int ix = 0; ix < configs.size(); ix++) {
+                visit(configs.get(ix));
+                if (ix < configs.size() - 1)
                     sb.append(", ");
             }
-            sb.append(")");
+
+            sb.append(")");;
         }
         return null;
     }
 
     @Override
-    public Void visitTraversalStrategyArgs_PartitionStrategy(final GremlinParser.TraversalStrategyArgs_PartitionStrategyContext ctx) {
-        appendStrategyArguments(ctx);
+    public Void visitConfiguration(final GremlinParser.ConfigurationContext ctx) {
+        // form of three tokens of key:value to become key=value
+        sb.append(ctx.getChild(0).getText());
+        sb.append(": ");
+        visit(ctx.getChild(2));
 
         // need to convert List to Set for readPartitions until TINKERPOP-3032
         if (ctx.getChild(0).getText().equals("readPartitions")) {
             // find the last "List" in sb and replace it with "HashSet"
-            final int ix = sb.lastIndexOf("List");
-            sb.replace(ix, ix + 4, "HashSet");
+            final int ix = sb.lastIndexOf("List<object>");
+            sb.replace(ix, ix + 12, "HashSet<string>");
         }
 
         return null;
@@ -1076,6 +1083,12 @@ public class DotNetTranslateVisitor extends AbstractTranslateVisitor {
         return handleGenerics(ctx);
     }
 
+    @Override
+    public Void visitClassType(final GremlinParser.ClassTypeContext ctx) {
+        sb.append("typeof(").append(ctx.getText()).append(")");
+        return null;
+    }
+
     /**
      * Steps with a {@code <TNewEnd>} defined need special handling to append generics.
      */
@@ -1091,13 +1104,6 @@ public class DotNetTranslateVisitor extends AbstractTranslateVisitor {
         for (int ix = 1; ix < ctx.getChildCount(); ix++) {
             visit(ctx.getChild(ix));
         }
-        return null;
-    }
-
-    @Override
-    protected Void appendStrategyArguments(final ParseTree ctx) {
-        sb.append(ctx.getChild(0).getText()).append(": ");
-        visit(ctx.getChild(2));
         return null;
     }
 

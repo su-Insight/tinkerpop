@@ -43,14 +43,15 @@ ignores = [
 
 @given("the {graph_name:w} graph")
 def choose_graph(step, graph_name):
-    step.context.ignore = step.text in ignores
-
+    # if we have no traversals then we are ignoring the test - should be temporary until we can settle out the
+    # issue of handling the removal of lambdas from Gremlin as a language
+    step.context.ignore = len(step.context.traversals) == 0
     tagset = [tag.name for tag in step.all_tags]
     if not step.context.ignore:
         step.context.ignore = "AllowNullPropertyValues" in tagset
 
-    if not step.context.ignore and len(step.context.traversals) == 0:
-        step.context.ignore = True
+    if (step.context.ignore):
+        return
 
     step.context.graph_name = graph_name
     step.context.g = traversal().with_(step.context.remote_conn[graph_name])
@@ -58,6 +59,9 @@ def choose_graph(step, graph_name):
 
 @given("the graph initializer of")
 def initialize_graph(step):
+    if (step.context.ignore):
+        return
+
     t = step.context.traversals.pop(0)(g=step.context.g)
 
     # just be sure that the traversal returns something to prove that it worked to some degree. probably
@@ -75,6 +79,9 @@ def unsupported_scenario(step):
 
 @given("using the parameter {param_name:w} of P.{p_val:w}({param:QuotedString})")
 def add_p_parameter(step, param_name, p_val, param):
+    if (step.context.ignore):
+        return
+
     if not hasattr(step.context, "traversal_params"):
         step.context.traversal_params = {}
 
@@ -83,6 +90,9 @@ def add_p_parameter(step, param_name, p_val, param):
 
 @given("using the parameter {param_name:w} defined as {param:QuotedString}")
 def add_parameter(step, param_name, param):
+    if (step.context.ignore):
+        return
+
     if not hasattr(step.context, "traversal_params"):
         step.context.traversal_params = {}
 
@@ -91,6 +101,8 @@ def add_parameter(step, param_name, param):
 
 @given("the traversal of")
 def translate_traversal(step):
+    if step.context.ignore == False:
+        step.context.ignore = step.text in ignores
     if step.context.ignore:
         return
 
