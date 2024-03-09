@@ -28,6 +28,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.Bytecode;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.OptionsStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.util.BytecodeHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -52,6 +54,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.apache.tinkerpop.gremlin.driver.Client.ClientUtil.getRequestOptions;
+import static org.apache.tinkerpop.gremlin.driver.Tokens.ARGS_BATCH_SIZE;
+import static org.apache.tinkerpop.gremlin.driver.Tokens.ARGS_EVAL_TIMEOUT;
+import static org.apache.tinkerpop.gremlin.driver.Tokens.ARGS_USER_AGENT;
+import static org.apache.tinkerpop.gremlin.driver.Tokens.REQUEST_ID;
 
 /**
  * A {@code Client} is constructed from a {@link Cluster} and represents a way to send messages to Gremlin Server.
@@ -642,7 +650,7 @@ public abstract class Client {
 
         @Override
         public CompletableFuture<ResultSet> submitAsync(final Bytecode bytecode) {
-            return submitAsync(bytecode, RequestOptions.EMPTY);
+            return submitAsync(bytecode, getRequestOptions(bytecode));
         }
 
         @Override
@@ -911,6 +919,26 @@ public abstract class Client {
                 return new Settings(this);
             }
 
+        }
+    }
+
+    public static class ClientUtil {
+        public static RequestOptions getRequestOptions(final Bytecode bytecode) {
+            final Iterator<OptionsStrategy> itty = BytecodeHelper.findStrategies(bytecode, OptionsStrategy.class);
+            final RequestOptions.Builder builder = RequestOptions.build();
+            while (itty.hasNext()) {
+                final OptionsStrategy optionsStrategy = itty.next();
+                final Map<String,Object> options = optionsStrategy.getOptions();
+                if (options.containsKey(ARGS_EVAL_TIMEOUT))
+                    builder.timeout(((Number) options.get(ARGS_EVAL_TIMEOUT)).longValue());
+                if (options.containsKey(REQUEST_ID))
+                    builder.overrideRequestId((UUID) options.get(REQUEST_ID));
+                if (options.containsKey(ARGS_BATCH_SIZE))
+                    builder.batchSize(((Number) options.get(ARGS_BATCH_SIZE)).intValue());
+                if (options.containsKey(ARGS_USER_AGENT))
+                    builder.userAgent((String) options.get(ARGS_USER_AGENT));
+            }
+            return builder.create();
         }
     }
 
