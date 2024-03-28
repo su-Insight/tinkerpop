@@ -22,6 +22,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 import org.apache.tinkerpop.gremlin.util.message.ResponseMessage;
 import org.apache.tinkerpop.gremlin.util.message.ResponseStatusCode;
+import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
+import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -41,8 +44,10 @@ public class GraphSONMessageSerializerV4Test extends GraphSONMessageSerializerV3
 
     public final GraphSONMessageSerializerV4 serializer = new GraphSONMessageSerializerV4();
 
+    private final ObjectMapper mapper = new ObjectMapper();
+
     @Test
-    public void shouldDeserializeChunkedResponseMessage() throws SerializationException {
+    public void shouldDeserializeChunkedResponseMessage() throws SerializationException, JsonProcessingException {
         final UUID id = UUID.randomUUID();
         final ResponseMessage response = ResponseMessage.buildV4(id)
                 .code(ResponseStatusCode.SUCCESS)
@@ -57,15 +62,16 @@ public class GraphSONMessageSerializerV4Test extends GraphSONMessageSerializerV3
 
         final ByteBuf bbCombined = allocator.buffer().writeBytes(bb0).writeBytes(bb1).writeBytes(bb2).writeBytes(bb3);
 
-        final ResponseMessage deserialized = serializer.deserializeResponse(bbCombined);
+        final String json = bbCombined.readCharSequence(bbCombined.readableBytes(), CharsetUtil.UTF_8).toString();
 
-        assertEquals(8, ((List)deserialized.getResult().getData()).size());
-        assertEquals(200, deserialized.getStatus().getCode().getValue());
-        assertEquals("OK", deserialized.getStatus().getMessage());
+        final JsonNode node = mapper.readTree(json);
+
+        assertEquals("start/end", node.get("result").get("@value").get(0).textValue());
+        assertEquals(8, node.get("result").get("@value").size());
     }
 
     @Test
-    public void shouldDeserializeChunkedResponseMessageWithError() throws SerializationException {
+    public void shouldDeserializeChunkedResponseMessageWithError() throws SerializationException, JsonProcessingException {
         final UUID id = UUID.randomUUID();
         final ResponseMessage response = ResponseMessage.buildV4(id)
                 .code(ResponseStatusCode.SUCCESS)
@@ -80,13 +86,13 @@ public class GraphSONMessageSerializerV4Test extends GraphSONMessageSerializerV3
 
         final ByteBuf bbCombined = allocator.buffer().writeBytes(bb0).writeBytes(bb1).writeBytes(bb2).writeBytes(bb3);
 
-        final ResponseMessage deserialized = serializer.deserializeResponse(bbCombined);
+        final String json = bbCombined.readCharSequence(bbCombined.readableBytes(), CharsetUtil.UTF_8).toString();
 
-        // 3 chunks without errors, 2 items in each
-        assertEquals(6, ((List)deserialized.getResult().getData()).size());
-        // error description is in trailing headers
-        assertEquals(200, deserialized.getStatus().getCode().getValue());
-        assertEquals("OK", deserialized.getStatus().getMessage());
+        final JsonNode node = mapper.readTree(json);
+
+        assertEquals("start/end", node.get("result").get("@value").get(0).textValue());
+        // 6 items in first 3 chunks
+        assertEquals(6, node.get("result").get("@value").size());
     }
 
     @Override

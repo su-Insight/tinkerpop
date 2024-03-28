@@ -153,9 +153,9 @@ public final class GraphSONMessageSerializerV4 extends AbstractGraphSONMessageSe
         try {
             final byte[] header = mapper.writeValueAsBytes(new ResponseMessage.ResponseMessageHeader(responseMessage));
             final byte[] result = getChunk(true, responseMessage.getResult().getData());
-            // skip closing }}
-            encodedMessage = allocator.buffer(header.length - 2 + result.length);
-            encodedMessage.writeBytes(header, 0, header.length - 2);
+            // skip closing }
+            encodedMessage = allocator.buffer(header.length - 1 + result.length);
+            encodedMessage.writeBytes(header, 0, header.length - 1);
             encodedMessage.writeBytes(result);
 
             return encodedMessage;
@@ -266,11 +266,10 @@ public final class GraphSONMessageSerializerV4 extends AbstractGraphSONMessageSe
             GraphSONUtil.writeStartObject(responseMessage, jsonGenerator, typeSerializer);
 
             jsonGenerator.writeStringField(SerTokens.TOKEN_REQUEST, responseMessage.getRequestId() != null ? responseMessage.getRequestId().toString() : null);
+            // todo: write tx id
 
             jsonGenerator.writeFieldName(SerTokens.TOKEN_RESULT);
 
-            GraphSONUtil.writeStartObject(responseMessage, jsonGenerator, typeSerializer);
-            jsonGenerator.writeFieldName(SerTokens.TOKEN_DATA);
             jsonGenerator.writeRaw(":{\"@type\":\"g:List\",\"@value\":[");
 
             // jsonGenerator will add 2 closing }
@@ -307,15 +306,10 @@ public final class GraphSONMessageSerializerV4 extends AbstractGraphSONMessageSe
             // close result field
             jsonGenerator.writeRaw("]},");
 
-            jsonGenerator.writeObjectField(SerTokens.TOKEN_META, responseMessage.getResult().getMeta());
-
-            jsonGenerator.writeRaw("}");
-
             jsonGenerator.writeFieldName(SerTokens.TOKEN_STATUS);
             GraphSONUtil.writeStartObject(responseMessage, jsonGenerator, typeSerializer);
             jsonGenerator.writeStringField(SerTokens.TOKEN_MESSAGE, responseMessage.getStatus().getMessage());
             jsonGenerator.writeNumberField(SerTokens.TOKEN_CODE, responseMessage.getStatus().getCode().getValue());
-            jsonGenerator.writeObjectField(SerTokens.TOKEN_ATTRIBUTES, responseMessage.getStatus().getAttributes());
             GraphSONUtil.writeEndObject(responseMessage, jsonGenerator, typeSerializer);
 
             GraphSONUtil.writeEndObject(responseMessage, jsonGenerator, typeSerializer);

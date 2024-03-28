@@ -110,6 +110,8 @@ public class GraphBinaryMessageSerializerV4 extends GraphBinaryMessageSerializer
 
                 // Nullable request id
                 writer.writeValue(responseMessage.getRequestId(), buffer, true);
+                // Nullable tx id
+                writer.writeValue((UUID)null, buffer, true);
             }
 
             if (parts.contains(MessageParts.DATA)) {
@@ -162,6 +164,8 @@ public class GraphBinaryMessageSerializerV4 extends GraphBinaryMessageSerializer
         final Buffer buffer = bufferFactory.create(byteBuf);
 
         try {
+            UUID requestId = null;
+
             if (isFirstChunk) {
                 final int version = buffer.readByte() & 0xff;
 
@@ -170,9 +174,11 @@ public class GraphBinaryMessageSerializerV4 extends GraphBinaryMessageSerializer
                     // Or the buffer offsets are wrong
                     throw new SerializationException("The most significant bit should be set according to the format");
                 }
-            }
 
-            final UUID requestId = isFirstChunk ? reader.readValue(buffer, UUID.class, true) : null;
+                requestId = reader.readValue(buffer, UUID.class, true);
+                // todo: tx id !!!
+                reader.readValue(buffer, UUID.class, true);
+            }
 
             final List<Object> result = readPayload(buffer);
 
