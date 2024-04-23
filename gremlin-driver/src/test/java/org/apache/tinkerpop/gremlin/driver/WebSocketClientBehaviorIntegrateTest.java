@@ -33,7 +33,6 @@ import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.tinkerpop.gremlin.driver.exception.NoHostAvailableException;
-import org.apache.tinkerpop.gremlin.util.ser.Serializers;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.ExceptionHelper;
 
@@ -113,7 +112,6 @@ public class WebSocketClientBehaviorIntegrateTest {
         final Cluster cluster = Cluster.build("localhost").port(settings.PORT)
                 .minConnectionPoolSize(1)
                 .maxConnectionPoolSize(1)
-                .serializer(Serializers.GRAPHSON_V2)
                 .create();
         final Client.ClusteredClient client = cluster.connect();
 
@@ -131,7 +129,6 @@ public class WebSocketClientBehaviorIntegrateTest {
         final Cluster cluster = Cluster.build("localhost").port(settings.PORT)
                 .minConnectionPoolSize(1)
                 .maxConnectionPoolSize(1)
-                .serializer(Serializers.GRAPHSON_V2)
                 .enableUserAgentOnConnect(false)
                 .create();
         final Client.ClusteredClient client = cluster.connect();
@@ -203,7 +200,6 @@ public class WebSocketClientBehaviorIntegrateTest {
         final Cluster cluster = Cluster.build("localhost").port(settings.PORT)
                 .minConnectionPoolSize(1)
                 .maxConnectionPoolSize(1)
-                .serializer(Serializers.GRAPHSON_V2)
                 .create();
         final Client.ClusteredClient client = cluster.connect();
 
@@ -250,7 +246,6 @@ public class WebSocketClientBehaviorIntegrateTest {
         final Cluster cluster = Cluster.build("localhost").port(settings.PORT)
                 .minConnectionPoolSize(1)
                 .maxConnectionPoolSize(1)
-                .serializer(Serializers.GRAPHSON_V2)
                 .create();
 
         final Client.ClusteredClient client = cluster.connect();
@@ -298,7 +293,6 @@ public class WebSocketClientBehaviorIntegrateTest {
         final Cluster cluster = Cluster.build("localhost").port(settings.PORT)
                 .minConnectionPoolSize(1)
                 .maxConnectionPoolSize(1)
-                .serializer(Serializers.GRAPHSON_V2)
                 .create();
         final Client.ClusteredClient client = cluster.connect();
 
@@ -397,7 +391,6 @@ public class WebSocketClientBehaviorIntegrateTest {
                 .maxConnectionPoolSize(5)
                 .maxWaitForConnection(15000) // large value ensures that request will eventually find a connection.
                 .connectionSetupTimeoutMillis(1000)
-                .serializer(Serializers.GRAPHSON_V2)
                 .create();
 
         final Client.ClusteredClient client = cluster.connect();
@@ -426,7 +419,6 @@ public class WebSocketClientBehaviorIntegrateTest {
                 .maxConnectionPoolSize(5)
                 .maxWaitForConnection(250) // small value ensures that requests will return TimeoutException.
                 .connectionSetupTimeoutMillis(100)
-                .serializer(Serializers.GRAPHSON_V2)
                 .create();
 
         final Client.ClusteredClient client = cluster.connect();
@@ -451,7 +443,6 @@ public class WebSocketClientBehaviorIntegrateTest {
     public void shouldContinueRunningIfServerGoesDownTemporarily() throws InterruptedException {
         final Cluster cluster = Cluster.build("localhost").port(settings.PORT)
                 .minConnectionPoolSize(1)
-                .serializer(Serializers.GRAPHSON_V2)
                 .create();
 
         final Client.ClusteredClient client = cluster.connect();
@@ -491,7 +482,6 @@ public class WebSocketClientBehaviorIntegrateTest {
                 .minConnectionPoolSize(1)
                 .maxWaitForConnection(500)
                 .connectionSetupTimeoutMillis(100)
-                .serializer(Serializers.GRAPHSON_V2)
                 .create();
 
         final Client.ClusteredClient client = cluster.connect();
@@ -519,7 +509,6 @@ public class WebSocketClientBehaviorIntegrateTest {
         final Cluster cluster = Cluster.build("localhost").port(settings.PORT)
                 .minConnectionPoolSize(1)
                 .maxConnectionPoolSize(1)
-                .serializer(Serializers.GRAPHSON_V2)
                 .create();
         final Client.ClusteredClient client = cluster.connect();
 
