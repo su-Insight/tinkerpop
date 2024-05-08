@@ -47,23 +47,26 @@ in each release line represent unreleased changes only. Once an official release
 are removed with new items taking their place as they are planned. The release line is removed from the roadmap
 completely when it is no longer maintained.
 
-== 3.7.x - Target 2023H1
+== TinkerPop 4.x - Target 2024H2
+The development of the 4.x release line is currently under way with a target release date for the initial release
+of the line of 24H2. Items listed below are breaking feature updates essential to TP4, additional features in discussion are listed in the Appendix.
+For additional details on each item listed, see the features doc link:https://github.com/apache/tinkerpop/blob/master/docs/src/dev/future/proposal-4-tinkerpop4-features[TinkerPop 4 Features].
 
-The development of the 3.7.x release line is currently under way with a target release date for the initial release of
-the line of 23H1.
+* *HTTP Support* - Server & GLVs
+** Replacement of WebSocket with HTTP/1.1 (link:https://lists.apache.org/thread/vfs1j9ycb8voxwc00gdzfmlg2gghx3n1[DISCUSS thread])
+* Make `gremlin-lang` script processing default
+* Bytecode Removal (link:https://lists.apache.org/thread/7m3govzsqtmmj224xs7k5vv1ycnmocjn[DISCUSS thread])
+* *Transactions* - Redesign the transaction model so that it is better suited for all graphs.
+** Ensure that TinkerPop has a native implementation for transactions in TinkerGraph so that all tests can run from it.
+** Ensure that there is no difference between remote and embedded transaction usage and that the API is less tangled
+than it is today.
+Features originally planned for 3.7.x.
 
 * Add support for traversals as parameters for `V()`, `is()`, and `has()` (includes `Traversal` arguments to `P`)
-* Geospatial support for TinkerPop (link:++https://lists.apache.org/list?dev@tinkerpop.apache.org:2021-7:DISCUSS%20geo-spatial++[DISCUSS Thread])
-* Add mid-traversal `E()` support (link:https://issues.apache.org/jira/browse/TINKERPOP-2798[TINKERPOP-2798])
-* Allow properties on elements (as opposed to just references) for remote traversals
 * Add subgraph/tree structure in all GLVs
-* List functions (`concat()`/etc.)
 * Define semantics for query federation across Gremlin servers (depends on `call()` step)
 * Gremlin debug support
-* Date/Time manipulation functions (`dateAdd()`, `dateDiff()`, etc.)
-* Add string manipulation functions (`split()`, `substring()` etc.) (link:https://issues.apache.org/jira/browse/TINKERPOP-2672[TINKERPOP-2672])
 * Case-insensitive search (link:https://issues.apache.org/jira/browse/TINKERPOP-2673[TINKERPOP-2673])
-* Type conversion with `cast()` step
 * Mutation steps for `clone()` of an `Element` and for `moveE()` for edges.
 * Add a language element to merge `Map` objects more easily.
 
@@ -99,25 +102,41 @@ story.
 |link:https://github.com/apache/tinkerpop/blob/master/docs/src/dev/future/proposal-arrow-flight-2[Proposal 2] |Gremlin Arrow Flight. |Future |N
 |link:https://github.com/apache/tinkerpop/blob/master/docs/src/dev/future/proposal-3-remove-closures[Proposal 3] |Removing the Need for Closures/Lambda in Gremlin |3.7.0 |Y
 |link:https://github.com/apache/tinkerpop/blob/master/docs/src/dev/future/proposal-transaction-4[Proposal 4] |TinkerGraph Transaction Support |3.7.0 |Y
+|link:https://github.com/apache/tinkerpop/blob/master/docs/src/dev/future/proposal-4-tinkerpop4-features[Proposal 5] |TinkerPop 4 Features |4.0.0 |N
 |=========================================================
 
 = Appendix
 
-== TinkerPop4
+== TinkerPop 4.x
+This section includes proposed features for TP4, which may or may not be planned into the release.
+For additional details on each item listed, see the features doc link:https://github.com/apache/tinkerpop/blob/master/docs/src/dev/future/proposal-4-tinkerpop4-features[TinkerPop 4 Features].
 
-This space is currently a bit of a scratchpad for ideas and changes that might not fit well into TinkerPop3 and
-therefore might be best left to TinkerPop4.
-
-* *Transactions* - Redesign the transaction model so that it is better suited for all graphs.
-** Ensure that TinkerPop has a native implementation for transactions in TinkerGraph so that all tests can run from it.
-** Ensure that there is no difference between remote and embedded transaction usage and that the API is less tangled
-than it is today.
 * *Groovy* - Reconsider all dependencies on Groovy throughout TinkerPop
 ** Remove Groovy support from Gremlin Server which should be possible now that `gremlin-language` and `call()` are
 available.
 ** Investigate options for using JShell as a replacement for `groovysh` in Gremlin Console.
 ** Investigate options for removing `ScriptEngine` support in general, which would include support from
 `gremlin-language`.
+* Type System (link:https://lists.apache.org/thread/rpdq3ywk6vqpyv512to36ot8yqvjo3dv[DISCUSS thread])
+* Schema Support
+* Multi-label, no label, mutable label support
+* Multi/meta properties on edges
+* Pluggable System for explain/profile()
+* `has()` accepting a traversal
+* Improve `local()` step
+* Type conversion with `cast()` step
+* New Gremlin language elements for geospatial (link:https://lists.apache.org/thread/mxg3kopgj9h9v8j299qjhdhopzpdkfow[DISCUSS Thread]), vector, and pattern matching
+* Rework `match()` step
+* Query status/query cancellation
+* Unify algorithm steps
+* Modernize IO for OLAP
+* Proxy implementation
+* Remove `neo4j-gremlin` (link:https://lists.apache.org/thread/lxn4s9fs8rzggm0jlnffnphfpqnpn3h8[DISCUSS thread])
+* Deprecate `sparql-gremlin`
+* `io()` step improvements
+* Documentation re-organization
+* Improved telemetry in driver/server
+* Matrix testing in driver/server
 
 === 4.x Branching Methodology
 
