@@ -66,6 +66,8 @@ with details explaining their implications.
 | <<telemerty>>|N|L||
 |=========================================================
 
+---
+
 === Breaking Changes - Must-Haves [[breaking-must-have]]
 This section lists all breaking changes that will be essential to TP4 release, which cannot be implemented in minor version
 upgrades. Any changes not included in TP4 will need to be implemented in the next major versions.
@@ -119,6 +121,8 @@ Such API redesign will be a breaking change that needs to be introduced in the i
 stub implementations only, with full implementation added iteratively in minor releases.
 
 This is another large body of work that will be breaking for users and any providers relying on Groovy.
+
+---
 
 === Breaking Changes - Good-to-Haves [[breaking-good-to-have]]
 This section lists all breaking changes that will be beneficial to include into TP4, but can be implemented in future major versions.
@@ -189,14 +193,14 @@ which should expand the usability of the Gremlin language.
 These are useful features for debugging and improved resource management that have been implemented by providers, but would now be
 a good time to bring parity into TinkerPop.
 
-* link:https://issues.apache.org/jira/browse/TINKERPOP-2210[TINKERPOP-2210 Support cancellation of remote traversals]
+Related issue: link:https://issues.apache.org/jira/browse/TINKERPOP-2210[TINKERPOP-2210 Support cancellation of remote traversals].
 
 ==== Unify algorithm steps [[algorithm-steps]]
 Moving the algorithm steps into `call()` step or generify them in some way.
 
 ==== Modernize IO for OLAP [[io-olap]]
 As name suggests, we should remove old file serialization formats, and introduce more modernized format for IO. One possible
-candidate is link:link:https://github.com/apache/incubator-graphar[GraphAR], which is a standard data file format for graph data
+candidate is link:https://github.com/apache/incubator-graphar[GraphAR], which is a standard data file format for graph data
 storage and retrieval, currently an incubating Apache project.
 
 A potential large extension of this work, which may not be included for this version yet, is revisiting OLAP in general to resolve
@@ -204,7 +208,9 @@ link:https://issues.apache.org/jira/browse/TINKERPOP-1298?jql=project%20%3D%20TI
 
 ==== Remove `neo4j-gremlin` [[neo4-removal]]
 As discussed inside (link:https://lists.apache.org/thread/lxn4s9fs8rzggm0jlnffnphfpqnpn3h8[DISCUSS thread]), `neo4j-gremlin` was deprecated in 3.7
-with the introduction of native transaction in TinkerGraph. TP4 would be the place to remove the model.
+with the introduction of native transaction in TinkerGraph. TP4 would be the place to remove the module.
+
+---
 
 === Non-Breaking Changes [[non-breaking]]
 This section lists all changes that should not be breaking in terms of functionality and APIs, and can be implemented in minor version releases.
