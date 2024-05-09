@@ -92,4 +92,5 @@ export const structure = {
   Vertex: graph.Vertex,
   VertexProperty: graph.VertexProperty,
   toLong: utils.toLong,
+  parseVertex: utils.parseVertex,
 };
