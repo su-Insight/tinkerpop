@@ -33,6 +33,8 @@
     "@cucumber/cucumber": "^10.3.1",
     "@knighted/duel": "^1.0.7",
     "@tsconfig/node18": "^18.2.2",
+    "@types/chai": "^4.3.16",
+    "@types/mocha": "^10.0.6",
     "@types/readable-stream": "^4.0.10",
     "@types/uuid": "^9.0.8",
     "@types/ws": "^8.5.10",

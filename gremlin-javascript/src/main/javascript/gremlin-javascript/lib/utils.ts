@@ -23,6 +23,7 @@
  */
 
 import * as uuid from 'uuid';
+import type { Vertex, VertexProperties } from './structure/graph.js';
 
 const gremlinVersion = '4.0.0-SNAPSHOT'; // DO NOT MODIFY - Configured automatically by Maven Replacer Plugin
 
@@ -119,3 +120,35 @@ export const DeferredPromise = <T>() => {
 
   return Object.assign(promise, { resolve, reject });
 };
+
+export const parseVertex = <
+  TVertex extends Vertex,
+  TCardinality extends { [P in keyof NonNullable<TVertex['properties']>]?: 'single' | 'list' | 'set' | undefined },
+>(
+  vertex: TVertex,
+  cardinality: TCardinality = {} as TCardinality,
+): {
+  [P in keyof NonNullable<TVertex['properties']>]: (typeof cardinality)[P] extends 'single'
+    ? NonNullable<TVertex['properties']>[P][0]['value']
+    : (typeof cardinality)[P] extends 'list'
+      ? Array<NonNullable<TVertex['properties']>[P][0]['value']>
+      : (typeof cardinality)[P] extends 'set'
+        ? Set<NonNullable<TVertex['properties']>[P][0]['value']>
+        : NonNullable<TVertex['properties']>[P][0]['value'];
+} =>
+  Object.fromEntries(
+    Object.entries<VertexProperties>(vertex.properties as any).map(([key, value]): any => [
+      key,
+      (() => {
+        switch (cardinality[key]) {
+          case 'list':
+            return value.map((x) => x.value);
+          case 'set':
+            return new Set(value.map((x) => x.value));
+          case 'single':
+          default:
+            return value[0].value;
+        }
+      })(),
+    ]),
+  ) as any;
