@@ -41,6 +41,11 @@ public enum Operator implements BinaryOperator<Object> {
         public Object apply(final Object a, Object b) {
             return NumberHelper.add((Number) a, (Number) b);
         }
+
+        @Override
+        public boolean isCommutative() {
+            return true;
+        }
     },
 
     /**
@@ -64,6 +69,11 @@ public enum Operator implements BinaryOperator<Object> {
     mult {
         public Object apply(final Object a, final Object b) {
             return NumberHelper.mul((Number) a, (Number) b);
+        }
+
+        @Override
+        public boolean isCommutative() {
+            return true;
         }
     },
 
@@ -89,6 +99,11 @@ public enum Operator implements BinaryOperator<Object> {
         public Object apply(final Object a, final Object b) {
             return NumberHelper.min((Comparable) a, (Comparable) b);
         }
+
+        @Override
+        public boolean isCommutative() {
+            return true;
+        }
     },
 
     /**
@@ -100,6 +115,11 @@ public enum Operator implements BinaryOperator<Object> {
     max {
         public Object apply(final Object a, final Object b) {
             return NumberHelper.max((Comparable) a, (Comparable) b);
+        }
+
+        @Override
+        public boolean isCommutative() {
+            return true;
         }
     },
 
@@ -138,6 +158,11 @@ public enum Operator implements BinaryOperator<Object> {
             }
             return ((boolean) a) && ((boolean) b);
         }
+
+        @Override
+        public boolean isCommutative() {
+            return true;
+        }
     },
 
     /**
@@ -163,6 +188,11 @@ public enum Operator implements BinaryOperator<Object> {
             }
             return ((boolean) a) || ((boolean) b);
         }
+
+        @Override
+        public boolean isCommutative() {
+            return true;
+        }
     },
 
     /**
@@ -185,13 +215,18 @@ public enum Operator implements BinaryOperator<Object> {
             }
 
             if (a instanceof Map && b instanceof Map)
-                ((Map<?,?>) a).putAll((Map) b);
+                ((Map<?, ?>) a).putAll((Map) b);
             else if (a instanceof Collection && a instanceof Collection)
                 ((Collection<?>) a).addAll((Collection) b);
             else
                 throw new IllegalArgumentException(String.format("Objects must be both of Map or Collection: a=%s b=%s",
                         a.getClass().getSimpleName(), b.getClass().getSimpleName()));
             return a;
+        }
+
+        @Override
+        public boolean isCommutative() {
+            return true;
         }
     },
 
@@ -204,5 +239,19 @@ public enum Operator implements BinaryOperator<Object> {
         public Object apply(final Object a, final Object b) {
             return (long) a + (long) b;
         }
+
+        @Override
+        public boolean isCommutative() {
+            return true;
+        }
+    };
+
+    /**
+     * This flag indicates whether each operation is commutative. Only commutative operations are allowed to operate
+     * on {@link org.apache.tinkerpop.gremlin.process.computer.GraphComputer} to ensure proper functionality under
+     * distributed processing.
+     */
+    public boolean isCommutative() {
+        return false;
     }
 }

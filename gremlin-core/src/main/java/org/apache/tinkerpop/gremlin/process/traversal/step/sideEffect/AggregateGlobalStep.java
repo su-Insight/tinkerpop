@@ -20,6 +20,7 @@ package org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalSideEffects;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.ByModulating;
 import org.apache.tinkerpop.gremlin.process.traversal.step.LocalBarrier;
@@ -31,15 +32,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequire
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalUtil;
-import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.function.BulkSetSupplier;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 
 /**
@@ -122,8 +118,16 @@ public final class AggregateGlobalStep<S> extends AbstractStep<S, S> implements 
 
     @Override
     public void processAllStarts() {
+        final TraversalSideEffects sideEffects = this.getTraversal().getSideEffects();
+
+        // Pre-defined Operator such as addAll and assign will reduce over the whole input set, rather than
+        // applying a single input one by one.
+        final boolean isOperatorForBulkSet = sideEffects.getReducer(sideEffectKey) == Operator.addAll ||
+                sideEffects.getReducer(sideEffectKey) == Operator.assign;
+
         if (this.starts.hasNext()) {
             final BulkSet<Object> bulkSet = new BulkSet<>();
+
             while (this.starts.hasNext()) {
                 final Traverser.Admin<S> traverser = this.starts.next();
                 TraversalUtil.produce(traverser, aggregateTraversal).ifProductive(p -> bulkSet.add(p, traverser.bulk()));
@@ -133,7 +137,12 @@ public final class AggregateGlobalStep<S> extends AbstractStep<S, S> implements 
                 // when barrier is reloaded, the traversers should be at the next step
                 this.barrier.add(traverser);
             }
-            this.getTraversal().getSideEffects().add(this.sideEffectKey, bulkSet);
+
+            if (isOperatorForBulkSet) {
+                sideEffects.add(this.sideEffectKey, bulkSet);
+            } else {
+                bulkSet.forEach(p -> sideEffects.add(sideEffectKey, p));
+            }
         }
     }
 

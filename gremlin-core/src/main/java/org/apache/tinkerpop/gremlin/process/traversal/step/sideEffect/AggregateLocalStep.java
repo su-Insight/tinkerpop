@@ -20,6 +20,7 @@ package org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalSideEffects;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.ByModulating;
 import org.apache.tinkerpop.gremlin.process.traversal.step.SideEffectCapable;
@@ -52,9 +53,20 @@ public final class AggregateLocalStep<S> extends SideEffectStep<S> implements Si
 
     @Override
     protected void sideEffect(final Traverser.Admin<S> traverser) {
+        final TraversalSideEffects sideEffects = this.getTraversal().getSideEffects();
+        // Pre-defined Operator such as addAll and assign will reduce over the whole input set, rather than
+        // applying a single input one by one.
+        final boolean isOperatorForBulkSet = sideEffects.getReducer(sideEffectKey) == Operator.addAll ||
+                sideEffects.getReducer(sideEffectKey) == Operator.assign;
+
         final BulkSet<Object> bulkSet = new BulkSet<>();
         TraversalUtil.produce(traverser, this.storeTraversal).ifProductive(p -> bulkSet.add(p, traverser.bulk()));
-        this.getTraversal().getSideEffects().add(this.sideEffectKey, bulkSet);
+
+        if (isOperatorForBulkSet) {
+            sideEffects.add(this.sideEffectKey, bulkSet);
+        } else {
+            bulkSet.forEach(p -> sideEffects.add(sideEffectKey, p));
+        }
     }
 
     @Override
