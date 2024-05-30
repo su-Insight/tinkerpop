@@ -454,7 +454,7 @@ public final class IteratorUtils {
         else if (o instanceof Object[])
             itty = new ArrayIterator<>((Object[]) o);
         else if (o != null && o.getClass().isArray()) // handle for primitive array
-            itty = new org.apache.commons.collections.iterators.ArrayIterator(o);
+            itty = new org.apache.commons.collections4.iterators.ArrayIterator(o);
         else if (o instanceof Stream)
             itty = ((Stream) o).iterator();
         else if (o instanceof Map)
@@ -468,6 +468,10 @@ public final class IteratorUtils {
 
     public static List asList(final Object o) {
         return list(asIterator(o));
+    }
+
+    public static Set asSet(final Object o) {
+        return set(asIterator(o));
     }
 
     /**

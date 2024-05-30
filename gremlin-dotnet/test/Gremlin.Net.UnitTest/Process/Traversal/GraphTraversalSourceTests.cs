@@ -22,7 +22,9 @@
 #endregion
 
 using System;
+using Gremlin.Net.Process.Remote;
 using Gremlin.Net.Process.Traversal;
+using NSubstitute;
 using Xunit;
 
 namespace Gremlin.Net.UnitTest.Process.Traversal
@@ -30,9 +32,9 @@ namespace Gremlin.Net.UnitTest.Process.Traversal
     public class GraphTraversalSourceTests
     {
         [Fact]
-        public void ShouldBeIndependentFromReturnedGraphTraversalModififyingBytecode()
+        public void ShouldBeIndependentFromReturnedGraphTraversalModifyingBytecode()
         {
-            var g = AnonymousTraversalSource.Traversal();
+            var g = AnonymousTraversalSource.Traversal().With(null);
 
             g.V().Has("someKey", "someValue").Drop();
 
@@ -41,9 +43,9 @@ namespace Gremlin.Net.UnitTest.Process.Traversal
         }
 
         [Fact]
-        public void ShouldBeIndependentFromReturnedGraphTraversalSourceModififyingBytecode()
+        public void ShouldBeIndependentFromReturnedGraphTraversalSourceModifyingBytecode()
         {
-            var g1 = AnonymousTraversalSource.Traversal();
+            var g1 = AnonymousTraversalSource.Traversal().With(null);
 
             var g2 = g1.WithSideEffect("someSideEffectKey", "someSideEffectValue");
 
@@ -53,20 +55,9 @@ namespace Gremlin.Net.UnitTest.Process.Traversal
         }
 
         [Fact]
-        public void ShouldBeIndependentFromReturnedGraphTraversalSourceModififyingTraversalStrategies()
+        public void CloneShouldCreateIndependentGraphTraversalModifyingBytecode()
         {
-            var gLocal = AnonymousTraversalSource.Traversal();
-
-            var gRemote = gLocal.WithRemote(null);
-
-            Assert.Equal(0, gLocal.TraversalStrategies.Count);
-            Assert.Equal(1, gRemote.TraversalStrategies.Count);
-        }
-
-        [Fact]
-        public void CloneShouldCreateIndependentGraphTraversalModifiyingBytecode()
-        {
-            var g = AnonymousTraversalSource.Traversal();
+            var g = AnonymousTraversalSource.Traversal().With(null);
             var original = g.V().Out("created");
             var clone = original.Clone().Out("knows");
             var cloneClone = clone.Clone().Out("created");
@@ -86,7 +77,7 @@ namespace Gremlin.Net.UnitTest.Process.Traversal
         [Fact]
         public void ShouldOnlyAllowChildTraversalsThatAreAnonymous()
         {
-            var g = AnonymousTraversalSource.Traversal();
+            var g = AnonymousTraversalSource.Traversal().With(null);
 
             g.V(0).AddE("self").To(__.V(1));
 

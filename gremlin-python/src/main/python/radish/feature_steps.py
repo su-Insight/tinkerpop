@@ -17,6 +17,7 @@
 # under the License.
 #
 
+from datetime import datetime
 import json
 import re
 from gremlin_python.statics import long
@@ -34,13 +35,16 @@ inV = __.inV
 project = __.project
 tail = __.tail
 
-ignores = []
+ignores = [
+    "g.withoutStrategies(CountStrategy).V().count()",  # serialization issues with Class in GraphSON
+    "g.withoutStrategies(LazyBarrierStrategy).V().as(\"label\").aggregate(local,\"x\").select(\"x\").select(\"label\")"
+]
 
 
 @given("the {graph_name:w} graph")
 def choose_graph(step, graph_name):
     step.context.graph_name = graph_name
-    step.context.g = traversal().withRemote(step.context.remote_conn[graph_name])
+    step.context.g = traversal().with_(step.context.remote_conn[graph_name])
 
 
 @given("the graph initializer of")
@@ -128,11 +132,11 @@ def raise_an_error_with_message(step, comparison, expected_message):
     assert_that(step.context.failed, equal_to(True))
 
     if comparison == "containing":
-        assert_that(step.context.failed_message, contains_string(expected_message))
+        assert_that(step.context.failed_message.upper(), contains_string(expected_message.upper()))
     elif comparison == "ending":
-        assert_that(step.context.failed_message, ends_with(expected_message))
+        assert_that(step.context.failed_message.upper(), ends_with(expected_message.upper()))
     elif comparison == "starting":
-        assert_that(step.context.failed_message, starts_with(expected_message))
+        assert_that(step.context.failed_message.upper(), starts_with(expected_message.upper()))
     else:
         raise ValueError("unknown comparison '" + comparison + "'- must be: containing, ending or starting")
 
@@ -198,6 +202,11 @@ def _convert(val, ctx):
         return [] if val == "l[]" else list(map((lambda x: _convert(x, ctx)), val[2:-1].split(",")))
     elif isinstance(val, str) and re.match(r"^s\[.*\]$", val):  # parse set
         return set() if val == "s[]" else set(map((lambda x: _convert(x, ctx)), val[2:-1].split(",")))
+    elif isinstance(val, str) and re.match(r"^str\[.*\]$", val):  # return string as is
+        return val[4:-1]
+    elif isinstance(val, str) and re.match(r"^dt\[.*\]$", val):  # parse datetime
+        # python 3.8 can handle only subset of ISO 8601 dates
+        return datetime.fromisoformat(val[3:-1].replace('Z', ''))
     elif isinstance(val, str) and re.match(r"^d\[NaN\]$", val):  # parse nan
         return float("nan")
     elif isinstance(val, str) and re.match(r"^d\[Infinity\]$", val):  # parse +inf

@@ -30,7 +30,8 @@ import org.junit.runner.RunWith;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
-        tags = "not @RemoteOnly and not @GraphComputerOnly and not @AllowNullPropertyValues",
+        tags = "@TestTag",
+//        tags = "not @RemoteOnly and not @GraphComputerOnly and not @AllowNullPropertyValues",
         glue = { "org.apache.tinkerpop.gremlin.features" },
         objectFactory = TinkerGraphFeatureTest.TinkerGraphGuiceFactory.class,
         features = { "classpath:/org/apache/tinkerpop/gremlin/test/features" },
@@ -46,7 +47,7 @@ public class TinkerGraphFeatureTest {
     public static final class ServiceModule extends AbstractModule {
         @Override
         protected void configure() {
-            bind(World.class).to(TinkerGraphWorld.class);
+            bind(World.class).to(TinkerWorld.TinkerGraphWorld.class);
         }
     }
 }

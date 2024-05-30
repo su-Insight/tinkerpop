@@ -75,7 +75,7 @@ public class TraversalRootVisitor<G extends Traversal> extends DefaultGremlinBas
                 (GremlinParser.TraversalSourceContext) ctx.getChild(childIndexOfTraversalSource));
         // call traversal source spawn method
         final int childIndexOfTraversalSourceSpawnMethod = 2;
-        final GraphTraversal traversal = new TraversalSourceSpawnMethodVisitor(source, this).visitTraversalSourceSpawnMethod(
+        final GraphTraversal traversal = new TraversalSourceSpawnMethodVisitor(source, this, antlr).visitTraversalSourceSpawnMethod(
                 (GremlinParser.TraversalSourceSpawnMethodContext) ctx.getChild(childIndexOfTraversalSourceSpawnMethod));
 
         if (ctx.getChildCount() == 5) {
@@ -108,8 +108,8 @@ public class TraversalRootVisitor<G extends Traversal> extends DefaultGremlinBas
      * {@inheritDoc}
      */
     @Override
-    public Traversal visitTraversalSelfMethod_none(final GremlinParser.TraversalSelfMethod_noneContext ctx) {
-        this.traversal = traversal.none();
+    public Traversal visitTraversalSelfMethod_discard(final GremlinParser.TraversalSelfMethod_discardContext ctx) {
+        this.traversal = traversal.discard();
         return this.traversal;
     }
 

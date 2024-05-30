@@ -19,12 +19,16 @@
 package org.apache.tinkerpop.gremlin.language.grammar;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 
 /**
  * A {@link GraphTraversalSource} self method visitor.
@@ -52,13 +56,8 @@ public class TraversalSourceSelfMethodVisitor extends DefaultGremlinBaseVisitor<
      * {@inheritDoc}
      */
     @Override
-    public GraphTraversalSource visitTraversalSourceSelfMethod_withBulk(final GremlinParser.TraversalSourceSelfMethod_withBulkContext ctx)
-    {
-        final int childIndexOfParameterUseBulk = 2;
-
-        final Boolean useBulk = (Boolean)(new GenericLiteralVisitor(antlr).visitBooleanLiteral(
-                (GremlinParser.BooleanLiteralContext)(ctx.getChild(childIndexOfParameterUseBulk))));
-
+    public GraphTraversalSource visitTraversalSourceSelfMethod_withBulk(final GremlinParser.TraversalSourceSelfMethod_withBulkContext ctx) {
+        final boolean useBulk = (boolean) antlr.argumentVisitor.visitBooleanArgument(ctx.booleanArgument());
         return source.withBulk(useBulk);
     }
 
@@ -66,8 +65,7 @@ public class TraversalSourceSelfMethodVisitor extends DefaultGremlinBaseVisitor<
      * {@inheritDoc}
      */
     @Override
-    public GraphTraversalSource visitTraversalSourceSelfMethod_withPath(final GremlinParser.TraversalSourceSelfMethod_withPathContext ctx)
-    {
+    public GraphTraversalSource visitTraversalSourceSelfMethod_withPath(final GremlinParser.TraversalSourceSelfMethod_withPathContext ctx) {
         return source.withPath();
     }
 
@@ -75,19 +73,12 @@ public class TraversalSourceSelfMethodVisitor extends DefaultGremlinBaseVisitor<
      * {@inheritDoc}
      */
     @Override
-    public GraphTraversalSource visitTraversalSourceSelfMethod_withSack(final GremlinParser.TraversalSourceSelfMethod_withSackContext ctx)
-    {
-        final int childIndexOfParameterInitialValue = 2;
-
+    public GraphTraversalSource visitTraversalSourceSelfMethod_withSack(final GremlinParser.TraversalSourceSelfMethod_withSackContext ctx) {
         if (ctx.getChildCount() == 4) {
-            return source.withSack(new GenericLiteralVisitor(antlr).visitGenericLiteral(
-                    ParseTreeContextCastHelper.castChildToGenericLiteral(ctx, childIndexOfParameterInitialValue)));
+            return source.withSack(antlr.argumentVisitor.visitGenericLiteralArgument(ctx.genericLiteralArgument()));
         } else {
-            final int childIndexOfParameterMergeOperator = 4;
-
-            return source.withSack(new GenericLiteralVisitor(antlr).visitGenericLiteral(
-                    ParseTreeContextCastHelper.castChildToGenericLiteral(ctx, childIndexOfParameterInitialValue)),
-                    TraversalEnumParser.parseTraversalEnumFromContext(Operator.class, ctx.getChild(childIndexOfParameterMergeOperator)));
+            return source.withSack(antlr.argumentVisitor.visitGenericLiteralArgument(ctx.genericLiteralArgument()),
+                    (BinaryOperator) antlr.argumentVisitor.visitTraversalBiFunctionArgument(ctx.traversalBiFunctionArgument()));
         }
     }
 
@@ -95,31 +86,22 @@ public class TraversalSourceSelfMethodVisitor extends DefaultGremlinBaseVisitor<
      * {@inheritDoc}
      */
     @Override
-    public GraphTraversalSource visitTraversalSourceSelfMethod_withSideEffect(final GremlinParser.TraversalSourceSelfMethod_withSideEffectContext ctx)
-    {
-        final int childIndexOfParameterKey = 2;
-        final int childIndexOfParameterInitialValue = 4;
-
-        final String argument1 = (String)(new GenericLiteralVisitor(antlr).visitStringBasedLiteral(
-                (GremlinParser.StringBasedLiteralContext)(ctx.getChild(childIndexOfParameterKey))));
-        final Object argument2 = new GenericLiteralVisitor(antlr).visitGenericLiteral(
-                (GremlinParser.GenericLiteralContext)(ctx.getChild(childIndexOfParameterInitialValue)));
-
-        return source.withSideEffect(argument1, argument2);
+    public GraphTraversalSource visitTraversalSourceSelfMethod_withSideEffect(final GremlinParser.TraversalSourceSelfMethod_withSideEffectContext ctx) {
+        return source.withSideEffect(antlr.argumentVisitor.parseString(ctx.stringArgument()),
+                antlr.argumentVisitor.visitGenericLiteralArgument(ctx.genericLiteralArgument()));
     }
 
     @Override
     public GraphTraversalSource visitTraversalSourceSelfMethod_withStrategies(final GremlinParser.TraversalSourceSelfMethod_withStrategiesContext ctx) {
-
         if (null == traversalStrategyVisitor)
-            traversalStrategyVisitor = new TraversalStrategyVisitor((DefaultGremlinBaseVisitor) antlr.tvisitor);
+            traversalStrategyVisitor = new TraversalStrategyVisitor(antlr);
 
         // with 4 children withStrategies() was called with a single TraversalStrategy, otherwise multiple were
         // specified.
         if (ctx.getChildCount() < 5) {
             return source.withStrategies(traversalStrategyVisitor.visitTraversalStrategy((GremlinParser.TraversalStrategyContext) ctx.getChild(2)));
         } else {
-            final Object[] vargs = GenericLiteralVisitor.getTraversalStrategyList(
+            final Object[] vargs = GenericLiteralVisitor.parseTraversalStrategyList(
                     (GremlinParser.TraversalStrategyListContext) ctx.getChild(4), traversalStrategyVisitor);
             final List<TraversalStrategy> strats = new ArrayList<>(Arrays.asList(Arrays.copyOf(vargs, vargs.length, TraversalStrategy[].class)));
             strats.add(0, traversalStrategyVisitor.visitTraversalStrategy((GremlinParser.TraversalStrategyContext) ctx.getChild(2)));
@@ -127,26 +109,32 @@ public class TraversalSourceSelfMethodVisitor extends DefaultGremlinBaseVisitor<
         }
     }
 
+    @Override
+    public GraphTraversalSource visitTraversalSourceSelfMethod_withoutStrategies(final GremlinParser.TraversalSourceSelfMethod_withoutStrategiesContext ctx) {
+        final List<GremlinParser.ClassTypeContext> contexts = new ArrayList<>();
+        contexts.add(ctx.classType());
+        if (ctx.classTypeList() != null) {
+            contexts.addAll(ctx.classTypeList().classTypeExpr().classType());
+        }
+
+        final Class[] strategyClasses = contexts.stream().map(c -> TraversalStrategies.GlobalCache.getRegisteredStrategyClass(c.getText()))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toArray(Class[]::new);
+
+        return source.withoutStrategies(strategyClasses);
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
-    public GraphTraversalSource visitTraversalSourceSelfMethod_with(final GremlinParser.TraversalSourceSelfMethod_withContext ctx)
-    {
-        final int childIndexOfParameterKey = 2;
-
+    public GraphTraversalSource visitTraversalSourceSelfMethod_with(final GremlinParser.TraversalSourceSelfMethod_withContext ctx) {
         if (ctx.getChildCount() == 4) {
-            final String argument1 = (String)(new GenericLiteralVisitor(antlr).visitStringBasedLiteral(
-                    (GremlinParser.StringBasedLiteralContext)(ctx.getChild(childIndexOfParameterKey))));
-            return source.with(argument1);
+            return source.with(antlr.argumentVisitor.parseString(ctx.stringArgument()));
         } else {
-            final int childIndexOfParameterInitialValue = 4;
-
-            final String argument1 = (String)(new GenericLiteralVisitor(antlr).visitStringBasedLiteral(
-                    (GremlinParser.StringBasedLiteralContext)(ctx.getChild(childIndexOfParameterKey))));
-            final Object argument2 = new GenericLiteralVisitor(antlr).visitGenericLiteral(
-                    (GremlinParser.GenericLiteralContext)(ctx.getChild(childIndexOfParameterInitialValue)));
-            return source.with(argument1, argument2);
+            return source.with(antlr.argumentVisitor.parseString(ctx.stringArgument()),
+                    antlr.argumentVisitor.visitGenericLiteralArgument(ctx.genericLiteralArgument()));
         }
     }
 }

@@ -41,7 +41,7 @@ namespace Gremlin.Net.Benchmarks
     {
         private static readonly Bytecode EmptyBytecode = new Bytecode();
 
-        private static readonly Bytecode SomeBytecode = Traversal().WithComputer().V().
+        private static readonly Bytecode SomeBytecode = Traversal().With(null).WithComputer().V().
             Has("Name", "marko").
             Where(
                 Out("knows").
@@ -86,22 +86,22 @@ namespace Gremlin.Net.Benchmarks
                 .ConfigureAwait(false);
 
         [Benchmark]
-        public async Task<ResponseMessage<List<object>>> TestReadSmallResponseMessageBinary() =>
+        public async Task<ResponseMessage<List<object>>?> TestReadSmallResponseMessageBinary() =>
             await BinaryMessageSerializer.DeserializeMessageAsync(TestMessages.SmallBinaryResponseMessageBytes)
                 .ConfigureAwait(false);
         
         [Benchmark]
-        public async Task<ResponseMessage<List<object>>> TestReadSmallResponseMessageGraphSON3() =>
+        public async Task<ResponseMessage<List<object>>?> TestReadSmallResponseMessageGraphSON3() =>
             await GraphSON3MessageSerializer.DeserializeMessageAsync(TestMessages.SmallGraphSON3ResponseMessageBytes)
                 .ConfigureAwait(false);
         
         [Benchmark]
-        public async Task<ResponseMessage<List<object>>> TestReadBigResponseMessageBinary() =>
+        public async Task<ResponseMessage<List<object>>?> TestReadBigResponseMessageBinary() =>
             await BinaryMessageSerializer.DeserializeMessageAsync(TestMessages.BigBinaryResponseMessageBytes)
                 .ConfigureAwait(false);
         
         [Benchmark]
-        public async Task<ResponseMessage<List<object>>> TestReadBigResponseMessageGraphSON3() =>
+        public async Task<ResponseMessage<List<object>>?> TestReadBigResponseMessageGraphSON3() =>
             await GraphSON3MessageSerializer.DeserializeMessageAsync(TestMessages.BigGraphSON3ResponseMessageBytes)
                 .ConfigureAwait(false);
     }

@@ -20,18 +20,18 @@
 /**
  * @author Igor Ostapenko
  */
-'use strict';
 
-const g = require('../../../graph');
+import { Buffer } from 'buffer';
+import { VertexProperty } from '../../../graph.js';
 
-module.exports = class VertexPropertySerializer {
+export default class VertexPropertySerializer {
   constructor(ioc) {
     this.ioc = ioc;
     this.ioc.serializers[ioc.DataType.VERTEXPROPERTY] = this;
   }
 
   canBeUsedFor(value) {
-    return value instanceof g.VertexProperty;
+    return value instanceof VertexProperty;
   }
 
   serialize(item, fullyQualifiedFormat = true) {
@@ -154,7 +154,7 @@ module.exports = class VertexPropertySerializer {
       // {properties} is a fully qualified typed value composed of {type_code}{type_info}{value_flag}{value} which contains properties. Note that as TinkerPop currently send "references" only, this value will always be null.
       let properties, properties_len;
       try {
-        ({ v: properties, len: properties_len } = this.ioc.unspecifiedNullSerializer.deserialize(cursor));
+        ({ v: properties, len: properties_len } = this.ioc.anySerializer.deserialize(cursor));
         len += properties_len;
       } catch (err) {
         err.message = '{properties}: ' + err.message;
@@ -163,10 +163,10 @@ module.exports = class VertexPropertySerializer {
       // TODO: should we verify that properties is null?
       cursor = cursor.slice(properties_len);
 
-      const v = new g.VertexProperty(id, label, value, properties);
+      const v = new VertexProperty(id, label, value, properties);
       return { v, len };
     } catch (err) {
       throw this.ioc.utils.des_error({ serializer: this, args: arguments, cursor, err });
     }
   }
-};
+}

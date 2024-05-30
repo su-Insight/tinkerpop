@@ -33,10 +33,10 @@ namespace Gremlin.Net.IntegrationTest.Process.Traversal.DriverRemoteConnection
     {
         private readonly IRemoteConnection _connection = new RemoteConnectionFactory().CreateRemoteConnection("gtx");
 
-        [IgnoreIfTransactionsNotSupportedFact]
+        [Fact]
         public async Task ShouldSupportRemoteTransactionsCommit()
         {
-            var g = AnonymousTraversalSource.Traversal().WithRemote(_connection);
+            var g = AnonymousTraversalSource.Traversal().With(_connection);
             var tx = g.Tx();
             var gtx = tx.Begin();
             await gtx.AddV("person").Property("name", "jorge").Promise(t => t.Iterate()).ConfigureAwait(false);
@@ -57,10 +57,10 @@ namespace Gremlin.Net.IntegrationTest.Process.Traversal.DriverRemoteConnection
             Assert.Equal(2, count);
         }
         
-        [IgnoreIfTransactionsNotSupportedFact]
+        [Fact]
         public async Task ShouldSupportRemoteTransactionsRollback()
         {
-            var g = AnonymousTraversalSource.Traversal().WithRemote(_connection);
+            var g = AnonymousTraversalSource.Traversal().With(_connection);
             var tx = g.Tx();
             var gtx = tx.Begin();
             await gtx.AddV("person").Property("name", "jorge").Promise(t => t.Iterate()).ConfigureAwait(false);
@@ -86,22 +86,9 @@ namespace Gremlin.Net.IntegrationTest.Process.Traversal.DriverRemoteConnection
 
         private void EmptyGraph()
         {
-            var g = AnonymousTraversalSource.Traversal().WithRemote(_connection);
+            var g = AnonymousTraversalSource.Traversal().With(_connection);
             g.V().Drop().Iterate();
         }
     }
-
-    public sealed class IgnoreIfTransactionsNotSupportedFact : FactAttribute
-    {
-        public IgnoreIfTransactionsNotSupportedFact()
-        {
-            if (!TransactionsSupported)
-            {
-                Skip = "Transactions not supported";
-            }
-        }
-
-        private static bool TransactionsSupported =>
-            Convert.ToBoolean(Environment.GetEnvironmentVariable("TEST_TRANSACTIONS"));
-    }
+    
 }

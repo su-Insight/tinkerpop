@@ -23,11 +23,11 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
 import io.netty.handler.timeout.IdleStateHandler;
-import org.apache.tinkerpop.gremlin.driver.MessageSerializer;
-import org.apache.tinkerpop.gremlin.driver.message.RequestMessage;
-import org.apache.tinkerpop.gremlin.driver.message.ResponseMessage;
-import org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1;
-import org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV2d0;
+import org.apache.tinkerpop.gremlin.util.MessageSerializer;
+import org.apache.tinkerpop.gremlin.util.message.RequestMessage;
+import org.apache.tinkerpop.gremlin.util.message.ResponseMessage;
+import org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV1;
+import org.apache.tinkerpop.gremlin.util.ser.GraphSONMessageSerializerV2;
 import org.apache.tinkerpop.gremlin.groovy.engine.GremlinExecutor;
 import org.apache.tinkerpop.gremlin.server.auth.Authenticator;
 import org.apache.tinkerpop.gremlin.server.authz.Authorizer;
@@ -80,7 +80,7 @@ import java.util.stream.Stream;
 public abstract class AbstractChannelizer extends ChannelInitializer<SocketChannel> implements Channelizer {
     private static final Logger logger = LoggerFactory.getLogger(AbstractChannelizer.class);
     protected static final List<Settings.SerializerSettings> DEFAULT_SERIALIZERS = Arrays.asList(
-            new Settings.SerializerSettings(GraphSONMessageSerializerV2d0.class.getName(), Collections.emptyMap()),
+            new Settings.SerializerSettings(GraphSONMessageSerializerV2.class.getName(), Collections.emptyMap()),
             new Settings.SerializerSettings(GraphBinaryMessageSerializerV1.class.getName(), Collections.emptyMap()),
             new Settings.SerializerSettings(GraphBinaryMessageSerializerV1.class.getName(), new HashMap<String,Object>(){{
                 put(GraphBinaryMessageSerializerV1.TOKEN_SERIALIZE_RESULT_TO_STRING, true);
@@ -185,28 +185,10 @@ public abstract class AbstractChannelizer extends ChannelInitializer<SocketChann
         try {
             final Class<?> clazz = Class.forName(settings.authentication.authenticationHandler);
             AbstractAuthenticationHandler aah;
-            try {
-                // the three arg constructor is the new form as a handler may need the authorizer in some cases
-                final Class<?>[] threeArgForm = new Class[]{Authenticator.class, Authorizer.class, Settings.class};
-                final Constructor<?> twoArgConstructor = clazz.getDeclaredConstructor(threeArgForm);
-                return (AbstractAuthenticationHandler) twoArgConstructor.newInstance(authenticator, authorizer, settings);
-            } catch (Exception threeArgEx) {
-                try {
-                    // the two arg constructor is the "old form" that existed prior to Authorizers. should probably
-                    // deprecate this form
-                    final Class<?>[] twoArgForm = new Class[]{Authenticator.class, Settings.class};
-                    final Constructor<?> twoArgConstructor = clazz.getDeclaredConstructor(twoArgForm);
-
-                    if (authorizer != null) {
-                        logger.warn("There is an authorizer configured but the {} does not have a constructor of ({}, {}, {}) so it cannot be added",
-                                clazz.getName(), Authenticator.class.getSimpleName(), Authorizer.class.getSimpleName(), Settings.class.getSimpleName());
-                    }
-
-                    return (AbstractAuthenticationHandler) twoArgConstructor.newInstance(authenticator, settings);
-                } catch (Exception twoArgEx) {
-                    throw twoArgEx;
-                }
-            }
+            // the three arg constructor is the new form as a handler may need the authorizer in some cases
+            final Class<?>[] threeArgForm = new Class[]{Authenticator.class, Authorizer.class, Settings.class};
+            final Constructor<?> threeArgConstructor = clazz.getDeclaredConstructor(threeArgForm);
+            return (AbstractAuthenticationHandler) threeArgConstructor.newInstance(authenticator, authorizer, settings);
         } catch (Exception ex) {
             logger.warn(ex.getMessage());
             throw new IllegalStateException(String.format("Could not create/configure AuthenticationHandler %s", settings.authentication.authenticationHandler), ex);
