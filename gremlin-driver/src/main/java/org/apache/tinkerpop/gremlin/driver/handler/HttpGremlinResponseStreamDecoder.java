@@ -41,15 +41,20 @@ import org.apache.tinkerpop.gremlin.util.ser.SerializersV4;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class HttpGremlinResponseStreamDecoder extends MessageToMessageDecoder<DefaultHttpObject> {
+import static org.apache.tinkerpop.gremlin.driver.Channelizer.HttpChannelizer.LAST_CONTENT_READ;
 
+public class HttpGremlinResponseStreamDecoder extends MessageToMessageDecoder<DefaultHttpObject> {
     private static final AttributeKey<Boolean> IS_FIRST_CHUNK = AttributeKey.valueOf("isFirstChunk");
     private static final AttributeKey<HttpResponseStatus> RESPONSE_STATUS = AttributeKey.valueOf("responseStatus");
     private static final AttributeKey<String> RESPONSE_ENCODING = AttributeKey.valueOf("responseSerializer");
     private static final AttributeKey<Integer> BYTES_READ = AttributeKey.valueOf("bytesRead");
+
+    private static final ResponseMessageV4 EMPTY_RESPONSE =
+            ResponseMessageV4.build().code(HttpResponseStatus.OK).result(Collections.emptyList()).create();
 
     private final MessageSerializerV4<?> serializer;
     private final int maxContentLength;
@@ -68,6 +73,7 @@ public class HttpGremlinResponseStreamDecoder extends MessageToMessageDecoder<De
 
         if (msg instanceof HttpResponse) {
             ctx.channel().attr(BYTES_READ).set(0);
+            ctx.channel().attr(LAST_CONTENT_READ).set(false);
 
             final HttpResponse resp = (HttpResponse) msg;
             responseStatus.set(resp.status());
@@ -84,16 +90,22 @@ public class HttpGremlinResponseStreamDecoder extends MessageToMessageDecoder<De
                 throw new TooLongFrameException("Response exceeded " + maxContentLength + " bytes.");
             }
 
-            if (msg instanceof LastHttpContent && content.readableBytes() == 0 && bytesRead.get() != 0) {
-                // If this last content contains no bytes and there were bytes read previously, it means that this is the
-                // trailing headers. Trailing headers aren't used in the driver and shouldn't be passed on.
-                content.release();
-                return;
+            if (msg instanceof LastHttpContent) {
+                ctx.channel().attr(LAST_CONTENT_READ).set(true);
+
+                if (content.readableBytes() == 0 && bytesRead.get() != 0) {
+                    // If this last content contains no bytes and there were bytes read previously, it means that this
+                    // is the trailing headers. Trailing headers aren't used in the driver and shouldn't be passed on.
+                    content.release();
+                    out.add(EMPTY_RESPONSE);
+                }
             }
 
             try {
                 // no more chunks expected
                 if (isError(responseStatus.get()) && !SerTokensV4.MIME_GRAPHBINARY_V4.equals(responseEncoding.get())) {
+                    // There are certain errors that can occur on the server before the request is processed so they
+                    // aren't returned in GraphBinary. Assume they are JSON responses instead.
                     final JsonNode node = mapper.readTree(content.toString(CharsetUtil.UTF_8));
                     final String message = node.get("message").asText();
                     final ResponseMessageV4 response = ResponseMessageV4.build()

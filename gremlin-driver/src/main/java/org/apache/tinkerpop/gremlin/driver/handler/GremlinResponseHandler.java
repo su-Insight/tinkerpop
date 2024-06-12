@@ -34,6 +34,8 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.apache.tinkerpop.gremlin.driver.Channelizer.HttpChannelizer.LAST_CONTENT_READ;
+
 /**
  * Takes a map of requests pending responses and writes responses to the {@link ResultQueue} of a request
  * as the {@link ResponseMessageV4} objects are deserialized.
@@ -60,10 +62,10 @@ public class GremlinResponseHandler extends SimpleChannelInboundHandler<Response
 
     @Override
     protected void channelRead0(final ChannelHandlerContext channelHandlerContext, final ResponseMessageV4 response) {
-        final HttpResponseStatus statusCode = response.getStatus() == null ? HttpResponseStatus.PARTIAL_CONTENT : response.getStatus().getCode();
+        final HttpResponseStatus statusCode = (response.getStatus() == null) ? null : response.getStatus().getCode();
         final ResultQueue queue = pending.get();
 
-        if (statusCode == HttpResponseStatus.OK || statusCode == HttpResponseStatus.PARTIAL_CONTENT) {
+        if (null == statusCode || statusCode == HttpResponseStatus.OK) {
             final List<Object> data = response.getResult().getData();
             // unrolls the collection into individual results to be handled by the queue.
             data.forEach(item -> queue.add(new Result(item)));
@@ -75,8 +77,7 @@ public class GremlinResponseHandler extends SimpleChannelInboundHandler<Response
             }
         }
 
-        // as this is a non-PARTIAL_CONTENT code - the stream is done.
-        if (statusCode != HttpResponseStatus.PARTIAL_CONTENT) {
+        if (channelHandlerContext.channel().attr(LAST_CONTENT_READ).get() == true) {
             final ResultQueue current = pending.getAndSet(null);
             if (current != null) {
                 current.markComplete(response.getStatus().getAttributes());

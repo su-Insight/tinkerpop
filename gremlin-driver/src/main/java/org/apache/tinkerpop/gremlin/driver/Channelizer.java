@@ -28,6 +28,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
+import io.netty.util.AttributeKey;
 import org.apache.tinkerpop.gremlin.driver.handler.GremlinResponseHandler;
 import org.apache.tinkerpop.gremlin.driver.handler.HttpGremlinRequestEncoder;
 import org.apache.tinkerpop.gremlin.driver.handler.HttpGremlinResponseStreamDecoder;
@@ -155,7 +156,7 @@ public interface Channelizer extends ChannelHandler {
      * channelizer. Only sessionless requests are possible.
      */
     final class HttpChannelizer extends AbstractChannelizer {
-
+        public static final AttributeKey<Boolean> LAST_CONTENT_READ = AttributeKey.valueOf("lastContentRead");
         private HttpGremlinRequestEncoder gremlinRequestEncoder;
         private HttpGremlinResponseStreamDecoder gremlinResponseDecoder;
 
