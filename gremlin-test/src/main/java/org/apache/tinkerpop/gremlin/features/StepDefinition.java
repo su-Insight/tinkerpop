@@ -288,11 +288,6 @@ public final class StepDefinition {
         stringParameters.put(key, convertToString(value));
     }
 
-    @Given("using the parameter {word} of P.{word}\\({string})")
-    public void usingTheParameterXOfPX(final String key, final String pval, final String string) {
-        stringParameters.put(key, String.format("P.%s(%s)", pval, convertToString(string)));
-    }
-
     @Given("the traversal of")
     public void theTraversalOf(final String docString) {
         try {
