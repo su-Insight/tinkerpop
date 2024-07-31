@@ -464,6 +464,30 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
          * provided argument associated to the {@code token} is applied according to the semantics of the step. Please see
          * the documentation of such steps to understand the usage context.
          *
+         * @param token       the token that would trigger this option which may be a {@link Pick}, {@link Merge},
+         *                    a {@link Traversal}, {@link Predicate}, or object depending on the step being modulated.
+         * @param traversalOption the option as a traversal
+         * @return the traversal with the modulated step
+         * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#choose-step" target="_blank">Reference Documentation - Choose Step</a>
+         * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#mergev-step" target="_blank">Reference Documentation - MergeV Step</a>
+         * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#mergee-step" target="_blank">Reference Documentation - MergeE Step</a>
+         * @since 3.0.0-incubating
+         */
+        public default <M, E2> GraphTraversal<S, E> option(final GValue<M> token, final Traversal<?, E2> traversalOption) {
+            this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.option, token, traversalOption);
+
+            // handle null similar to how option() with Map handles it, otherwise we get a NPE if this one gets used
+            final Traversal.Admin<E,E2> t = null == traversalOption ?
+                    new ConstantTraversal<>(null) : (Traversal.Admin<E, E2>) traversalOption.asAdmin();
+            ((TraversalOptionParent<M, E, E2>) this.asAdmin().getEndStep()).addChildOption(token.get(), t);
+            return this;
+        }
+
+        /**
+         * This is a step modulator to a {@link TraversalOptionParent} like {@code choose()} or {@code mergeV()} where the
+         * provided argument associated to the {@code token} is applied according to the semantics of the step. Please see
+         * the documentation of such steps to understand the usage context.
+         *
          * @param m Provides a {@code Map} as the option which is the same as doing {@code constant(m)}.
          * @return the traversal with the modulated step
          * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#mergev-step" target="_blank">Reference Documentation - MergeV Step</a>
@@ -500,6 +524,54 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
             }
             ((TraversalOptionParent<M, E, E2>) this.asAdmin().getEndStep()).addChildOption((M) merge, (Traversal.Admin<E, E2>) new ConstantTraversal<>(m).asAdmin());
             return this;
+        }
+
+        /**
+         * Combines the list traverser and list argument. Also known as concatenation or append.
+         *
+         * @return the traversal with an appended {@link CombineStep}.
+         * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#combine-step" target="_blank">Reference Documentation - Combine Step</a>
+         * @since 3.7.3
+         */
+        public default GraphTraversal<S, List<?>> combine(final GValue<Object> values) {
+            this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.combine, values);
+            return this.asAdmin().addStep(new CombineStep<>(this.asAdmin(), values));
+        }
+
+        /**
+         * Joins together the elements of the incoming list traverser together with the provided delimiter.
+         *
+         * @return the traversal with an appended {@link ConjoinStep}.
+         * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#conjoin-step" target="_blank">Reference Documentation - Conjoin Step</a>
+         * @since 3.7.3
+         */
+        public default GraphTraversal<S, String> conjoin(final GValue<String> delimiter) {
+            this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.conjoin, delimiter);
+            return this.asAdmin().addStep(new ConjoinStep<>(this.asAdmin(), delimiter));
+        }
+
+        /**
+         * Calculates the intersection between the list traverser and list argument.
+         *
+         * @return the traversal with an appended {@link IntersectStep}.
+         * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#intersect-step" target="_blank">Reference Documentation - Intersect Step</a>
+         * @since 3.7.3
+         */
+        public default GraphTraversal<S, Set<?>> intersect(final GValue<Object> values) {
+            this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.intersect, values);
+            return this.asAdmin().addStep(new IntersectStep<>(this.asAdmin(), values));
+        }
+
+        /**
+         * Merges the list traverser and list argument. Also known as union.
+         *
+         * @return the traversal with an appended {@link TraversalMergeStep}.
+         * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#merge-step" target="_blank">Reference Documentation - Merge Step</a>
+         * @since 3.7.1
+         */
+        public default <E2> GraphTraversal<S, E2> merge(final GValue<Object> values) {
+            this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.merge, values);
+            return this.asAdmin().addStep(new TraversalMergeStep<>(this.asAdmin(), values));
         }
 
         @Override

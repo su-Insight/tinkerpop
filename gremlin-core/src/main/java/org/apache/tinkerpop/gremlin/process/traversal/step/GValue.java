@@ -66,8 +66,8 @@ public class GValue<V> implements Cloneable, Serializable {
     /**
      * Gets the name of the variable if it was defined as such and returns empty if the value was a literal.
      */
-    public Optional<String> getName() {
-        return Optional.ofNullable(this.name);
+    public String getName() {
+        return this.name;
     }
 
     /**
@@ -123,6 +123,7 @@ public class GValue<V> implements Cloneable, Serializable {
     public static <V> GValue<V> of(final String name, final V value) {
         return new GValue<>(name, GType.getType(value), value);
     }
+
     /**
      * Create a new {@code GValue} for a string value.
      */

@@ -21,6 +21,8 @@ package org.apache.tinkerpop.gremlin.language.grammar;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.step.GValue;
+import org.apache.tinkerpop.gremlin.process.traversal.step.GType;
 
 import java.util.Map;
 
@@ -119,7 +121,11 @@ public class TraversalSourceSpawnMethodVisitor extends DefaultGremlinBaseVisitor
      */
     @Override
     public GraphTraversal visitTraversalSourceSpawnMethod_mergeV_Map(final GremlinParser.TraversalSourceSpawnMethod_mergeV_MapContext ctx) {
-        return this.traversalSource.mergeV(antlr.argumentVisitor.parseMap(ctx.genericLiteralMapNullableArgument()));
+        final Object literalOrVar = antlr.argumentVisitor.visitGenericLiteralMapNullableArgument(ctx.genericLiteralMapNullableArgument());
+        if (literalOrVar instanceof GValue && ((GValue) literalOrVar).getType() == GType.MAP)
+            return this.traversalSource.asAdmin().mergeV((GValue) literalOrVar);
+        else
+            return this.traversalSource.mergeV((Map) literalOrVar);
     }
 
     /**
@@ -143,7 +149,11 @@ public class TraversalSourceSpawnMethodVisitor extends DefaultGremlinBaseVisitor
      */
     @Override
     public GraphTraversal visitTraversalSourceSpawnMethod_mergeE_Map(final GremlinParser.TraversalSourceSpawnMethod_mergeE_MapContext ctx) {
-        return this.traversalSource.mergeE(antlr.argumentVisitor.parseMap(ctx.genericLiteralMapNullableArgument()));
+        final Object literalOrVar = antlr.argumentVisitor.visitGenericLiteralMapNullableArgument(ctx.genericLiteralMapNullableArgument());
+        if (literalOrVar instanceof GValue && ((GValue) literalOrVar).getType() == GType.MAP)
+            return this.traversalSource.asAdmin().mergeE((GValue) literalOrVar);
+        else
+            return this.traversalSource.mergeE((Map) literalOrVar);
     }
 
     /**

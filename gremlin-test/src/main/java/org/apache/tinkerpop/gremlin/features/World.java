@@ -81,4 +81,13 @@ public interface World {
     public default String convertIdToScript(final Object id, final Class<? extends Element> type) {
         return id.toString();
     }
+
+    /**
+     * Determines if the test should use parameters literally or treat them as variables to be applied to the script.
+     * By default, they are treated literally.
+     */
+    public default boolean useParametersLiterally() {
+        return true;
+    }
+
 }

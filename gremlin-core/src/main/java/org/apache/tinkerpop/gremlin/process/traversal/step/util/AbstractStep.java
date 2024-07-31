@@ -21,6 +21,7 @@ package org.apache.tinkerpop.gremlin.process.traversal.step.util;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.step.GValue;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.EmptyTraverser;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
 import org.apache.tinkerpop.gremlin.process.traversal.util.EmptyTraversal;
@@ -33,6 +34,7 @@ import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -229,4 +231,29 @@ public abstract class AbstractStep<S, E> implements Step<S, E> {
         return traverser;
     }
 
+    /**
+     * The elements in object array argument are examined to see if they are {@link GValue} objects. If they are, they
+     * are preserved as is. If they are not then they are wrapped in a {@link GValue} object.
+     */
+    protected static <T> GValue<T>[] convertToGValues(final Object[] args) {
+        return Stream.of(args).map(id -> {
+            if (id instanceof GValue)
+                return (GValue<?>) id;
+            else
+                return GValue.of(id);
+        }).toArray(GValue[]::new);
+    }
+
+    /**
+     * Converts {@link GValue} objects the argument array to their values to prevent them from leaking to the Graph API.
+     * Providers extending from this step should use this method to get actual values to prevent any {@link GValue}
+     * objects from leaking to the Graph API.
+     */
+    protected Object[] resolveToValues(final GValue<?>[] gvalues) {
+        final Object[] newIds = new Object[gvalues.length];
+        for (int i = 0; i < gvalues.length; i++) {
+            newIds[i] = gvalues[i].get();
+        }
+        return newIds;
+    }
 }

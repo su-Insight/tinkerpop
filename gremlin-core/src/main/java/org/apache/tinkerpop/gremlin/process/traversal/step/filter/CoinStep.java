@@ -58,12 +58,8 @@ public final class CoinStep<S> extends FilterStep<S> implements Seedable {
         random.setSeed(seed);
     }
 
-    public GValue<Double> getProbabilityGValue() {
+    public GValue<Double> getProbability() {
         return probability;
-    }
-
-    public double getProbability() {
-        return this.probability.get();
     }
 
     @Override

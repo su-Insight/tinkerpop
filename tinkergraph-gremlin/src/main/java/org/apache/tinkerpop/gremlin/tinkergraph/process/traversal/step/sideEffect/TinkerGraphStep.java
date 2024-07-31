@@ -75,7 +75,7 @@ public final class TinkerGraphStep<S, E extends Element> extends GraphStep<S, E>
         if (null == this.ids)
             iterator = Collections.emptyIterator();
         else if (this.ids.length > 0)
-            iterator = this.iteratorList(graph.edges(this.ids));
+            iterator = this.iteratorList(graph.edges(this.getResolvedIds()));
         else
             iterator = null == indexedContainer ?
                     this.iteratorList(graph.edges()) :
@@ -97,7 +97,7 @@ public final class TinkerGraphStep<S, E extends Element> extends GraphStep<S, E>
         if (null == this.ids)
             iterator = Collections.emptyIterator();
         else if (this.ids.length > 0)
-            iterator = this.iteratorList(graph.vertices(this.ids));
+            iterator = this.iteratorList(graph.vertices(this.getResolvedIds()));
         else
             iterator = (null == indexedContainer ?
                     this.iteratorList(graph.vertices()) :

@@ -41,11 +41,7 @@ public class ConstantStep<S, E> extends ScalarMapStep<S, E> {
         this.constant = null == constant ? GValue.of(null) : constant;
     }
 
-    public E getConstant() {
-        return this.constant.get();
-    }
-
-    public GValue<E> getConstantGValue() {
+    public GValue<E> getConstant() {
         return this.constant;
     }
 

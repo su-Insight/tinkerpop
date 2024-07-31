@@ -32,6 +32,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.tinkerpop.gremlin.language.grammar.GremlinAntlrToJava;
 import org.apache.tinkerpop.gremlin.language.grammar.GremlinLexer;
 import org.apache.tinkerpop.gremlin.language.grammar.GremlinParser;
+import org.apache.tinkerpop.gremlin.language.grammar.VariableResolver;
 import org.apache.tinkerpop.gremlin.language.translator.GremlinTranslator;
 import org.apache.tinkerpop.gremlin.language.translator.Translator;
 import org.apache.tinkerpop.gremlin.process.traversal.Merge;
@@ -92,7 +93,7 @@ public final class StepDefinition {
 
     private World world;
     private GraphTraversalSource g;
-    private final Map<String, String> stringParameters = new HashMap<>();
+    private final Map<String, Object> stringParameters = new HashMap<>();
     private Traversal traversal;
     private Object result;
     private Throwable error;
@@ -285,14 +286,26 @@ public final class StepDefinition {
 
     @Given("using the parameter {word} defined as {string}")
     public void usingTheParameterXDefinedAsX(final String key, final String value) {
-        stringParameters.put(key, convertToString(value));
+        // when parameters are used literally, they are converted to string representations that can be recognized by
+        // the grammar and parsed inline. when they are used as variables, they are converted to objects that can be
+        // applied to the script as variables.
+        if (world.useParametersLiterally())
+            stringParameters.put(key, convertToString(value));
+        else
+            stringParameters.put(key, convertToObject(value));
     }
 
     @Given("the traversal of")
     public void theTraversalOf(final String docString) {
         try {
-            final String gremlin = tryUpdateDataFilePath(docString);
-            traversal = parseGremlin(applyParameters(gremlin));
+            final String rawGremlin = tryUpdateDataFilePath(docString);
+
+            // when parameters are used literally, they are converted to string representations that can be recognized by
+            // the grammar and parsed inline. when they are used as variables, they are converted to objects that can be
+            // applied to the script as variables.
+            final String gremlin = world.useParametersLiterally() ? applyParameters(rawGremlin) : rawGremlin;
+
+            traversal = parseGremlin(gremlin);
         } catch (Exception ex) {
             ex.printStackTrace();
             error = ex;
@@ -447,7 +460,14 @@ public final class StepDefinition {
         final GremlinLexer lexer = new GremlinLexer(CharStreams.fromString(normalizedGremlin));
         final GremlinParser parser = new GremlinParser(new CommonTokenStream(lexer));
         final GremlinParser.QueryContext ctx = parser.query();
-        return (Traversal) new GremlinAntlrToJava(g).visitQuery(ctx);
+
+        // when parameters are used literally, they are converted to string representations that can be recognized by
+        // the grammar and parsed inline. when they are used as variables, they are converted to objects that can be
+        // applied to the script as variables.
+        if (world.useParametersLiterally())
+            return (Traversal) new GremlinAntlrToJava(g).visitQuery(ctx);
+        else
+            return (Traversal) new GremlinAntlrToJava(g, new VariableResolver.DefaultVariableResolver(this.stringParameters)).visitQuery(ctx);
     }
 
     private List<Object> translateResultsToActual() {
@@ -571,7 +591,7 @@ public final class StepDefinition {
         final List<String> paramNames = new ArrayList<>(stringParameters.keySet());
         paramNames.sort((a,b) -> b.length() - a.length());
         for (String k : paramNames) {
-            replaced = replaced.replace(k, stringParameters.get(k));
+            replaced = replaced.replace(k, stringParameters.get(k).toString());
         }
         return replaced;
     }
