@@ -487,7 +487,7 @@ traversalMethod_fold
     ;
 
 traversalMethod_from
-    : 'from' LPAREN stringArgument RPAREN #traversalMethod_from_String
+    : 'from' LPAREN stringLiteral RPAREN #traversalMethod_from_String
     | 'from' LPAREN structureVertexArgument RPAREN #traversalMethod_from_Vertex
     | 'from' LPAREN nestedTraversal RPAREN #traversalMethod_from_Traversal
     ;
@@ -644,7 +644,6 @@ traversalMethod_option
     : 'option' LPAREN traversalPredicate COMMA nestedTraversal RPAREN #traversalMethod_option_Predicate_Traversal
     | 'option' LPAREN traversalMergeArgument COMMA genericLiteralMapNullableArgument RPAREN #traversalMethod_option_Merge_Map
     | 'option' LPAREN traversalMergeArgument COMMA genericLiteralMapNullableArgument COMMA traversalCardinality RPAREN #traversalMethod_option_Merge_Map_Cardinality
-    | 'option' LPAREN traversalMergeArgument COMMA nestedTraversal RPAREN #traversalMethod_option_Merge_Traversal
     | 'option' LPAREN genericLiteralArgument COMMA nestedTraversal RPAREN #traversalMethod_option_Object_Traversal
     | 'option' LPAREN nestedTraversal RPAREN #traversalMethod_option_Traversal
     ;
@@ -808,8 +807,8 @@ traversalMethod_times
     ;
 
 traversalMethod_to
-    : 'to' LPAREN traversalDirectionArgument (COMMA stringLiteralVarargs)? RPAREN #traversalMethod_to_Direction_String
-    | 'to' LPAREN stringArgument RPAREN #traversalMethod_to_String
+    : 'to' LPAREN traversalDirection (COMMA stringLiteralVarargs)? RPAREN #traversalMethod_to_Direction_String
+    | 'to' LPAREN stringLiteral RPAREN #traversalMethod_to_String
     | 'to' LPAREN structureVertexArgument RPAREN #traversalMethod_to_Vertex
     | 'to' LPAREN nestedTraversal RPAREN #traversalMethod_to_Traversal
     ;

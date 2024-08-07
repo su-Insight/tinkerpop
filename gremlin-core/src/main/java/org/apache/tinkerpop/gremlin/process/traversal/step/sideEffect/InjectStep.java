@@ -39,7 +39,7 @@ public final class InjectStep<S> extends StartStep<S> {
     @Override
     public InjectStep<S> clone() {
         final InjectStep<S> clone = (InjectStep<S>) super.clone();
-        clone.start = new ArrayIterator<>(clone.injections);
+        clone.start = new ArrayIterator<>(resolveToValues(clone.injections));
         return clone;
     }
 

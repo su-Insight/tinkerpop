@@ -177,8 +177,11 @@ public class TraversalSourceSpawnMethodVisitor extends DefaultGremlinBaseVisitor
      */
     @Override
     public GraphTraversal visitTraversalSourceSpawnMethod_call_string_map(final GremlinParser.TraversalSourceSpawnMethod_call_string_mapContext ctx) {
-        return this.traversalSource.call(antlr.argumentVisitor.parseString(ctx.stringArgument()),
-                antlr.argumentVisitor.parseMap(ctx.genericLiteralMapArgument()));
+        final Object literalOrVar = antlr.argumentVisitor.visitGenericLiteralMapArgument(ctx.genericLiteralMapArgument());
+        if (literalOrVar instanceof GValue && ((GValue) literalOrVar).getType() == GType.MAP)
+            return this.traversalSource.asAdmin().call(antlr.argumentVisitor.parseString(ctx.stringArgument()), (GValue<Map>) literalOrVar);
+        else
+            return this.traversalSource.call(antlr.argumentVisitor.parseString(ctx.stringArgument()), (Map) literalOrVar);
     }
 
     /**
@@ -195,9 +198,11 @@ public class TraversalSourceSpawnMethodVisitor extends DefaultGremlinBaseVisitor
      */
     @Override
     public GraphTraversal visitTraversalSourceSpawnMethod_call_string_map_traversal(final GremlinParser.TraversalSourceSpawnMethod_call_string_map_traversalContext ctx) {
-        return this.traversalSource.call(antlr.argumentVisitor.parseString(ctx.stringArgument()),
-                antlr.argumentVisitor.parseMap(ctx.genericLiteralMapArgument()),
-                anonymousVisitor.visitNestedTraversal(ctx.nestedTraversal()));
+        final Object literalOrVar = antlr.argumentVisitor.visitGenericLiteralMapArgument(ctx.genericLiteralMapArgument());
+        if (literalOrVar instanceof GValue && ((GValue) literalOrVar).getType() == GType.MAP)
+            return this.traversalSource.asAdmin().call(antlr.argumentVisitor.parseString(ctx.stringArgument()), (GValue<Map>) literalOrVar, anonymousVisitor.visitNestedTraversal(ctx.nestedTraversal()));
+        else
+            return this.traversalSource.call(antlr.argumentVisitor.parseString(ctx.stringArgument()), (Map) literalOrVar, anonymousVisitor.visitNestedTraversal(ctx.nestedTraversal()));
     }
 
     /**

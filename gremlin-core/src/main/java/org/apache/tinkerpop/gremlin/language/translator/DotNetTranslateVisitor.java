@@ -872,16 +872,19 @@ public class DotNetTranslateVisitor extends AbstractTranslateVisitor {
     }
 
     @Override
-    public Void visitTraversalMethod_option_Merge_Traversal(final GremlinParser.TraversalMethod_option_Merge_TraversalContext ctx) {
-        // call is ambiguous without an explicit cast
-        visit(ctx.getChild(0));
-        sb.append("(");
-        visit(ctx.traversalMergeArgument());
-        sb.append(", ");
-        sb.append("(ITraversal) ");
-        visit(ctx.nestedTraversal());
-        sb.append(")");
-        return null;
+    public Void visitTraversalMethod_option_Object_Traversal(final GremlinParser.TraversalMethod_option_Object_TraversalContext ctx) {
+        if (ctx.genericLiteralArgument().genericLiteral().traversalMerge() != null) {
+            visit(ctx.getChild(0));
+            sb.append("(");
+            visit(ctx.genericLiteralArgument());
+            sb.append(", ");
+            sb.append("(ITraversal) ");
+            visit(ctx.nestedTraversal());
+            sb.append(")");
+            return null;
+        } else {
+            return super.visitTraversalMethod_option_Object_Traversal(ctx);
+        }
     }
 
     @Override

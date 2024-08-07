@@ -80,6 +80,13 @@ public class GValue<V> implements Cloneable, Serializable {
     }
 
     /**
+     * Determines if the value held is of a {@code null} value.
+     */
+    public boolean isNull() {
+        return this.value == null;
+    }
+
+    /**
      * Gets the value.
      */
     public V get() {
@@ -96,7 +103,7 @@ public class GValue<V> implements Cloneable, Serializable {
     public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        GValue<?> gValue = (GValue<?>) o;
+        final GValue<?> gValue = (GValue<?>) o;
         return Objects.equals(name, gValue.name) && type == gValue.type && Objects.equals(value, gValue.value);
     }
 

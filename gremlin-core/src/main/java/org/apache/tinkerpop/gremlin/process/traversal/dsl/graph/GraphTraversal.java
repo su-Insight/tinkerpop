@@ -551,6 +551,30 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
         }
 
         /**
+         * Calculates the difference between the list traverser and list argument.
+         *
+         * @return the traversal with an appended {@link DifferenceStep}.
+         * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#difference-step" target="_blank">Reference Documentation - Difference Step</a>
+         * @since 3.7.1
+         */
+        public default GraphTraversal<S, Set<?>> difference(final GValue<Object> values) {
+            this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.difference, values);
+            return this.asAdmin().addStep(new DifferenceStep<>(this.asAdmin(), values));
+        }
+
+        /**
+         * Calculates the disjunction between the list traverser and list argument.
+         *
+         * @return the traversal with an appended {@link DisjunctStep}.
+         * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#disjunct-step" target="_blank">Reference Documentation - Disjunct Step</a>
+         * @since 3.7.3
+         */
+        public default GraphTraversal<S, Set<?>> disjunct(final GValue<Object> values) {
+            this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.disjunct, values);
+            return this.asAdmin().addStep(new DisjunctStep<>(this.asAdmin(), values));
+        }
+
+        /**
          * Calculates the intersection between the list traverser and list argument.
          *
          * @return the traversal with an appended {@link IntersectStep}.
@@ -567,11 +591,96 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
          *
          * @return the traversal with an appended {@link TraversalMergeStep}.
          * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#merge-step" target="_blank">Reference Documentation - Merge Step</a>
-         * @since 3.7.1
+         * @since 3.7.3
          */
         public default <E2> GraphTraversal<S, E2> merge(final GValue<Object> values) {
             this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.merge, values);
             return this.asAdmin().addStep(new TraversalMergeStep<>(this.asAdmin(), values));
+        }
+
+        /**
+         * Calculates the cartesian product between the list traverser and list argument.
+         *
+         * @return the traversal with an appended {@link ProductStep}.
+         * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#product-step" target="_blank">Reference Documentation - Product Step</a>
+         * @since 3.7.3
+         */
+        public default GraphTraversal<S, List<List<?>>> product(final GValue<Object> values) {
+            this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.product, values);
+            return this.asAdmin().addStep(new ProductStep<>(this.asAdmin(), values));
+        }
+
+        /**
+         * When used as a modifier to {@link #addE(String)} this method specifies the traversal to use for selecting the
+         * incoming vertex of the newly added {@link Edge}.
+         *
+         * @param toVertex the vertex for selecting the incoming vertex
+         * @return the traversal with the modified {@link AddEdgeStep}
+         * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#addedge-step" target="_blank">Reference Documentation - From Step</a>
+         * @since 4.0.0
+         */
+        public default GraphTraversal<S, E> to(final GValue<Vertex> toVertex) {
+            final Step<?,?> prev = this.asAdmin().getEndStep();
+            if (!(prev instanceof FromToModulating))
+                throw new IllegalArgumentException(String.format(
+                        "The to() step cannot follow %s", prev.getClass().getSimpleName()));
+
+            this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.to, toVertex);
+            ((FromToModulating) prev).addTo(__.constant(toVertex).asAdmin());
+            return this;
+        }
+
+        /**
+         * When used as a modifier to {@link #addE(String)} this method specifies the traversal to use for selecting the
+         * outgoing vertex of the newly added {@link Edge}.
+         *
+         * @param fromVertex the vertex for selecting the outgoing vertex
+         * @return the traversal with the modified {@link AddEdgeStep}
+         * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#addedge-step" target="_blank">Reference Documentation - From Step</a>
+         * @since 4.0.0
+         */
+        public default GraphTraversal<S, E> from(final GValue<Vertex> fromVertex) {
+            final Step<?,?> prev = this.asAdmin().getEndStep();
+            if (!(prev instanceof FromToModulating))
+                throw new IllegalArgumentException(String.format(
+                        "The from() step cannot follow %s", prev.getClass().getSimpleName()));
+
+            this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.from, fromVertex);
+            ((FromToModulating) prev).addFrom(__.constant(fromVertex).asAdmin());
+            return this;
+        }
+
+        /**
+         * Perform the specified service call with the specified static parameters.
+         *
+         * @param service the name of the service call
+         * @param params static parameter map (no nested traversals)
+         * @return the traversal with an appended {@link CallStep}.
+         * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#call-step" target="_blank">Reference Documentation - Call Step</a>
+         * @since 4.0.0
+         */
+        default <E> GraphTraversal<S, E> call(final String service, final GValue<Map> params) {
+            this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.call, service, params);
+            final CallStep<S,E> call = new CallStep<>(this.asAdmin(), false, service, params);
+            return this.asAdmin().addStep(call);
+        }
+        /**
+         * Perform the specified service call with both static and dynamic parameters produced by the specified child
+         * traversal. These parameters will be merged at execution time per the provider implementation. Reference
+         * implementation merges dynamic into static (dynamic will overwrite static).
+         *
+         * @param service the name of the service call
+         * @param params static parameter map (no nested traversals)
+         * @param childTraversal a traversal that will produce a Map of parameters for the service call when invoked.
+         * @return the traversal with an appended {@link CallStep}.
+         * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#call-step" target="_blank">Reference Documentation - Call Step</a>
+         * @since 4.0.0
+         */
+        default <E> GraphTraversal<S, E> call(final String service, final GValue<Map> params, final Traversal<?, Map<?,?>> childTraversal) {
+            this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.call, service, params, childTraversal);
+            final CallStep<S,E> step = null == childTraversal ? new CallStep(this.asAdmin(), false, service, params) :
+                    new CallStep(this.asAdmin(), false, service, params, childTraversal.asAdmin());
+            return this.asAdmin().addStep(step);
         }
 
         @Override
@@ -2725,8 +2834,7 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
     public default GraphTraversal<S, E> hasId(final Object id, final Object... otherIds) {
         if (id instanceof P) {
             return this.hasId((P) id);
-        }
-        else {
+        } else {
             this.asAdmin().getBytecode().addStep(Symbols.hasId, id, otherIds);
 
             //using ArrayList given P.within() turns all arguments into lists
@@ -2737,8 +2845,9 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
                 // as ids are unrolled when it's in array, they should also be unrolled when it's a list.
                 // this also aligns with behavior of hasId() when it's pushed down to g.V() (TINKERPOP-2863)
                 ids.addAll((Collection<?>) id);
-            } else
+            } else {
                 ids.add(id);
+            }
 
             // unrolling ids from lists works cleaner with Collection too, as otherwise they will need to
             // be turned into array first

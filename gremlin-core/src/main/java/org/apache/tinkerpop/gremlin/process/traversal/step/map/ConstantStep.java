@@ -33,7 +33,7 @@ public class ConstantStep<S, E> extends ScalarMapStep<S, E> {
     private final GValue<E> constant;
 
     public ConstantStep(final Traversal.Admin traversal, final E constant) {
-        this(traversal, GValue.of(constant));
+        this(traversal, constant instanceof GValue ? (GValue) constant : GValue.of(constant));
     }
 
     public ConstantStep(final Traversal.Admin traversal, final GValue<E> constant) {

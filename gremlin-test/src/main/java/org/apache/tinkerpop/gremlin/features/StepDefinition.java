@@ -75,6 +75,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -183,13 +184,13 @@ public final class StepDefinition {
             }
         }));
 
-        add(Pair.with(Pattern.compile("l\\[\\]"), s -> Collections.emptyList()));
+        add(Pair.with(Pattern.compile("l\\[\\]"), s -> new ArrayList<>()));
         add(Pair.with(Pattern.compile("l\\[(.*)\\]"), s -> {
             final String[] items = s.split(",");
             return Stream.of(items).map(String::trim).map(x -> convertToObject(x)).collect(Collectors.toList());
         }));
 
-        add(Pair.with(Pattern.compile("s\\[\\]"), s -> Collections.emptySet()));
+        add(Pair.with(Pattern.compile("s\\[\\]"), s -> new HashSet<>()));
         add(Pair.with(Pattern.compile("s\\[(.*)\\]"), s -> {
             final String[] items = s.split(",");
             return Stream.of(items).map(String::trim).map(x -> convertToObject(x)).collect(Collectors.toSet());
@@ -235,7 +236,7 @@ public final class StepDefinition {
         add(Pair.with(Pattern.compile("e\\[(.+)\\]"), s -> getEdge(g, s)));
 
         add(Pair.with(Pattern.compile("t\\[(.*)\\]"), T::valueOf));
-        add(Pair.with(Pattern.compile("D\\[(.*)\\]"), Direction::valueOf));
+        add(Pair.with(Pattern.compile("D\\[(.*)\\]"), StepDefinition::getDirection));
         add(Pair.with(Pattern.compile("M\\[(.*)\\]"), Merge::valueOf));
 
         add(Pair.with(Pattern.compile("c\\[(.*)\\]"), s -> {
@@ -382,17 +383,11 @@ public final class StepDefinition {
     }
 
     @Then("the graph should return {int} for count of {string}")
-    public void theGraphShouldReturnForCountOf(final Integer count, final String gremlin) {
+    public void theGraphShouldReturnForCountOf(final Integer count, final String rawGremlin) {
         assertThatNoErrorWasThrown();
 
-        assertEquals(count.longValue(), ((GraphTraversal) parseGremlin(applyParameters(gremlin))).count().next());
-    }
-
-    @Then("debug the graph should return {int} for count of {string}")
-    public void debugTheGraphShouldReturnForCountOf(final Integer count, final String gremlin) {
-        assertThatNoErrorWasThrown();
-
-        assertEquals(count.longValue(), ((GraphTraversal) parseGremlin(applyParameters(gremlin))).count().next());
+        final String gremlin = world.useParametersLiterally() ? applyParameters(rawGremlin) : rawGremlin;
+        assertEquals(count.longValue(), ((GraphTraversal) parseGremlin(gremlin)).count().next());
     }
 
     @Then("the result should be empty")
@@ -602,6 +597,12 @@ public final class StepDefinition {
         final String relPath = matcher.group(1);
         final String absPath = world.changePathToDataFile(relPath);
         return docString.replace(relPath, escapeJava(absPath));
+    }
+
+    private static Direction getDirection(final String direction) {
+        if (direction.equals("from")) return Direction.OUT;
+        if (direction.equals("to")) return Direction.IN;
+        return Direction.valueOf(direction);
     }
 
     /**
