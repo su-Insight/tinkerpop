@@ -43,6 +43,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -56,6 +57,7 @@ public class GraphStep<S, E extends Element> extends AbstractStep<S, E> implemen
     protected Parameters parameters = new Parameters();
     protected final Class<E> returnClass;
     protected GValue<?>[] ids;
+    protected boolean legacyLogicForPassingNoIds = false;
     protected transient Supplier<Iterator<E>> iteratorSupplier;
     protected boolean isStart;
     protected boolean done = false;
@@ -152,10 +154,21 @@ public class GraphStep<S, E extends Element> extends AbstractStep<S, E> implemen
      * Gets the ids associated with this step as literal values rather than {@link GValue} objects.
      */
     public Object[] getResolvedIds() {
+        if (legacyLogicForPassingNoIds) return null;
         return resolveToValues(this.ids);
     }
 
     public void addIds(final Object... newIds) {
+        // there is some logic that has been around for a long time that used to set ids to null. it only happened here
+        // in this method and only occurred when the ids were already null or empty and the newIds were length 1 and
+        // an instance of List and that list was empty. so basically it would trigger for something like g.V().hasId([])
+        // which in turn would trigger an empty iterator in TinkerGraphStep and zero results. trying to maintain that
+        // logic now with GValue in the mix is tough because the context of what the meaning is gets lost by the time
+        // you get to calling getResolvedIds(). using a flag to try to maintain that legacy logic, but ultimately, all
+        // this needs to be rethought.
+        this.legacyLogicForPassingNoIds = newIds.length == 1 && ((newIds[0] instanceof List && ((List) newIds[0]).isEmpty()) ||
+                (newIds[0] instanceof GValue && ((GValue) newIds[0]).getType().isCollection() && ((List) ((GValue) newIds[0]).get()).isEmpty()));
+
         final GValue[] gvalues = convertToGValues(tryUnrollSingleCollectionArgument(newIds));
         this.ids = ArrayUtils.addAll(this.ids, gvalues);
     }

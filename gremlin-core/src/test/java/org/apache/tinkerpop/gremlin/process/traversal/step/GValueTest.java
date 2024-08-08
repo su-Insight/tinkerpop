@@ -203,7 +203,7 @@ public class GValueTest {
     @Test
     public void shouldCreateGValueFromList() {
         final List<String> list = Arrays.asList("value1", "value2");
-        final GValue<List> gValue = GValue.ofList(list);
+        final GValue<List<String>> gValue = GValue.ofList(list);
         assertEquals(list, gValue.get());
         assertEquals(GType.LIST, gValue.getType());
         assertThat(gValue.isVariable(), is(false));
@@ -212,7 +212,7 @@ public class GValueTest {
     @Test
     public void shouldCreateGValueFromListWithName() {
         final List<String> list = Arrays.asList("value1", "value2");
-        final GValue<List> gValue = GValue.ofList("varName", list);
+        final GValue<List<String>> gValue = GValue.ofList("varName", list);
         assertEquals(list, gValue.get());
         assertEquals(GType.LIST, gValue.getType());
         assertEquals("varName", gValue.getName());

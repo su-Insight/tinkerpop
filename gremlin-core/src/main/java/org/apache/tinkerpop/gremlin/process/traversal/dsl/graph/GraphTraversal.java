@@ -25,6 +25,7 @@ import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.PageRank
 import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.PeerPressureVertexProgramStep;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.ProgramVertexProgramStep;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.ShortestPathVertexProgramStep;
+import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.DT;
 import org.apache.tinkerpop.gremlin.process.traversal.Failure;
 import org.apache.tinkerpop.gremlin.process.traversal.Merge;
@@ -2836,6 +2837,12 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
             return this.hasId((P) id);
         } else {
             this.asAdmin().getBytecode().addStep(Symbols.hasId, id, otherIds);
+
+            // the logic for dealing with hasId([]) is sketchy historically, just trying to maintain what we were
+            // originally testing prior to GValue.
+            if (id instanceof GValue && ((GValue) id).getType().isCollection()) {
+                return TraversalHelper.addHasContainer(this.asAdmin(), new HasContainer(T.id.getAccessor(), new P(Contains.within, id)));
+            }
 
             //using ArrayList given P.within() turns all arguments into lists
             final List<Object> ids = new ArrayList<>();

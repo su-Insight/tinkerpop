@@ -28,9 +28,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.EmptyTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
@@ -245,7 +247,22 @@ public abstract class AbstractStep<S, E> implements Step<S, E> {
     }
 
     /**
-     * Converts {@link GValue} objects the argument array to their values to prevent them from leaking to the Graph API.
+     * Converts {@link GValue} objects arguments to their values to prevent them from leaking to the Graph API.
+     * Providers extending from this step should use this method to get actual values to prevent any {@link GValue}
+     * objects from leaking to the Graph API.
+     */
+    protected Object[] resolveToValues(final List<GValue<?>> gvalues) {
+        // convert gvalues to array
+        final Object[] newIds = new Object[gvalues.size()];
+        int i = 0;
+        for (final GValue<?> gvalue : gvalues) {
+            newIds[i++] = gvalue.get();
+        }
+        return newIds;
+    }
+
+    /**
+     * Converts {@link GValue} objects argument array to their values to prevent them from leaking to the Graph API.
      * Providers extending from this step should use this method to get actual values to prevent any {@link GValue}
      * objects from leaking to the Graph API.
      */

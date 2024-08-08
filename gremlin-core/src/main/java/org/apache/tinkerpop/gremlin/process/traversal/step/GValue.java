@@ -246,14 +246,14 @@ public class GValue<V> implements Cloneable, Serializable {
     /**
      * Create a new {@code GValue} for a list value.
      */
-    public static GValue<List> ofList(final List value) {
+    public static <T> GValue<List<T>> ofList(final List<T> value) {
         return new GValue<>(GType.LIST, value);
     }
 
     /**
      * Create a new {@code GValue} for a list value with a specified name.
      */
-    public static GValue<List> ofList(final String name, final List value) {
+    public static <T> GValue<List<T>> ofList(final String name, final List<T> value) {
         return new GValue<>(name, GType.LIST, value);
     }
 
