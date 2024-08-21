@@ -114,7 +114,7 @@ public class AddEdgeStep<S> extends ScalarMapStep<S, Edge>
                     edgeLabel, e.getMessage()));
         }
 
-        if (!(theTo instanceof Vertex) && (theTo instanceof GValue && ((GValue) theTo).getType() != GType.VERTEX))
+        if (!(theTo instanceof Vertex) || (theTo instanceof GValue && ((GValue) theTo).getType() != GType.VERTEX))
             throw new IllegalStateException(String.format(
                     "The value given to addE(%s).to() must resolve to a Vertex but %s was specified instead", edgeLabel,
                     null == theTo ? "null" : theTo.getClass().getSimpleName()));
@@ -128,7 +128,7 @@ public class AddEdgeStep<S> extends ScalarMapStep<S, Edge>
                     edgeLabel, e.getMessage()));
         }
 
-        if (!(theFrom instanceof Vertex) && (theFrom instanceof GValue && ((GValue) theTo).getType() != GType.VERTEX))
+        if (!(theFrom instanceof Vertex) || (theFrom instanceof GValue && ((GValue) theTo).getType() != GType.VERTEX))
             throw new IllegalStateException(String.format(
                     "The value given to addE(%s).to() must resolve to a Vertex but %s was specified instead", edgeLabel,
                     null == theFrom ? "null" : theFrom.getClass().getSimpleName()));

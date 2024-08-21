@@ -21,16 +21,17 @@ package org.apache.tinkerpop.gremlin.process.traversal.step;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -113,21 +114,25 @@ public class GValue<V> implements Cloneable, Serializable {
     }
 
     /**
-     * Create a new {@code Var} from a particular value but without the specified name.
+     * Create a new {@code Var} from a particular value but without the specified name. If the argument provide is
+     * already a {@code GValue} then it is returned as-is.
      *
      * @param value the value of the variable
      */
     public static <V> GValue<V> of(final V value) {
+        if (value instanceof GValue) return (GValue) value;
         return new GValue<>(GType.getType(value), value);
     }
 
     /**
-     * Create a new {@code Var} with the specified name and value.
+     * Create a new {@code Var} with the specified name and value.. If the argument provide is  already a
+     * {@code GValue} then it is returned as-is.
      *
      * @param name the name of the variable
      * @param value the value of the variable
      */
     public static <V> GValue<V> of(final String name, final V value) {
+        if (value instanceof GValue) throw new IllegalArgumentException("value cannot be a GValue");
         return new GValue<>(name, GType.getType(value), value);
     }
 
@@ -325,5 +330,49 @@ public class GValue<V> implements Cloneable, Serializable {
      */
     public static GValue<Property> ofProperty(final String name, final Property value) {
         return new GValue<>(name, GType.PROPERTY, value);
+    }
+
+    /**
+     * Tests if the object is a {@link GValue} and if so, checks the type of the value against the provided
+     * {@link GType}.
+     */
+    public static boolean valueInstanceOf(final Object o, final GType type) {
+        return o instanceof GValue && ((GValue) o).getType() == type;
+    }
+
+    /**
+     * Checks the type of the object against the provided {@link GType}. If the object is a {@link GValue} then it
+     * can directly check the type, otherwise it will test the given object's class itself using the mappign on the
+     * {@link GType}.
+     */
+    public static boolean instanceOf(final Object o, final GType type) {
+        // todo: is this right for null?
+        if (null == o)
+            return false;
+        else if (o instanceof GValue)
+            return ((GValue) o).getType() == type;
+        else
+            return o.getClass().isAssignableFrom(type.getJavaType());
+    }
+
+    /**
+     * Returns {@code true} if the object is a collection or a {@link GValue} that contains a {@link Collection}.
+     */
+    public static boolean instanceOfCollection(final Object o) {
+        return o instanceof Collection || (o instanceof GValue && ((GValue) o).getType().isCollection());
+    }
+
+    /**
+     * Returns {@code true} if the object is an element or a {@link GValue} that contains an {@link Element}.
+     */
+    public static boolean instanceOfElement(final Object o) {
+        return o instanceof Element || (o instanceof GValue && ((GValue) o).getType().isElement());
+    }
+
+    /**
+     * Returns {@code true} if the object is a number or a {@link GValue} that contains a number.
+     */
+    public static boolean instanceOfNumber(final Object o) {
+        return o instanceof Number || (o instanceof GValue && ((GValue) o).getType().isNumeric());
     }
 }

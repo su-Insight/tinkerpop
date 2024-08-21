@@ -71,7 +71,7 @@ public final class TinkerGraphStep<S, E extends Element> extends GraphStep<S, E>
         final AbstractTinkerGraph graph = (AbstractTinkerGraph) this.getTraversal().getGraph().get();
         final HasContainer indexedContainer = getIndexKey(Edge.class);
         Iterator<Edge> iterator;
-        final Object[] resolvedIds = this.getResolvedIds();
+        final Object[] resolvedIds = this.getIdsAsValues();
         // ids are present, filter on them first
         if (null == resolvedIds)
             iterator = Collections.emptyIterator();
@@ -94,7 +94,7 @@ public final class TinkerGraphStep<S, E extends Element> extends GraphStep<S, E>
         final AbstractTinkerGraph graph = (AbstractTinkerGraph) this.getTraversal().getGraph().get();
         final HasContainer indexedContainer = getIndexKey(Vertex.class);
         Iterator<? extends Vertex> iterator;
-        final Object[] resolvedIds = this.getResolvedIds();
+        final Object[] resolvedIds = this.getIdsAsValues();
         // ids are present, filter on them first
         if (null == resolvedIds)
             iterator = Collections.emptyIterator();

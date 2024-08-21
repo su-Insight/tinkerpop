@@ -144,7 +144,7 @@ public class GraphStep<S, E extends Element> extends AbstractStep<S, E> implemen
 
     /**
      * Get the ids associated with this step. If there are {@link GValue} objects present they will be returned
-     * alongside literal ids. Prefer {@link #getResolvedIds()} if you prefer to work with literal ids only.
+     * alongside literal ids. Prefer {@link #getIdsAsValues()} if you prefer to work with literal ids only.
      */
     public GValue[] getIds() {
         return this.ids;
@@ -153,7 +153,7 @@ public class GraphStep<S, E extends Element> extends AbstractStep<S, E> implemen
     /**
      * Gets the ids associated with this step as literal values rather than {@link GValue} objects.
      */
-    public Object[] getResolvedIds() {
+    public Object[] getIdsAsValues() {
         if (legacyLogicForPassingNoIds) return null;
         return resolveToValues(this.ids);
     }

@@ -873,7 +873,7 @@ public class DotNetTranslateVisitor extends AbstractTranslateVisitor {
 
     @Override
     public Void visitTraversalMethod_option_Object_Traversal(final GremlinParser.TraversalMethod_option_Object_TraversalContext ctx) {
-        if (ctx.genericLiteralArgument().genericLiteral().traversalMerge() != null) {
+        if (ctx.genericLiteralArgument().genericLiteral() != null && ctx.genericLiteralArgument().genericLiteral().traversalMerge() != null) {
             visit(ctx.getChild(0));
             sb.append("(");
             visit(ctx.genericLiteralArgument());

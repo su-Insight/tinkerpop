@@ -37,9 +37,24 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 
 public class GValueTest {
+
+    @Test
+    public void shouldReturnAnExistingGValue() {
+        final GValue<Integer> gValue = GValue.of(123);
+        final Object returnedGValue = GValue.of(gValue);
+        assertEquals(gValue, returnedGValue);
+        assertSame(gValue, returnedGValue);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldReturnAnExistInTypedGValue() {
+        final Object gValue = GValue.of("x", 123);
+        GValue.of("x", gValue);
+    }
 
     @Test
     public void shouldCreateGValueFromValue() {
@@ -312,5 +327,92 @@ public class GValueTest {
         assertEquals(GType.PROPERTY, gValue.getType());
         assertEquals("varName", gValue.getName());
         assertThat(gValue.isVariable(), is(true));
+    }
+
+    @Test
+    public void shouldBeAnInstanceOf() {
+        assertThat(GValue.instanceOf(GValue.of("string"), GType.STRING), is(true));
+        assertThat(GValue.instanceOf(GValue.ofInteger(1), GType.INTEGER), is(true));
+        assertThat(GValue.instanceOf("string", GType.STRING), is(true));
+        assertThat(GValue.instanceOf(1, GType.INTEGER), is(true));
+    }
+
+    @Test
+    public void shouldNotBeAnInstanceOf() {
+        assertThat(GValue.instanceOf(GValue.of("string"), GType.INTEGER), is(false));
+        assertThat(GValue.instanceOf(GValue.ofInteger(1), GType.STRING), is(false));
+        assertThat(GValue.instanceOf("string", GType.INTEGER), is(false));
+        assertThat(GValue.instanceOf(1, GType.STRING), is(false));
+    }
+
+    @Test
+    public void shouldBeAnInstanceOfCollection() {
+        assertThat(GValue.instanceOfCollection(GValue.of(Arrays.asList("string"))), is(true));
+        assertThat(GValue.instanceOfCollection(GValue.ofSet(new HashSet(Arrays.asList("string")))), is(true));
+        assertThat(GValue.instanceOfCollection(Arrays.asList("string")), is(true));
+        assertThat(GValue.instanceOfCollection(new HashSet(Arrays.asList("string"))), is(true));
+    }
+
+    @Test
+    public void shouldNotBeAnInstanceOfCollection() {
+        assertThat(GValue.instanceOfCollection(GValue.of(new HashMap())), is(false));
+        assertThat(GValue.instanceOfCollection(GValue.ofInteger(1)), is(false));
+        assertThat(GValue.instanceOfCollection(new HashMap()), is(false));
+        assertThat(GValue.instanceOfCollection(1), is(false));
+    }
+
+    @Test
+    public void shouldBeAnInstanceOfNumber() {
+        assertThat(GValue.instanceOfNumber(GValue.of(1)), is(true));
+        assertThat(GValue.instanceOfNumber(GValue.of(1L)), is(true));
+        assertThat(GValue.instanceOfNumber(GValue.of(1D)), is(true));
+        assertThat(GValue.instanceOfNumber(GValue.of(BigInteger.valueOf((1L)))), is(true));
+        assertThat(GValue.instanceOfNumber(GValue.of(BigDecimal.valueOf((1.0)))), is(true));
+        assertThat(GValue.instanceOfNumber(GValue.ofInteger(1)), is(true));
+        assertThat(GValue.instanceOfNumber(GValue.ofLong(1L)), is(true));
+        assertThat(GValue.instanceOfNumber(GValue.ofDouble(1D)), is(true));
+        assertThat(GValue.instanceOfNumber(GValue.ofBigInteger(BigInteger.valueOf((1L)))), is(true));
+        assertThat(GValue.instanceOfNumber(GValue.ofBigDecimal(BigDecimal.valueOf((1.0)))), is(true));
+    }
+
+    @Test
+    public void shouldNotBeAnInstanceOfNumber() {
+        assertThat(GValue.instanceOfNumber(GValue.of("string")), is(false));
+        assertThat(GValue.instanceOfNumber(GValue.of(Arrays.asList("string"))), is(false));
+    }
+
+    @Test
+    public void shouldBeAnInstanceOfElement() {
+        assertThat(GValue.instanceOfElement(GValue.ofVertex(mock(Vertex.class))), is(true));
+        assertThat(GValue.instanceOfElement(GValue.ofEdge(mock(Edge.class))), is(true));
+    }
+
+    @Test
+    public void shouldNotBeAnInstanceOfElement() {
+        assertThat(GValue.instanceOfElement(GValue.of("string")), is(false));
+        assertThat(GValue.instanceOfElement(GValue.of(Arrays.asList("string"))), is(false));
+    }
+
+    @Test
+    public void valueInstanceOfShouldReturnTrueForMatchingType() {
+        GValue<Integer> gValue = GValue.of(123);
+        assertThat(GValue.valueInstanceOf(gValue, GType.INTEGER), is(true));
+    }
+
+    @Test
+    public void valueInstanceOfShouldReturnFalseForNonMatchingType() {
+        GValue<Integer> gValue = GValue.of(123);
+        assertThat(GValue.valueInstanceOf(gValue, GType.STRING), is(false));
+    }
+
+    @Test
+    public void valueInstanceOfShouldReturnFalseForNonGValueObject() {
+        String nonGValue = "test";
+        assertThat(GValue.valueInstanceOf(nonGValue, GType.STRING), is(false));
+    }
+
+    @Test
+    public void valueInstanceOfShouldReturnFalseForNullObject() {
+        assertThat(GValue.valueInstanceOf(null, GType.STRING), is(false));
     }
 }
