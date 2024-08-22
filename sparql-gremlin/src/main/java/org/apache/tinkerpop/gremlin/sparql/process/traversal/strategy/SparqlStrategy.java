@@ -71,7 +71,7 @@ public class SparqlStrategy extends AbstractTraversalStrategy<TraversalStrategy.
         // assumes that the traversal starts with the single inject step that holds the sparql query
         if (traversal.getStartStep() instanceof InjectStep) {
             final InjectStep stepWithSparql = (InjectStep) traversal.getStartStep();
-            final Object[] injections = stepWithSparql.getInjections();
+            final Object[] injections = stepWithSparql.getInjectionsAsValues();
 
             // further assumes that there is just one argument to that injection which is a string (i.e. sparql query)
             if (injections.length == 1 && injections[0] instanceof String) {
