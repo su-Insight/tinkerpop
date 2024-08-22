@@ -394,14 +394,14 @@ public class GValueTest {
     }
 
     @Test
-    public void valueInstanceOfShouldReturnTrueForMatchingType() {
-        GValue<Integer> gValue = GValue.of(123);
+    public void ShouldHaveForMatchingType() {
+        final GValue<Integer> gValue = GValue.of(123);
         assertThat(GValue.valueInstanceOf(gValue, GType.INTEGER), is(true));
     }
 
     @Test
     public void valueInstanceOfShouldReturnFalseForNonMatchingType() {
-        GValue<Integer> gValue = GValue.of(123);
+        final GValue<Integer> gValue = GValue.of(123);
         assertThat(GValue.valueInstanceOf(gValue, GType.STRING), is(false));
     }
 
@@ -414,5 +414,65 @@ public class GValueTest {
     @Test
     public void valueInstanceOfShouldReturnFalseForNullObject() {
         assertThat(GValue.valueInstanceOf(null, GType.STRING), is(false));
+    }
+
+    @Test
+    public void getShouldReturnGValueValue() {
+        final GValue<Integer> gValue = GValue.of(123);
+        assertThat(GValue.getFrom(gValue), is(123));
+    }
+
+    @Test
+    public void getShouldReturnObjectAsIs() {
+        final String value = "test";
+        assertThat(GValue.getFrom(value), is(value));
+    }
+
+    @Test
+    public void getShouldReturnNullForNullInput() {
+        assertThat(GValue.getFrom(null), is((Object) null));
+    }
+
+    @Test
+    public void valueInstanceOfCollectionShouldReturnTrueForGValueWithCollectionType() {
+        final GValue<List<String>> gValue = GValue.ofList(Arrays.asList("value1", "value2"));
+        assertThat(GValue.valueInstanceOfCollection(gValue), is(true));
+    }
+
+    @Test
+    public void valueInstanceOfCollectionShouldReturnFalseForGValueWithNonCollectionType() {
+        final GValue<Integer> gValue = GValue.of(123);
+        assertThat(GValue.valueInstanceOfCollection(gValue), is(false));
+    }
+
+    @Test
+    public void valueInstanceOfCollectionShouldReturnFalseForNonGValueObject() {
+        assertThat(GValue.valueInstanceOfCollection("test"), is(false));
+    }
+
+    @Test
+    public void valueInstanceOfCollectionShouldReturnFalseForNullObject() {
+        assertThat(GValue.valueInstanceOfCollection(null), is(false));
+    }
+
+    @Test
+    public void valueInstanceOfNumericShouldReturnTrueForGValueWithNumericType() {
+        final GValue<Integer> gValue = GValue.of(123);
+        assertThat(GValue.valueInstanceOfNumeric(gValue), is(true));
+    }
+
+    @Test
+    public void valueInstanceOfNumericShouldReturnFalseForGValueWithNonNumericType() {
+        assertThat(GValue.valueInstanceOfNumeric("test"), is(false));
+    }
+
+    @Test
+    public void valueInstanceOfNumericShouldReturnFalseForNonGValueObject() {
+        assertThat(GValue.valueInstanceOfNumeric("test"), is(false));
+    }
+
+    @Test
+    public void valueInstanceOfNumericShouldReturnFalseForNullObject() {
+        assertThat(GValue.valueInstanceOfNumeric(null), is(false));
     }
 }

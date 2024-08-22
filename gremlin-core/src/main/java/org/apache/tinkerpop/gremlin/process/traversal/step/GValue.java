@@ -333,11 +333,32 @@ public class GValue<V> implements Cloneable, Serializable {
     }
 
     /**
+     * If the object is a {@code GValue} then get its value, otherwise return the object as-is.
+     */
+    public static <T> T getFrom(final Object o) {
+        return o instanceof GValue ? ((GValue<T>) o).get() : (T) o;
+    }
+
+    /**
      * Tests if the object is a {@link GValue} and if so, checks the type of the value against the provided
      * {@link GType}.
      */
     public static boolean valueInstanceOf(final Object o, final GType type) {
         return o instanceof GValue && ((GValue) o).getType() == type;
+    }
+
+    /**
+     * Tests if the object is a {@link GValue} and if so, checks if the type of the value is a collection.
+     */
+    public static boolean valueInstanceOfCollection(final Object o) {
+        return o instanceof GValue && ((GValue) o).getType().isCollection();
+    }
+
+    /**
+     * Tests if the object is a {@link GValue} and if so, checks if the type of the value is a numeric.
+     */
+    public static boolean valueInstanceOfNumeric(final Object o) {
+        return o instanceof GValue && ((GValue) o).getType().isNumeric();
     }
 
     /**
@@ -352,7 +373,7 @@ public class GValue<V> implements Cloneable, Serializable {
         else if (o instanceof GValue)
             return ((GValue) o).getType() == type;
         else
-            return o.getClass().isAssignableFrom(type.getJavaType());
+            return type.getJavaType().isAssignableFrom(o.getClass());
     }
 
     /**
