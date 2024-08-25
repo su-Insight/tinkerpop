@@ -771,7 +771,7 @@ public class TraversalMethodVisitor extends TraversalRootVisitor<GraphTraversal>
             // since we normalized above to gvalue or literal we can just test the first arg for gvalue-ness
             if (GValue.valueInstanceOf(literalOrVar, GType.STRING)) {
                 final GValue[] gvalueLiteralOrVars = literalOrVars == null ? null : Arrays.stream(literalOrVars).map(o -> (GValue) o).toArray(GValue[]::new);
-                return graphTraversal.hasLabel((GValue) literalOrVar, (GValue[]) literalOrVars);
+                return graphTraversal.hasLabel((GValue) literalOrVar, (GValue[]) gvalueLiteralOrVars);
             } else {
                 // convert object array to string array
                 final String[] stringLiteralOrVars = literalOrVars == null ? null : Arrays.stream(literalOrVars).map(o -> (String) o).toArray(String[]::new);
