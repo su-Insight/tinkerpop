@@ -930,6 +930,16 @@ public class DotNetTranslateVisitor extends AbstractTranslateVisitor {
     }
 
     @Override
+    public Void visitTraversalMethod_conjoin_String(final GremlinParser.TraversalMethod_conjoin_StringContext ctx) {
+        final String step = ctx.getChild(0).getText();
+        sb.append(convertToPascalCase(step));
+        sb.append("((string) ");
+        visit(ctx.stringArgument());
+        sb.append(")");
+        return null;
+    }
+
+    @Override
     public Void visitTraversalMethod_propertyMap(final GremlinParser.TraversalMethod_propertyMapContext ctx) {
         return handleGenerics(ctx);
     }
