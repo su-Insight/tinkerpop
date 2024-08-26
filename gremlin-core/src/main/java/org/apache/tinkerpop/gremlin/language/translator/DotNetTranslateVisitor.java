@@ -740,8 +740,34 @@ public class DotNetTranslateVisitor extends AbstractTranslateVisitor {
             sb.append(")");
             return null;
         } else {
-            return super.visitTraversalMethod_hasLabel_String_String(ctx);
+            final String step = ctx.getChild(0).getText();
+            sb.append(convertToPascalCase(step));
+            sb.append("(");
+            tryAppendCastToString(ctx.stringNullableArgument());
+            visit(ctx.stringNullableArgument());
+
+            // more arguments to come
+            if (!ctx.stringLiteralVarargs().isEmpty())  sb.append(", ");
+            visit(ctx.stringLiteralVarargs());
+
+            sb.append(")");
+            return null;
         }
+    }
+
+    @Override
+    public Void visitStringLiteralVarargs(final GremlinParser.StringLiteralVarargsContext ctx) {
+        for (int ix = 0; ix < ctx.getChildCount(); ix++) {
+            final ParseTree pt = ctx.getChild(ix);
+            if (pt instanceof GremlinParser.StringNullableArgumentContext) {
+                GremlinParser.StringNullableArgumentContext sna = (GremlinParser.StringNullableArgumentContext) pt;
+                tryAppendCastToString(sna);
+                visit(sna);
+            } else {
+                visit(pt);
+            }
+        };
+        return null;
     }
 
     @Override
@@ -933,7 +959,8 @@ public class DotNetTranslateVisitor extends AbstractTranslateVisitor {
     public Void visitTraversalMethod_conjoin_String(final GremlinParser.TraversalMethod_conjoin_StringContext ctx) {
         final String step = ctx.getChild(0).getText();
         sb.append(convertToPascalCase(step));
-        sb.append("((string) ");
+        sb.append("(");
+        tryAppendCastToString(ctx.stringArgument());
         visit(ctx.stringArgument());
         sb.append(")");
         return null;
@@ -1151,6 +1178,12 @@ public class DotNetTranslateVisitor extends AbstractTranslateVisitor {
             final String[] split = txt.split("\\.");
             sb.append(split[0]).append(".");
             sb.append(convertToPascalCase(split[1]));
+        }
+    }
+
+    private void tryAppendCastToString(final GremlinParser.StringArgumentContext ctx) {
+        if (ctx.variable() != null || ctx.stringLiteral() != null) {
+            sb.append("(string) ");
         }
     }
 

@@ -293,6 +293,8 @@ const gremlins = {
     g_E_hasLabelXuses_traversesX: [function({g}) { return g.E().hasLabel("uses", "traverses") }], 
     g_V_hasLabelXperson_software_blahX: [function({g}) { return g.V().hasLabel("person", "software", "blah") }], 
     g_V_hasLabelXpersonX_hasLabelXsoftwareX: [function({g}) { return g.V().hasLabel("person").hasLabel("software") }], 
+    g_V_hasLabelXpersonvarX_hasLabelXsoftwareX: [function({g, xx1}) { return g.V().hasLabel(xx1).hasLabel("software") }], 
+    g_V_hasLabelXpersonvar_softwarevarX: [function({g, xx1, xx2}) { return g.V().hasLabel(xx1, xx2) }], 
     g_V_hasLabelXpersonX_hasXage_notXlteX10X_andXnotXbetweenX11_20XXXX_andXltX29X_orXeqX35XXXX_name: [function({g}) { return g.V().hasLabel("person").has("age", P.not(P.lte(10).and(P.not(P.between(11, 20)))).and(P.lt(29).or(P.eq(35)))).values("name") }], 
     g_V_hasLabelXnullX: [function({g}) { return g.V().hasLabel(null) }], 
     g_V_hasXlabel_nullX: [function({g}) { return g.V().has(T.label, null) }], 

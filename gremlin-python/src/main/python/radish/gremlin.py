@@ -275,6 +275,8 @@ world.gremlins = {
     'g_E_hasLabelXuses_traversesX': [(lambda g:g.E().has_label('uses', 'traverses'))], 
     'g_V_hasLabelXperson_software_blahX': [(lambda g:g.V().has_label('person', 'software', 'blah'))], 
     'g_V_hasLabelXpersonX_hasLabelXsoftwareX': [(lambda g:g.V().has_label('person').has_label('software'))], 
+    'g_V_hasLabelXpersonvarX_hasLabelXsoftwareX': [(lambda g, xx1=None:g.V().has_label(xx1).has_label('software'))], 
+    'g_V_hasLabelXpersonvar_softwarevarX': [(lambda g, xx1=None,xx2=None:g.V().has_label(xx1, xx2))], 
     'g_V_hasLabelXpersonX_hasXage_notXlteX10X_andXnotXbetweenX11_20XXXX_andXltX29X_orXeqX35XXXX_name': [(lambda g:g.V().has_label('person').has('age', P.not_(P.lte(10).and_(P.not_(P.between(11, 20)))).and_(P.lt(29).or_(P.eq(35)))).values('name'))], 
     'g_V_hasLabelXnullX': [(lambda g:g.V().has_label(None))], 
     'g_V_hasXlabel_nullX': [(lambda g:g.V().has(T.label, None))], 
