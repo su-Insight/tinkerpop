@@ -129,9 +129,7 @@ public final class InlineFilterStrategy extends AbstractTraversalStrategy<Traver
             final List<Object> edgeLabels = new ArrayList<>();
             for (final HasContainer hasContainer : new ArrayList<>(step.getHasContainers())) {
                 if (hasContainer.getKey().equals(T.label.getAccessor())) {
-                    if (hasContainer.getBiPredicate() == Compare.eq &&
-                            (hasContainer.getValue() instanceof String ||
-                                    (hasContainer.getValue() instanceof GValue && ((GValue) hasContainer.getValue()).getType() == GType.STRING)) &&
+                    if (hasContainer.getBiPredicate() == Compare.eq && GValue.instanceOf(hasContainer.getValue(), GType.STRING) &&
                             edgeLabels.isEmpty()) {
                         edgeLabels.add(hasContainer.getValue());
                         step.removeHasContainer(hasContainer);
@@ -145,8 +143,7 @@ public final class InlineFilterStrategy extends AbstractTraversalStrategy<Traver
                         final List<P<?>> orps = ((OrP) hasContainer.getPredicate()).getPredicates();
                         final List<Object> newEdges = new ArrayList<>();
                         for (int i = 0; i < orps.size(); i++) {
-                            if (orps.get(i).getBiPredicate() == Compare.eq && (orps.get(i).getValue() instanceof String ||
-                                    (orps.get(i).getValue() instanceof GValue && ((GValue) orps.get(i).getValue()).getType() == GType.STRING)))
+                            if (orps.get(i).getBiPredicate() == Compare.eq && GValue.instanceOf(orps.get(i).getValue(), GType.STRING))
                                 newEdges.add(orps.get(i).getValue());
                             else {
                                 removeContainer = false;

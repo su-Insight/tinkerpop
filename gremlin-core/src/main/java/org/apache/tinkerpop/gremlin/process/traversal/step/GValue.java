@@ -367,7 +367,6 @@ public class GValue<V> implements Cloneable, Serializable {
      * {@link GType}.
      */
     public static boolean instanceOf(final Object o, final GType type) {
-        // todo: is this right for null?
         if (null == o)
             return false;
         else if (o instanceof GValue)

@@ -156,11 +156,11 @@ public class HasContainer implements Serializable, Cloneable, Predicate<Element>
             if (predicateValue instanceof Collection) {
                 final Collection collection = (Collection) predicateValue;
                 if (!collection.isEmpty()) {
-                    return ((Collection) predicateValue).stream().allMatch(c -> null == c || c instanceof String || (c instanceof GValue && ((GValue) c).getType() == GType.STRING));
+                    return ((Collection) predicateValue).stream().allMatch(c -> null == c || GValue.instanceOf(c, GType.STRING));
                 }
             }
 
-            return predicateValue instanceof String || (predicateValue instanceof GValue && ((GValue) predicateValue).getType() == GType.STRING);
+            return GValue.instanceOf(predicateValue, GType.STRING);
         }
 
         return false;

@@ -272,6 +272,8 @@ var translationMap = map[string][]func(g *gremlingo.GraphTraversalSource, p map[
     "g_E_hasLabelXuses_traversesX": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.E().HasLabel("uses", "traverses")}}, 
     "g_V_hasLabelXperson_software_blahX": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.V().HasLabel("person", "software", "blah")}}, 
     "g_V_hasLabelXpersonX_hasLabelXsoftwareX": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.V().HasLabel("person").HasLabel("software")}}, 
+    "g_V_hasLabelXpersonvarX_hasLabelXsoftwareX": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.V().HasLabel(p["xx1"]).HasLabel("software")}}, 
+    "g_V_hasLabelXpersonvar_softwarevarX": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.V().HasLabel(p["xx1"], p["xx2"])}}, 
     "g_V_hasLabelXpersonX_hasXage_notXlteX10X_andXnotXbetweenX11_20XXXX_andXltX29X_orXeqX35XXXX_name": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.V().HasLabel("person").Has("age", gremlingo.P.Not(gremlingo.P.Lte(10).And(gremlingo.P.Not(gremlingo.P.Between(11, 20)))).And(gremlingo.P.Lt(29).Or(gremlingo.P.Eq(35)))).Values("name")}}, 
     "g_V_hasLabelXnullX": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.V().HasLabel(nil)}}, 
     "g_V_hasXlabel_nullX": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.V().Has(gremlingo.T.Label, nil)}}, 
