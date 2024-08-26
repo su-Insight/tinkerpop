@@ -225,6 +225,8 @@ const gremlins = {
     g_VX1X_out_hasXid_2X: [function({g, v2}) { return g.V(v2).has("age", P.gt(30)) }], 
     g_V_hasXblahX: [function({g}) { return g.V().has("blah") }], 
     g_V_hasXperson_name_markoX_age: [function({g}) { return g.V().has("person", "name", "marko").values("age") }], 
+    g_V_hasXperson_name_markovarX_age: [function({g, xx1}) { return g.V().has("person", "name", xx1).values("age") }], 
+    g_V_hasXpersonvar_name_markoX_age: [function({g, xx1}) { return g.V().has(xx1, "name", "marko").values("age") }], 
     g_VX1X_outE_hasXweight_inside_0_06X_inV: [function({g, vid1}) { return g.V(vid1).outE().has("weight", P.inside(0.0, 0.6)).inV() }], 
     g_EX11X_outV_outE_hasXid_10X: [function({g, eid11, eid10}) { return g.E(eid11).outV().outE().has(T.id, eid10) }], 
     g_EX11X_outV_outE_hasXid_10AsStringX: [function({g, eid11, eid10}) { return g.E(eid11).outV().outE().has(T.id, eid10) }], 

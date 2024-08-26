@@ -233,6 +233,8 @@ namespace Gremlin.Net.IntegrationTest.Gherkin
                {"g_VX1X_out_hasXid_2X", new List<Func<GraphTraversalSource, IDictionary<string, object>, ITraversal>> {(g,p) =>g.V((Vertex) p["v2"]).Has("age", P.Gt(30))}}, 
                {"g_V_hasXblahX", new List<Func<GraphTraversalSource, IDictionary<string, object>, ITraversal>> {(g,p) =>g.V().Has("blah")}}, 
                {"g_V_hasXperson_name_markoX_age", new List<Func<GraphTraversalSource, IDictionary<string, object>, ITraversal>> {(g,p) =>g.V().Has("person", "name", "marko").Values<object>("age")}}, 
+               {"g_V_hasXperson_name_markovarX_age", new List<Func<GraphTraversalSource, IDictionary<string, object>, ITraversal>> {(g,p) =>g.V().Has("person", "name", (object) p["xx1"]).Values<object>("age")}}, 
+               {"g_V_hasXpersonvar_name_markoX_age", new List<Func<GraphTraversalSource, IDictionary<string, object>, ITraversal>> {(g,p) =>g.V().Has((string) p["xx1"], "name", "marko").Values<object>("age")}}, 
                {"g_VX1X_outE_hasXweight_inside_0_06X_inV", new List<Func<GraphTraversalSource, IDictionary<string, object>, ITraversal>> {(g,p) =>g.V(p["vid1"]).OutE().Has("weight", P.Inside(0.0, 0.6)).InV()}}, 
                {"g_EX11X_outV_outE_hasXid_10X", new List<Func<GraphTraversalSource, IDictionary<string, object>, ITraversal>> {(g,p) =>g.E(p["eid11"]).OutV().OutE().Has(T.Id, (object) p["eid10"])}}, 
                {"g_EX11X_outV_outE_hasXid_10AsStringX", new List<Func<GraphTraversalSource, IDictionary<string, object>, ITraversal>> {(g,p) =>g.E(p["eid11"]).OutV().OutE().Has(T.Id, (object) p["eid10"])}}, 

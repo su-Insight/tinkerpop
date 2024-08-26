@@ -207,6 +207,8 @@ world.gremlins = {
     'g_VX1X_out_hasXid_2X': [(lambda g, v2=None:g.V(v2).has('age', P.gt(30)))], 
     'g_V_hasXblahX': [(lambda g:g.V().has('blah'))], 
     'g_V_hasXperson_name_markoX_age': [(lambda g:g.V().has('person', 'name', 'marko').values('age'))], 
+    'g_V_hasXperson_name_markovarX_age': [(lambda g, xx1=None:g.V().has('person', 'name', xx1).values('age'))], 
+    'g_V_hasXpersonvar_name_markoX_age': [(lambda g, xx1=None:g.V().has(xx1, 'name', 'marko').values('age'))], 
     'g_VX1X_outE_hasXweight_inside_0_06X_inV': [(lambda g, vid1=None:g.V(vid1).out_e().has('weight', P.inside(0.0, 0.6)).in_v())], 
     'g_EX11X_outV_outE_hasXid_10X': [(lambda g, eid11=None,eid10=None:g.E(eid11).out_v().out_e().has(T.id_, eid10))], 
     'g_EX11X_outV_outE_hasXid_10AsStringX': [(lambda g, eid11=None,eid10=None:g.E(eid11).out_v().out_e().has(T.id_, eid10))], 

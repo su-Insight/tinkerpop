@@ -204,6 +204,8 @@ var translationMap = map[string][]func(g *gremlingo.GraphTraversalSource, p map[
     "g_VX1X_out_hasXid_2X": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.V(p["v2"]).Has("age", gremlingo.P.Gt(30))}}, 
     "g_V_hasXblahX": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.V().Has("blah")}}, 
     "g_V_hasXperson_name_markoX_age": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.V().Has("person", "name", "marko").Values("age")}}, 
+    "g_V_hasXperson_name_markovarX_age": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.V().Has("person", "name", p["xx1"]).Values("age")}}, 
+    "g_V_hasXpersonvar_name_markoX_age": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.V().Has(p["xx1"], "name", "marko").Values("age")}}, 
     "g_VX1X_outE_hasXweight_inside_0_06X_inV": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.V(p["vid1"]).OutE().Has("weight", gremlingo.P.Inside(0.0, 0.6)).InV()}}, 
     "g_EX11X_outV_outE_hasXid_10X": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.E(p["eid11"]).OutV().OutE().Has(gremlingo.T.Id, p["eid10"])}}, 
     "g_EX11X_outV_outE_hasXid_10AsStringX": {func(g *gremlingo.GraphTraversalSource, p map[string]interface{}) *gremlingo.GraphTraversal {return g.E(p["eid11"]).OutV().OutE().Has(gremlingo.T.Id, p["eid10"])}}, 
