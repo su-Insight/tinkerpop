@@ -57,7 +57,11 @@ public final class MergeStep<S, E> extends ScalarMapStep<S, E> implements Traver
         return valueTraversal;
     }
 
-    public GValue<Object> getParameterItems() {
+    public Object getParameterItems() {
+        return parameterItems;
+    }
+
+    public GValue<Object> getParameterItemsGValue() {
         return parameterItems;
     }
 

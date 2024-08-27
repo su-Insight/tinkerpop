@@ -53,7 +53,11 @@ public final class ProductStep<S, E> extends ScalarMapStep<S, List<List<?>>> imp
         return this.valueTraversal;
     }
 
-    public GValue<Object> getParameterItems() {
+    public Object getParameterItems() {
+        return parameterItems;
+    }
+
+    public GValue<Object> getParameterItemsGValue() {
         return parameterItems;
     }
 

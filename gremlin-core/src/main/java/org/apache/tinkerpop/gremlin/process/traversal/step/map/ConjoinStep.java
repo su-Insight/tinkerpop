@@ -71,7 +71,11 @@ public final class ConjoinStep<S> extends ScalarMapStep<S, String> implements Li
         }
     }
 
-    public GValue<String> getDelimiter() {
+    public String getDelimiter() {
+        return this.delimiter.get();
+    }
+
+    public GValue<String> getDelimiterGValue() {
         return this.delimiter;
     }
 

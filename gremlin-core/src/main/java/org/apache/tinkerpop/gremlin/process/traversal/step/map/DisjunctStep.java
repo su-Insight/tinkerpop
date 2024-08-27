@@ -52,7 +52,11 @@ public final class DisjunctStep<S, E> extends ScalarMapStep<S, Set<?>> implement
         return this.valueTraversal;
     }
 
-    public GValue<Object> getParameterItems() {
+    public Object getParameterItems() {
+        return parameterItems;
+    }
+
+    public GValue<Object> getParameterItemsGValue() {
         return parameterItems;
     }
 

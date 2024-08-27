@@ -52,14 +52,14 @@ public final class InjectStep<S> extends StartStep<S> {
     /**
      * Get the injections of the step.
      */
-    public GValue<S>[] getInjections() {
+    public GValue<S>[] getInjectionsGValue() {
         return this.injections;
     }
 
     /**
      * Gets the injections of the step but unwraps the {@link GValue}.
      */
-    public S[] getInjectionsAsValues() {
+    public S[] getInjections() {
         return (S[]) resolveToValues(this.injections);
     }
 }

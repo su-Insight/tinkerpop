@@ -53,8 +53,12 @@ public final class IntersectStep<S, E> extends ScalarMapStep<S, Set<?>> implemen
         return this.valueTraversal;
     }
 
-    public GValue<Object> getParameterItems() {
-        return this.parameterItems;
+    public Object getParameterItems() {
+        return parameterItems;
+    }
+
+    public GValue<Object> getParameterItemsGValue() {
+        return parameterItems;
     }
 
     @Override

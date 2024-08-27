@@ -53,7 +53,11 @@ public final class DifferenceStep<S, E> extends ScalarMapStep<S, Set<?>> impleme
         return this.valueTraversal;
     }
 
-    public GValue<Object> getParameterItems() {
+    public Object getParameterItems() {
+        return parameterItems;
+    }
+
+    public GValue<Object> getParameterItemsGValue() {
         return parameterItems;
     }
 
