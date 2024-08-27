@@ -589,6 +589,36 @@ public class GraphTraversalSource implements TraversalSource {
     }
 
     /**
+     * Spawns a {@link GraphTraversal} starting with values produced by the specified service call with the specified
+     * static parameters.
+     *
+     * @param service the name of the service call
+     * @param params static parameter map (no nested traversals)
+     * @since 4.0.0
+     */
+    public <S> GraphTraversal<S, S> call(final String service, final GValue<Map> params) {
+        final GraphTraversalSource clone = GraphTraversalSource.this.clone();
+        clone.bytecode.addStep(GraphTraversal.Symbols.call, service, params);
+        final GraphTraversal.Admin<S, S> traversal = new DefaultGraphTraversal<>(clone);
+        return traversal.addStep(new CallStep<>(traversal, true, service, params));
+    }
+
+    /**
+     * Spawns a {@link GraphTraversal} starting with values produced by the specified service call with the specified
+     * static parameters.
+     *
+     * @param service the name of the service call
+     * @param params static parameter map (no nested traversals)
+     * @since 4.0.0
+     */
+    public <S> GraphTraversal<S, S> call(final String service, final GValue<Map> params, final Traversal<S, Map> childTraversal) {
+        final GraphTraversalSource clone = GraphTraversalSource.this.clone();
+        clone.bytecode.addStep(GraphTraversal.Symbols.call, service, params);
+        final GraphTraversal.Admin<S, S> traversal = new DefaultGraphTraversal<>(clone);
+        return traversal.addStep(new CallStep<>(traversal, true, service, params, childTraversal.asAdmin()));
+    }
+
+    /**
      * Merges the results of an arbitrary number of traversals.
      *
      * @param unionTraversals the traversals to merge

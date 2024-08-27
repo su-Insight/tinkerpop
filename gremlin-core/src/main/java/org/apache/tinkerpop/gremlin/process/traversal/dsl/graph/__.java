@@ -899,9 +899,23 @@ public class __ {
     }
 
     /**
+     * @see GraphTraversal#difference(GValue)
+     */
+    public static <A> GraphTraversal<A, Set<?>> difference(final GValue<Object> values) {
+        return __.<A>start().difference(values);
+    }
+
+    /**
      * @see GraphTraversal#disjunct(Object)
      */
     public static <A> GraphTraversal<A, Set<?>> disjunct(final Object values) {
+        return __.<A>start().disjunct(values);
+    }
+
+    /**
+     * @see GraphTraversal#disjunct(GValue)
+     */
+    public static <A> GraphTraversal<A, Set<?>> disjunct(final GValue<Object> values) {
         return __.<A>start().disjunct(values);
     }
 
@@ -913,9 +927,23 @@ public class __ {
     }
 
     /**
+     * @see GraphTraversal#intersect(GValue)
+     */
+    public static <A> GraphTraversal<A, Set<?>> intersect(final GValue<Object> values) {
+        return __.<A>start().intersect(values);
+    }
+
+    /**
      * @see GraphTraversal#conjoin(String)
      */
     public static <A> GraphTraversal<A, String> conjoin(final String values) {
+        return __.<A>start().conjoin(values);
+    }
+
+    /**
+     * @see GraphTraversal#conjoin(GValue)
+     */
+    public static <A> GraphTraversal<A, String> conjoin(final GValue<String> values) {
         return __.<A>start().conjoin(values);
     }
 
@@ -927,6 +955,13 @@ public class __ {
     }
 
     /**
+     * @see GraphTraversal#merge(GValue)
+     */
+    public static <A, B> GraphTraversal<A, B> merge(final GValue<Object> values) {
+        return __.<A>start().merge(values);
+    }
+
+    /**
      * @see GraphTraversal#combine(Object)
      */
     public static <A> GraphTraversal<A, List<?>> combine(final Object values) {
@@ -934,9 +969,23 @@ public class __ {
     }
 
     /**
+     * @see GraphTraversal#combine(GValue)
+     */
+    public static <A> GraphTraversal<A, List<?>> combine(final GValue<Object> values) {
+        return __.<A>start().combine(values);
+    }
+
+    /**
      * @see GraphTraversal#product(Object)
      */
     public static <A> GraphTraversal<A, List<List<?>>> product(final Object values) {
+        return __.<A>start().product(values);
+    }
+
+    /**
+     * @see GraphTraversal#product(GValue)
+     */
+    public static <A> GraphTraversal<A, List<List<?>>> product(final GValue<Object> values) {
         return __.<A>start().product(values);
     }
 
@@ -1631,6 +1680,13 @@ public class __ {
     }
 
     /**
+     * @see GraphTraversal#call(String, GValue)
+     */
+    public static <A, B> GraphTraversal<A, B> call(final String service, final GValue<Map> params) {
+        return __.<A>start().call(service, params);
+    }
+
+    /**
      * @see GraphTraversal#call(String, Traversal)
      */
     public static <A, B> GraphTraversal<A, B> call(final String service, final Traversal<?, Map<?,?>> childTraversal) {
@@ -1641,6 +1697,13 @@ public class __ {
      * @see GraphTraversal#call(String, Map, Traversal)
      */
     public static <A, B> GraphTraversal<A, B> call(final String service, final Map params, final Traversal<?, Map<?,?>> childTraversal) {
+        return __.<A>start().call(service, params, childTraversal);
+    }
+
+    /**
+     * @see GraphTraversal#call(String, GValue, Traversal)
+     */
+    public static <A, B> GraphTraversal<A, B> call(final String service, final GValue<Map> params, final Traversal<?, Map<?,?>> childTraversal) {
         return __.<A>start().call(service, params, childTraversal);
     }
 }

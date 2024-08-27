@@ -1662,6 +1662,21 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
     }
 
     /**
+     * Perform the specified service call with the specified static parameters.
+     *
+     * @param service the name of the service call
+     * @param params static parameter map (no nested traversals)
+     * @return the traversal with an appended {@link CallStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#call-step" target="_blank">Reference Documentation - Call Step</a>
+     * @since 4.0.0
+     */
+    default <E> GraphTraversal<S, E> call(final String service, final GValue<Map> params) {
+        this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.call, service, params);
+        final CallStep<S,E> call = new CallStep<>(this.asAdmin(), false, service, params);
+        return this.asAdmin().addStep(call);
+    }
+
+    /**
      * Perform the specified service call with dynamic parameters produced by the specified child traversal.
      *
      * @param service the name of the service call
@@ -1691,6 +1706,25 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
      */
     default <E> GraphTraversal<S, E> call(final String service, final Map params, final Traversal<?, Map<?,?>> childTraversal) {
         this.asAdmin().getBytecode().addStep(Symbols.call, service, params, childTraversal);
+        final CallStep<S,E> step = null == childTraversal ? new CallStep(this.asAdmin(), false, service, params) :
+                new CallStep(this.asAdmin(), false, service, params, childTraversal.asAdmin());
+        return this.asAdmin().addStep(step);
+    }
+
+    /**
+     * Perform the specified service call with both static and dynamic parameters produced by the specified child
+     * traversal. These parameters will be merged at execution time per the provider implementation. Reference
+     * implementation merges dynamic into static (dynamic will overwrite static).
+     *
+     * @param service the name of the service call
+     * @param params static parameter map (no nested traversals)
+     * @param childTraversal a traversal that will produce a Map of parameters for the service call when invoked.
+     * @return the traversal with an appended {@link CallStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#call-step" target="_blank">Reference Documentation - Call Step</a>
+     * @since 4.0.0
+     */
+    default <E> GraphTraversal<S, E> call(final String service, final GValue<Map> params, final Traversal<?, Map<?,?>> childTraversal) {
+        this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.call, service, params, childTraversal);
         final CallStep<S,E> step = null == childTraversal ? new CallStep(this.asAdmin(), false, service, params) :
                 new CallStep(this.asAdmin(), false, service, params, childTraversal.asAdmin());
         return this.asAdmin().addStep(step);
@@ -2146,6 +2180,18 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
     }
 
     /**
+     * Calculates the difference between the list traverser and list argument.
+     *
+     * @return the traversal with an appended {@link DifferenceStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#difference-step" target="_blank">Reference Documentation - Difference Step</a>
+     * @since 4.0.0
+     */
+    public default GraphTraversal<S, Set<?>> difference(final GValue<Object> values) {
+        this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.difference, values);
+        return this.asAdmin().addStep(new DifferenceStep<>(this.asAdmin(), values));
+    }
+
+    /**
      * Calculates the disjunction between the list traverser and list argument.
      *
      * @return the traversal with an appended {@link DisjunctStep}.
@@ -2154,6 +2200,18 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
      */
     public default GraphTraversal<S, Set<?>> disjunct(final Object values) {
         this.asAdmin().getBytecode().addStep(Symbols.disjunct, values);
+        return this.asAdmin().addStep(new DisjunctStep<>(this.asAdmin(), values));
+    }
+
+    /**
+     * Calculates the disjunction between the list traverser and list argument.
+     *
+     * @return the traversal with an appended {@link DisjunctStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#disjunct-step" target="_blank">Reference Documentation - Disjunct Step</a>
+     * @since 4.0.0
+     */
+    public default GraphTraversal<S, Set<?>> disjunct(final GValue<Object> values) {
+        this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.disjunct, values);
         return this.asAdmin().addStep(new DisjunctStep<>(this.asAdmin(), values));
     }
 
@@ -2170,6 +2228,18 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
     }
 
     /**
+     * Calculates the intersection between the list traverser and list argument.
+     *
+     * @return the traversal with an appended {@link IntersectStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#intersect-step" target="_blank">Reference Documentation - Intersect Step</a>
+     * @since 4.0.0
+     */
+    public default GraphTraversal<S, Set<?>> intersect(final GValue<Object> values) {
+        this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.intersect, values);
+        return this.asAdmin().addStep(new IntersectStep<>(this.asAdmin(), values));
+    }
+
+    /**
      * Joins together the elements of the incoming list traverser together with the provided delimiter.
      *
      * @return the traversal with an appended {@link ConjoinStep}.
@@ -2178,6 +2248,18 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
      */
     public default GraphTraversal<S, String> conjoin(final String delimiter) {
         this.asAdmin().getBytecode().addStep(Symbols.conjoin, delimiter);
+        return this.asAdmin().addStep(new ConjoinStep<>(this.asAdmin(), delimiter));
+    }
+
+    /**
+     * Joins together the elements of the incoming list traverser together with the provided delimiter.
+     *
+     * @return the traversal with an appended {@link ConjoinStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#conjoin-step" target="_blank">Reference Documentation - Conjoin Step</a>
+     * @since 4.0.0
+     */
+    public default GraphTraversal<S, String> conjoin(final GValue<String> delimiter) {
+        this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.conjoin, delimiter);
         return this.asAdmin().addStep(new ConjoinStep<>(this.asAdmin(), delimiter));
     }
 
@@ -2194,6 +2276,18 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
     }
 
     /**
+     * Merges the list traverser and list argument. Also known as union.
+     *
+     * @return the traversal with an appended {@link MergeStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#merge-step" target="_blank">Reference Documentation - Merge Step</a>
+     * @since 4.0.0
+     */
+    public default <E2> GraphTraversal<S, E2> merge(final GValue<Object> values) {
+        this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.merge, values);
+        return this.asAdmin().addStep(new MergeStep<>(this.asAdmin(), values));
+    }
+
+    /**
      * Combines the list traverser and list argument. Also known as concatenation or append.
      *
      * @return the traversal with an appended {@link CombineStep}.
@@ -2206,6 +2300,18 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
     }
 
     /**
+     * Combines the list traverser and list argument. Also known as concatenation or append.
+     *
+     * @return the traversal with an appended {@link CombineStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#combine-step" target="_blank">Reference Documentation - Combine Step</a>
+     * @since 4.0.0
+     */
+    public default GraphTraversal<S, List<?>> combine(final GValue<Object> values) {
+        this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.combine, values);
+        return this.asAdmin().addStep(new CombineStep<>(this.asAdmin(), values));
+    }
+
+    /**
      * Calculates the cartesian product between the list traverser and list argument.
      *
      * @return the traversal with an appended {@link ProductStep}.
@@ -2214,6 +2320,18 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
      */
     public default GraphTraversal<S, List<List<?>>> product(final Object values) {
         this.asAdmin().getBytecode().addStep(Symbols.product, values);
+        return this.asAdmin().addStep(new ProductStep<>(this.asAdmin(), values));
+    }
+
+    /**
+     * Calculates the cartesian product between the list traverser and list argument.
+     *
+     * @return the traversal with an appended {@link ProductStep}.
+     * @see <a href="http://tinkerpop.apache.org/docs/${project.version}/reference/#product-step" target="_blank">Reference Documentation - Product Step</a>
+     * @since 4.0.0
+     */
+    public default GraphTraversal<S, List<List<?>>> product(final GValue<Object> values) {
+        this.asAdmin().getBytecode().addStep(GraphTraversal.Symbols.product, values);
         return this.asAdmin().addStep(new ProductStep<>(this.asAdmin(), values));
     }
 
