@@ -70,7 +70,7 @@ public class GraphStep<S, E extends Element> extends AbstractStep<S, E> implemen
         this.returnClass = returnClass;
 
         // if ids is a single collection like g.V(['a','b','c']), then unroll it into an array of ids
-        this.ids = GValue.convertToGValues(tryUnrollSingleCollectionArgument(ids));
+        this.ids = GValue.ensureGValues(tryUnrollSingleCollectionArgument(ids));
 
         this.isStart = isStart;
 
@@ -169,7 +169,7 @@ public class GraphStep<S, E extends Element> extends AbstractStep<S, E> implemen
         this.legacyLogicForPassingNoIds = newIds.length == 1 && ((newIds[0] instanceof List && ((List) newIds[0]).isEmpty()) ||
                 (newIds[0] instanceof GValue && ((GValue) newIds[0]).getType().isCollection() && ((List) ((GValue) newIds[0]).get()).isEmpty()));
 
-        final GValue[] gvalues = GValue.convertToGValues(tryUnrollSingleCollectionArgument(newIds));
+        final GValue[] gvalues = GValue.ensureGValues(tryUnrollSingleCollectionArgument(newIds));
         this.ids = ArrayUtils.addAll(this.ids, gvalues);
     }
 

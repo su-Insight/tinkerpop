@@ -338,6 +338,11 @@ public final class JavaTranslator<S extends TraversalSource, T extends Traversal
     private synchronized static void buildMethodCache(final Object delegate, final Map<String, List<ReflectedMethod>> methodCache) {
         if (methodCache.isEmpty()) {
             for (final Method method : delegate.getClass().getMethods()) {
+
+                // skip GValue arguments as they make selecting the right method ambiguous for the translator. in any
+                // event a GValue shouldn't get here since bytecode can't carry it. also, bytecode is gone in 4.0.0
+                // so this will be deleted anyway. mostly adding this exception so the tests can continue to pass until
+                // that removal completes.
                 final boolean freeOfGValue = Arrays.stream(method.getParameters()).
                         noneMatch(p -> p.getType() == GValue.class || p.getType().getComponentType() == GValue.class);
                 if (freeOfGValue) {

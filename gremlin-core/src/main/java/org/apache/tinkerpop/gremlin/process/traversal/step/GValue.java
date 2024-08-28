@@ -58,47 +58,6 @@ public class GValue<V> implements Cloneable, Serializable {
     }
 
     /**
-     * The elements in object array argument are examined to see if they are {@link GValue} objects. If they are, they
-     * are preserved as is. If they are not then they are wrapped in a {@link GValue} object.
-     */
-    public static <T> GValue<T>[] convertToGValues(final Object[] args) {
-        return Stream.of(args).map(id -> {
-            if (id instanceof GValue)
-                return (GValue<?>) id;
-            else
-                return of(id);
-        }).toArray(GValue[]::new);
-    }
-
-    /**
-     * Converts {@link GValue} objects arguments to their values to prevent them from leaking to the Graph API.
-     * Providers extending from this step should use this method to get actual values to prevent any {@link GValue}
-     * objects from leaking to the Graph API.
-     */
-    public static Object[] resolveToValues(final List<GValue<?>> gvalues) {
-        // convert gvalues to array
-        final Object[] newIds = new Object[gvalues.size()];
-        int i = 0;
-        for (final GValue<?> gvalue : gvalues) {
-            newIds[i++] = gvalue.get();
-        }
-        return newIds;
-    }
-
-    /**
-     * Converts {@link GValue} objects argument array to their values to prevent them from leaking to the Graph API.
-     * Providers extending from this step should use this method to get actual values to prevent any {@link GValue}
-     * objects from leaking to the Graph API.
-     */
-    public static Object[] resolveToValues(final GValue<?>[] gvalues) {
-        final Object[] newIds = new Object[gvalues.length];
-        for (int i = 0; i < gvalues.length; i++) {
-            newIds[i] = gvalues[i].get();
-        }
-        return newIds;
-    }
-
-    /**
      * Determines if the value held by this object was defined as a variable or a literal value. Literal values simply
      * have no name.
      */
@@ -436,5 +395,37 @@ public class GValue<V> implements Cloneable, Serializable {
      */
     public static boolean instanceOfNumber(final Object o) {
         return o instanceof Number || (o instanceof GValue && ((GValue) o).getType().isNumeric());
+    }
+
+    /**
+     * The elements in object array argument are examined to see if they are {@link GValue} objects. If they are, they
+     * are preserved as is. If they are not then they are wrapped in a {@link GValue} object.
+     */
+    public static <T> GValue<T>[] ensureGValues(final Object[] args) {
+        return Stream.of(args).map(GValue::of).toArray(GValue[]::new);
+    }
+
+    /**
+     * Converts {@link GValue} objects argument array to their values to prevent them from leaking to the Graph API.
+     * Providers extending from this step should use this method to get actual values to prevent any {@link GValue}
+     * objects from leaking to the Graph API.
+     */
+    public static Object[] resolveToValues(final GValue<?>[] gvalues) {
+        final Object[] values = new Object[gvalues.length];
+        for (int i = 0; i < gvalues.length; i++) {
+            values[i] = gvalues[i].get();
+        }
+        return values;
+    }
+
+    /**
+     * Takes an argument that is either a {@code GValue} or an object and if the former returns the child object and
+     * if the latter returns the object itself.
+     */
+    public static Object valueOf(final Object either) {
+        if (either instanceof GValue)
+            return ((GValue<?>) either).get();
+        else
+            return either;
     }
 }

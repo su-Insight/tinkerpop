@@ -765,7 +765,7 @@ public class TraversalMethodVisitor extends TraversalRootVisitor<GraphTraversal>
             // if any are GValue then they all need to be GValue to call hasLabel
             if (literalOrVar instanceof GValue || Arrays.stream(literalOrVars).anyMatch(lov -> lov instanceof GValue)) {
                 literalOrVar = GValue.of(literalOrVar);
-                literalOrVars = Arrays.stream(literalOrVars).map(GValue::of).toArray();
+                literalOrVars = GValue.ensureGValues(literalOrVars);
             }
 
             // since we normalized above to gvalue or literal we can just test the first arg for gvalue-ness

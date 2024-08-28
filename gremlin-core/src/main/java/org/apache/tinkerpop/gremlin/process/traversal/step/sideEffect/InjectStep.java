@@ -32,7 +32,7 @@ public final class InjectStep<S> extends StartStep<S> {
     @SafeVarargs
     public InjectStep(final Traversal.Admin traversal, final S... injections) {
         super(traversal);
-        this.injections = GValue.convertToGValues(injections);
+        this.injections = GValue.ensureGValues(injections);
         this.start = new ArrayIterator<>(GValue.resolveToValues(this.injections));
     }
 

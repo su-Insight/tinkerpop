@@ -82,13 +82,7 @@ public class P<V> implements Predicate<V>, Serializable, Cloneable {
         } else {
             // this might be a bunch of GValue that need to be resolved. zomg
             if (this.value instanceof List) {
-                return this.biPredicate.test(testValue, (V) ((List) this.value).stream().map(o -> {
-                    if (o instanceof GValue) {
-                        return ((GValue) o).get();
-                    } else {
-                        return o;
-                    }
-                }).collect(Collectors.toList()));
+                return this.biPredicate.test(testValue, (V) ((List) this.value).stream().map(GValue::valueOf).collect(Collectors.toList()));
             } else {
                 return this.biPredicate.test(testValue, this.value);
             }

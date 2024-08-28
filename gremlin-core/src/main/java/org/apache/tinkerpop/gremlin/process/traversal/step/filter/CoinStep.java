@@ -39,10 +39,6 @@ public final class CoinStep<S> extends FilterStep<S> implements Seedable {
     private final Random random = new Random();
     private final GValue<Double> probability;
 
-    /**
-     * @deprecated As of release 3.7.3, replaced by {@link #CoinStep(Traversal.Admin, GValue)}
-     */
-    @Deprecated
     public CoinStep(final Traversal.Admin traversal, final double probability) {
         super(traversal);
         this.probability = GValue.ofDouble(probability);

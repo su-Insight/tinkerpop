@@ -54,7 +54,7 @@ public class VertexStep<E extends Element> extends FlatMapStep<Vertex, E> implem
     private final Class<E> returnClass;
 
     public VertexStep(final Traversal.Admin traversal, final Class<E> returnClass, final Direction direction, final String... edgeLabels) {
-        this(traversal, returnClass, direction, GValue.convertToGValues(edgeLabels));
+        this(traversal, returnClass, direction, GValue.ensureGValues(edgeLabels));
     }
 
     public VertexStep(final Traversal.Admin traversal, final Class<E> returnClass, final Direction direction, final GValue<String>... edgeLabels) {

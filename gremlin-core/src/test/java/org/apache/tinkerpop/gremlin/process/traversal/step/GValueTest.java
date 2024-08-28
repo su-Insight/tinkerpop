@@ -34,9 +34,11 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 
@@ -474,5 +476,134 @@ public class GValueTest {
     @Test
     public void valueInstanceOfNumericShouldReturnFalseForNullObject() {
         assertThat(GValue.valueInstanceOfNumeric(null), is(false));
+    }
+
+    @Test
+    public void shouldConvertObjectArrayToGValues() {
+        final Object[] input = {1, "string", true};
+        final GValue<?>[] expected = {GValue.of(1), GValue.of("string"), GValue.of(true)};
+        final GValue<?>[] result = GValue.ensureGValues(input);
+        assertArrayEquals(expected, result);
+    }
+
+    @Test
+    public void shouldPreserveExistingGValuesInArray() {
+        final GValue<Integer> gValue = GValue.of(123);
+        final Object[] input = {gValue, "string"};
+        final GValue<?>[] expected = {gValue, GValue.of("string")};
+        final GValue<?>[] result = GValue.ensureGValues(input);
+        assertArrayEquals(expected, result);
+    }
+
+    @Test
+    public void shouldHandleEmptyArray() {
+        final Object[] input = {};
+        final GValue<?>[] expected = {};
+        final GValue<?>[] result = GValue.ensureGValues(input);
+        assertArrayEquals(expected, result);
+    }
+
+    @Test
+    public void shouldHandleArrayWithNullValues() {
+        final Object[] input = {null, "string"};
+        final GValue<?>[] expected = {GValue.of(null), GValue.of("string")};
+        final GValue<?>[] result = GValue.ensureGValues(input);
+        assertArrayEquals(expected, result);
+    }
+
+    @Test
+    public void shouldResolveGValuesToValues() {
+        final GValue<?>[] input = {GValue.of(1), GValue.of("string"), GValue.of(true)};
+        final Object[] expected = {1, "string", true};
+        final Object[] result = GValue.resolveToValues(input);
+        assertArrayEquals(expected, result);
+    }
+
+    @Test
+    public void shouldHandleEmptyGValuesArray() {
+        final GValue<?>[] input = {};
+        final Object[] expected = {};
+        final Object[] result = GValue.resolveToValues(input);
+        assertArrayEquals(expected, result);
+    }
+
+    @Test
+    public void shouldHandleGValuesArrayWithNullValues() {
+        final GValue<?>[] input = {GValue.of(null), GValue.of("string")};
+        final Object[] expected = {null, "string"};
+        final Object[] result = GValue.resolveToValues(input);
+        assertArrayEquals(expected, result);
+    }
+
+    @Test
+    public void shouldHandleMixedTypeGValuesArray() {
+        final GValue<?>[] input = {GValue.of(1), GValue.of("string"), GValue.of(true), GValue.of(123.45)};
+        final Object[] expected = {1, "string", true, 123.45};
+        final Object[] result = GValue.resolveToValues(input);
+        assertArrayEquals(expected, result);
+    }
+
+    @Test
+    public void equalsShouldReturnTrueForSameObject() {
+        final GValue<Integer> gValue = GValue.of(123);
+        assertEquals(true, gValue.equals(gValue));
+    }
+
+    @Test
+    public void equalsShouldReturnFalseForNull() {
+        final GValue<Integer> gValue = GValue.of(123);
+        assertEquals(false, gValue.equals(null));
+    }
+
+    @Test
+    public void equalsShouldReturnFalseForDifferentClass() {
+        final GValue<Integer> gValue = GValue.of(123);
+        assertEquals(false, gValue.equals("string"));
+    }
+
+    @Test
+    public void equalsShouldReturnTrueForEqualGValues() {
+        final GValue<Integer> gValue1 = GValue.of(123);
+        final GValue<Integer> gValue2 = GValue.of(123);
+        assertEquals(true, gValue1.equals(gValue2));
+    }
+
+    @Test
+    public void equalsShouldReturnFalseForDifferentNames() {
+        final GValue<Integer> gValue1 = GValue.of("name1", 123);
+        final GValue<Integer> gValue2 = GValue.of("name2", 123);
+        assertEquals(false, gValue1.equals(gValue2));
+    }
+
+    @Test
+    public void equalsShouldReturnFalseForDifferentTypes() {
+        final GValue<Integer> gValue1 = GValue.of(123);
+        final GValue<String> gValue2 = GValue.of("123");
+        assertEquals(false, gValue1.equals(gValue2));
+    }
+
+    @Test
+    public void equalsShouldReturnFalseForDifferentValues() {
+        final GValue<Integer> gValue1 = GValue.of(123);
+        final GValue<Integer> gValue2 = GValue.of(456);
+        assertEquals(false, gValue1.equals(gValue2));
+    }
+
+    @Test
+    public void valueOfShouldReturnGValueValue() {
+        final GValue<Integer> gValue = GValue.of(123);
+        assertEquals(123, GValue.valueOf(gValue));
+    }
+
+    @Test
+    public void valueOfShouldReturnObjectAsIs() {
+        final String value = "test";
+        assertEquals("test", GValue.valueOf(value));
+    }
+
+    @Test
+    public void valueOfShouldReturnNullForNullInput() {
+        assertNull(GValue.valueOf(null));
+        assertNull(null);
     }
 }
