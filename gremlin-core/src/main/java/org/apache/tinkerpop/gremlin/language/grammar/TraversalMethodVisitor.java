@@ -1783,10 +1783,34 @@ public class TraversalMethodVisitor extends TraversalRootVisitor<GraphTraversal>
     @Override
     public GraphTraversal visitTraversalMethod_valueMap_boolean_String(final GremlinParser.TraversalMethod_valueMap_boolean_StringContext ctx) {
         if (ctx.getChildCount() == 4) {
-            return graphTraversal.valueMap((boolean) antlr.argumentVisitor.visitBooleanArgument(ctx.booleanArgument()));
+            return graphTraversal.valueMap((boolean) antlr.argumentVisitor.visitBooleanLiteral(ctx.booleanLiteral()));
         } else {
-            return graphTraversal.valueMap((boolean) antlr.argumentVisitor.visitBooleanArgument(ctx.booleanArgument()),
+            return graphTraversal.valueMap((boolean) antlr.argumentVisitor.visitBooleanLiteral(ctx.booleanLiteral()),
                     antlr.genericVisitor.parseStringVarargs(ctx.stringLiteralVarargs()));
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public GraphTraversal visitTraversalMethod_valueMap_GValue(final GremlinParser.TraversalMethod_valueMap_GValueContext ctx) {
+        Object variable = antlr.argumentVisitor.visitVariable(ctx.variable());
+        if (variable instanceof String) {
+            String[] parsedVarargs = antlr.genericVisitor.parseStringVarargs(ctx.stringLiteralVarargs());
+            String[] stringArgs = new String[parsedVarargs.length+1];
+            stringArgs[0] = (String) variable;
+            System.arraycopy(parsedVarargs, 0, stringArgs, 1, parsedVarargs.length);
+            return graphTraversal.valueMap(stringArgs);
+        } else if (variable instanceof Boolean) {
+            if (ctx.getChildCount() == 4) {
+                return graphTraversal.valueMap((boolean) variable);
+            } else {
+                return graphTraversal.valueMap((boolean) variable,
+                        antlr.genericVisitor.parseStringVarargs(ctx.stringLiteralVarargs()));
+            }
+        } else {
+            throw new IllegalArgumentException("First argument to valueMap must be either String or boolean. Found: "+variable.getClass().getName());
         }
     }
 

@@ -1268,6 +1268,11 @@ public class TranslateVisitor extends AbstractParseTreeVisitor<Void> implements 
     }
 
     @Override
+    public Void visitTraversalMethod_valueMap_GValue(final GremlinParser.TraversalMethod_valueMap_GValueContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    @Override
     public Void visitTraversalMethod_values(final GremlinParser.TraversalMethod_valuesContext ctx) {
         return visitChildren(ctx);
     }
