@@ -89,6 +89,25 @@ Feature: Step - choose()
       | lop |
       | ripple |
 
+  # this doesn't work with either grammar (null not allowed)
+  # or groovy (ambiguous method call)
+  #Scenario: g_V_chooseXlabelX_optionXpersonvar_nullX_optionXnone__identityX
+  #  Given the modern graph
+  #  And using the parameter xx1 defined as "person"
+  #  And the traversal of
+  #    """
+  #    g.V().choose(__.label()).option(xx1, null).option(Pick.none, __.identity())
+  #    """
+  #  When iterated to list
+  #  Then the result should be unordered
+  #    | result |
+  #    | marko |
+  #    | vadas |
+  #    | peter |
+  #    | josh |
+  #    | lop |
+  #    | ripple |
+
   Scenario: g_V_chooseXoutXknowsX_count_isXgtX0XX__outXknowsXX_name
     Given the modern graph
     And the traversal of

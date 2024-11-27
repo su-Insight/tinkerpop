@@ -237,6 +237,25 @@ Feature: Step - call()
       | m[{"vertex": "v[ripple]", "degree": "d[0].l"}] |
       | m[{"vertex": "v[peter]",  "degree": "d[1].l"}] |
 
+  # Doesn't work because grammar doesn't allow null for traversal but GraphTraversal does.
+  # Probably just fix GraphTraversal?
+  #Scenario: g_V_callXdc_mapvar_nullX
+  #  Given the modern graph
+  #  And using the parameter xx1 defined as "m[{\"x\": \"y\"}]"
+  #  And the traversal of
+  #    """
+  #    g.V().as("v").call("tinker.degree.centrality", xx1, null)
+  #    """
+  #  When iterated to list
+  #  Then the result should be unordered
+  #    | result |
+  #    | d[3].l |
+  #    | d[0].l |
+  #    | d[1].l |
+  #    | d[1].l |
+  #    | d[0].l |
+  #    | d[1].l |
+
   Scenario: g_V_callXdc_traversalX
     Given the modern graph
     And the traversal of
