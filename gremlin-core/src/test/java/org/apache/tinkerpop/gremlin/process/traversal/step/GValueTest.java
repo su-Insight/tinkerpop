@@ -638,4 +638,28 @@ public class GValueTest {
     public void numberOfShouldThrowBecauseNullObject() {
         GValue.numberOf(null);
     }
+
+    @Test
+    public void numberOfShouldAcceptAllNumericTypeLiterals() {
+        assertEquals((byte) 123, GValue.numberOf((byte) 123));
+        assertEquals((short) 123, GValue.numberOf((short) 123));
+        assertEquals(123, GValue.numberOf(123));
+        assertEquals(123l, GValue.numberOf(123l));
+        assertEquals(123.45f, GValue.numberOf(123.45f));
+        assertEquals(123.45, GValue.numberOf(123.45));
+        assertEquals(BigInteger.ONE, GValue.numberOf(BigInteger.ONE));
+        assertEquals(BigDecimal.ONE, GValue.numberOf(BigDecimal.ONE));
+    }
+
+    @Test
+    public void numberOfShouldAcceptAllNumericTypeGValues() {
+        assertEquals((byte) 123, GValue.numberOf(GValue.of((byte) 123)));
+        assertEquals((short) 123, GValue.numberOf((GValue.of((short) 123))));
+        assertEquals(123, GValue.numberOf((GValue.of(123))));
+        assertEquals(123l, GValue.numberOf((GValue.of(123l))));
+        assertEquals(123.45f, GValue.numberOf((GValue.of(123.45f))));
+        assertEquals(123.45, GValue.numberOf((GValue.of(123.45))));
+        assertEquals(BigInteger.ONE, GValue.numberOf((GValue.of(BigInteger.ONE))));
+        assertEquals(BigDecimal.ONE, GValue.numberOf((GValue.of(BigDecimal.ONE))));
+    }
 }
