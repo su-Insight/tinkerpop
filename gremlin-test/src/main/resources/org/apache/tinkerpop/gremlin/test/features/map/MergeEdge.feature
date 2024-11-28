@@ -274,6 +274,7 @@ Feature: Step - mergeE()
     When iterated to list
     Then the traversal will raise an error with message containing text of "Out Vertex not specified"
 
+  @GremlinLangScriptOnly
   Scenario: g_mergeEXnullvarX
     Given the empty graph
     And the graph initializer of
@@ -288,6 +289,7 @@ Feature: Step - mergeE()
     When iterated to list
     Then the traversal will raise an error with message containing text of "Out Vertex not specified"
 
+  @GremlinLangScriptOnly
   Scenario: g_V_limitX1X_mergeEXnullvarX
     Given the empty graph
     And the graph initializer of
