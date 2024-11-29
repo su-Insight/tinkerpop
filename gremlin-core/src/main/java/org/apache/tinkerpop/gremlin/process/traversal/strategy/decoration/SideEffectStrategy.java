@@ -28,6 +28,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.util.function.ConstantSupplier;
 import org.javatuples.Triplet;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BinaryOperator;
@@ -64,10 +65,10 @@ public final class SideEffectStrategy extends AbstractTraversalStrategy<Traversa
 
         // don't want the GValue to leak beyond strategy application or else the Supplier will start producing it
         // during execution
-        strategy.sideEffects.add(new Triplet<>(key, () -> {
+        strategy.sideEffects.add(new Triplet<>(key, (Supplier & Serializable) (() -> {
             Object initialValue = value instanceof Supplier ? ((Supplier) value).get() : value;
             return GValue.valueOf(initialValue);
-        }, reducer));
+        }), reducer));
     }
 
     public boolean contains(final String sideEffectKey) {
