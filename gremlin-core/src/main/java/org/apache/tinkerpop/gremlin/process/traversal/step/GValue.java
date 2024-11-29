@@ -41,7 +41,7 @@ import java.util.stream.Stream;
  * the name is not given, the value was provided literally in the traversal. The value of the variable can be any
  * object. The {@code GValue} also includes the {@link GType} that describes the type it contains.
  */
-public class GValue<V> implements Cloneable, Serializable {
+public class GValue<V> implements Serializable {
     private final String name;
     private final GType type;
 
@@ -69,7 +69,7 @@ public class GValue<V> implements Cloneable, Serializable {
     }
 
     /**
-     * Gets the name of the variable if it was defined as such and returns empty if the value was a literal.
+     * Gets the name of the variable if it was defined as such and returns null if the value was a literal.
      */
     public String getName() {
         return this.name;
@@ -117,11 +117,6 @@ public class GValue<V> implements Cloneable, Serializable {
         return Objects.hash(name, type, value);
     }
 
-    @Override
-    public GValue<V> clone() {
-        return new GValue<>(this.name, this.type, this.value);
-    }
-
     /**
      * Create a new {@code Var} from a particular value but without the specified name. If the argument provide is
      * already a {@code GValue} then it is returned as-is.
@@ -134,11 +129,12 @@ public class GValue<V> implements Cloneable, Serializable {
     }
 
     /**
-     * Create a new {@code Var} with the specified name and value.. If the argument provide is  already a
-     * {@code GValue} then it is returned as-is.
+     * Create a new {@code Var} with the specified name and value. If the argument provide is already a
+     * {@code GValue} then an IllegalArgumentException is thrown.
      *
      * @param name the name of the variable
      * @param value the value of the variable
+     * @throws IllegalArgumentException if value is already a {@code GValue}
      */
     public static <V> GValue<V> of(final String name, final V value) {
         if (value instanceof GValue) throw new IllegalArgumentException("value cannot be a GValue");
@@ -364,6 +360,13 @@ public class GValue<V> implements Cloneable, Serializable {
     }
 
     /**
+     * Tests if the object is a {@link GValue} and if so, checks if the type of the value is an {@link Element}.
+     */
+    public static boolean valueInstanceOfElement(final Object o) {
+        return o instanceof GValue && ((GValue) o).getType().isElement();
+    }
+
+    /**
      * Tests if the object is a {@link GValue} and if so, checks if the type of the value is a numeric.
      */
     public static boolean valueInstanceOfNumeric(final Object o) {
@@ -388,21 +391,21 @@ public class GValue<V> implements Cloneable, Serializable {
      * Returns {@code true} if the object is a collection or a {@link GValue} that contains a {@link Collection}.
      */
     public static boolean instanceOfCollection(final Object o) {
-        return o instanceof Collection || (o instanceof GValue && ((GValue) o).getType().isCollection());
+        return o instanceof Collection || valueInstanceOfCollection(o);
     }
 
     /**
      * Returns {@code true} if the object is an element or a {@link GValue} that contains an {@link Element}.
      */
     public static boolean instanceOfElement(final Object o) {
-        return o instanceof Element || (o instanceof GValue && ((GValue) o).getType().isElement());
+        return o instanceof Element || valueInstanceOfElement(o);
     }
 
     /**
      * Returns {@code true} if the object is a number or a {@link GValue} that contains a number.
      */
     public static boolean instanceOfNumber(final Object o) {
-        return o instanceof Number || (o instanceof GValue && ((GValue) o).getType().isNumeric());
+        return o instanceof Number || valueInstanceOfNumeric(o);
     }
 
     /**
