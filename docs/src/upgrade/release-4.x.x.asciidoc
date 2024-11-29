@@ -292,6 +292,25 @@ PDT. Primitive PDTs are string-based representations of a primitive type support
 contain a map of fields. You should consult your provider's documentation to determine what types of fields a
 particular PDT may contain.
 
+==== Introduction of GValue and Update to Parameterization in Gremlin-Lang
+
+A new construct to parameterize traversals called `GValue` has been added to gremlin. A `GValue` wraps a parameter name
+and value, and can be provided as input to parameterizable steps when building a `GraphTraversal`. The following
+examples will produce a gremlin script of `g.V().hasLabel(label)` with a parameter map of `["label": "person"]`:
+
+[source,java]
+----
+g.V().hasLabel(GValue.of("label", "person"));
+----
+
+[source,python]
+----
+g.V().has_label(GValue('label', 'person'))
+----
+
+Use of `GValue` in traversals with repeated patterns may lead to improved performance in certain graphs. Consult the
+documentation for your specific graph provider for recommendations on how to best utilize `GValue` in traversals.
+
 === Upgrading for Providers
 
 ==== Renaming NoneStep to DiscardStep
@@ -356,5 +375,19 @@ The deprecated one-arg constructor for `AbstractAuthenticationHandler` has been 
 for the implementations. Gremlin Server formerly supported the two-arg `Authenticator`, and `Settings` constructor for
 instantiating new custom instances. It now expects implementations of `AbstractAuthenticationHandler` to use a
 three-arg constructor that takes `Authenticator`, `Authorizer`, and `Settings`.
+
+===== Introduction of GValue and Update to Parameterization in Gremlin-Lang
+
+Parameterization was first added to gremlin-lang in TinkerPop 3.7.0, however was limited in that variables were
+immediately resolved to literals during the compilation of a gremlin script. This direct resolution of variables limited
+providers ability to detect and optimize recurring query patterns.
+
+With this update, a new class `GValue` is introduced which wraps a parameter name and value. Steps which will benefit
+from parameterization have been given overloads to accept GValues. Users can pass GValue's into their traversals to
+inject parameters.
+
+A new `DefaultVariableResolver` has also been introduced with this change. The grammar will now resolve variables into
+`GValue` which are passed to the constructed traversal, instead of directly resolving them to literals. The old variable
+resolution behavior can still be obtained via the `DirectVariableResolver` if desired.
 
 ==== Graph Driver Providers
