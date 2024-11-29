@@ -25,7 +25,6 @@ import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.PageRank
 import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.PeerPressureVertexProgramStep;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.ProgramVertexProgramStep;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.ShortestPathVertexProgramStep;
-import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.DT;
 import org.apache.tinkerpop.gremlin.process.traversal.Failure;
 import org.apache.tinkerpop.gremlin.process.traversal.Merge;
@@ -2865,15 +2864,21 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
         } else {
             this.asAdmin().getGremlinLang().addStep(Symbols.hasId, id, otherIds);
 
-            // the logic for dealing with hasId([]) is sketchy historically, just trying to maintain what we were
-            // originally testing prior to GValue.
-            if (id instanceof GValue && ((GValue) id).getType().isCollection()) {
-                return TraversalHelper.addHasContainer(this.asAdmin(), new HasContainer(T.id.getAccessor(), new P(Contains.within, id)));
-            }
-
             //using ArrayList given P.within() turns all arguments into lists
             final List<Object> ids = new ArrayList<>();
-            if (id instanceof Object[]) {
+
+            if (id instanceof GValue) {
+                // the logic for dealing with hasId([]) is sketchy historically, just trying to maintain what we were
+                // originally testing prior to GValue.
+                Object value = ((GValue) id).get();
+                if (value instanceof Object[]) {
+                    ids.addAll(Arrays.asList(GValue.ensureGValues((Object[]) value)));
+                } else if (value instanceof Collection) {
+                    ids.addAll(Arrays.asList(GValue.ensureGValues(((Collection<?>) value).toArray())));
+                } else {
+                    ids.add(id);
+                }
+            } else if (id instanceof Object[]) {
                 Collections.addAll(ids, (Object[]) id);
             } else if (id instanceof Collection) {
                 // as ids are unrolled when it's in array, they should also be unrolled when it's a list.
@@ -2891,22 +2896,10 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
                     // For example, GValue.of([1, 2]) is processed to [GValue.of(1), GValue.of(2)]
                     if(i instanceof GValue) {
                         Object value = ((GValue) i).get();
-                        if (i instanceof Object[]) {
-                            for (Object o : (Object[]) value) {
-                                if(o instanceof GValue) {
-                                    ids.add(o);
-                                } else {
-                                    ids.add(GValue.of(null, o));
-                                }
-                            }
+                        if (value instanceof Object[]) {
+                            ids.addAll(Arrays.asList(GValue.ensureGValues((Object[]) value)));
                         } else if(value instanceof Collection) {
-                            for (Object o : (Collection<?>) value) {
-                                if(o instanceof GValue) {
-                                    ids.add(o);
-                                } else {
-                                    ids.add(GValue.of(null, o));
-                                }
-                            }
+                            ids.addAll(Arrays.asList(GValue.ensureGValues(((Collection<?>) value).toArray())));
                         } else {
                             ids.add(i);
                         }
