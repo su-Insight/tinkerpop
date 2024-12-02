@@ -74,9 +74,10 @@ public class GraphStep<S, E extends Element> extends AbstractStep<S, E> implemen
 
         this.isStart = isStart;
 
+        Object[] idValues = GValue.resolveToValues(this.ids);
         this.iteratorSupplier = () -> (Iterator<E>) (Vertex.class.isAssignableFrom(this.returnClass) ?
-                this.getTraversal().getGraph().get().vertices(GValue.resolveToValues(this.ids)) :
-                this.getTraversal().getGraph().get().edges(GValue.resolveToValues(this.ids)));
+                this.getTraversal().getGraph().get().vertices(idValues) :
+                this.getTraversal().getGraph().get().edges(idValues));
     }
 
     /**

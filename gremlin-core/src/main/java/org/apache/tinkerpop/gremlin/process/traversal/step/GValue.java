@@ -101,7 +101,7 @@ public class GValue<V> implements Serializable {
     @Override
     public String toString() {
         return isVariable() ?
-                String.format("%s&%s", name, value) : Objects.toString(value);
+                String.format("%s=%s", name, value) : Objects.toString(value);
     }
 
     @Override
