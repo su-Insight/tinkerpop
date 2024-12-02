@@ -136,14 +136,11 @@ def translate_traversal(step):
         else:
             p = step.context.traversal_params
 
-    localg = step.context.g
+    localg = step.context.g.with_('language', 'gremlin-lang')
 
     tagset = [tag.name for tag in step.all_tags]
     if "GraphComputerOnly" in tagset:
-        localg = step.context.g.with_computer()
-    if "GremlinLangScriptOnly" in tagset:
-        # temporary tag used for tests that need gremlin-lang script processing before groovy script is removed
-        localg = step.context.g.with_('language', 'gremlin-lang')
+        localg = step.context.g.with_('language', 'gremlin-lang').with_computer()
     p['g'] = localg
     step.context.traversal = step.context.traversals.pop(0)(**p)
 

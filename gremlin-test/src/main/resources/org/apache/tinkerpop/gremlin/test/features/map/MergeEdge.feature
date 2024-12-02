@@ -146,7 +146,6 @@ Feature: Step - mergeE()
     And the graph should return 0 for count of "g.E().properties()"
     And the graph should return 1 for count of "g.V()"
 
-  @GremlinLangScriptOnly
   Scenario: g_V_mergeEXlabel_selfX_optionXonMatch_nullX
     Given the empty graph
     And the graph initializer of
@@ -165,7 +164,6 @@ Feature: Step - mergeE()
     And the graph should return 0 for count of "g.E().properties()"
     And the graph should return 1 for count of "g.V()"
 
-  @GremlinLangScriptOnly
   Scenario: g_V_mergeEXemptyX_optionXonCreate_nullX
     Given the empty graph
     And the graph initializer of
@@ -305,7 +303,6 @@ Feature: Step - mergeE()
     Then the traversal will raise an error with message containing text of "Out Vertex not specified"
 
   # Directions not specified
-  @GremlinLangScriptOnly
   Scenario: g_V_mergeEXnullX
     Given the empty graph
     And the graph initializer of
@@ -991,7 +988,7 @@ Feature: Step - mergeE()
       """
       g.addV("person").property("name", "marko").property("age", 29).as("marko").
         addV("person").property("name", "vadas").property("age", 27).as("vadas").
-        addV("software").property("name", "lop").property("lang", "java").as("lop").
+        addV("software").property("name", "lop").property("", "java").as("lop").
         addV("person").property("name","josh").property("age", 32).as("josh").
         addV("software").property("name", "ripple").property("lang", "java").as("ripple").
         addV("person").property("name", "peter").property("age", 35).as('peter').
