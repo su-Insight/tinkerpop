@@ -4545,9 +4545,25 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
      * @since 3.7.3
      */
     public default <M, E2> GraphTraversal<S, E> option(final Merge merge, final GValue<Map<Object, Object>> m, final VertexProperty.Cardinality cardinality) {
+        final Step<?, ?> lastStep = this.asAdmin().getEndStep();
+
+        // CardinalityValueTraversal doesn't make sense for any prior step other than mergeV()
+        if (!(lastStep instanceof MergeVertexStep)) {
+            throw new IllegalStateException("option() with the Cardinality argument can only be used following mergeV()");
+        }
+
         this.asAdmin().getGremlinLang().addStep(GraphTraversal.Symbols.option, merge, m, cardinality);
 
-        ((TraversalOptionParent<M, E, E2>) this.asAdmin().getEndStep()).addChildOption((M) merge, (Traversal.Admin<E, E2>) new ConstantTraversal<>(m).asAdmin());
+        // do explicit cardinality for every single pair in the map.
+        // copy to new map to avoid modifying the existing map which was added to GremlinLang.
+        Map cardinalitiesMap = new LinkedHashMap(m.get());
+        for (Object k : cardinalitiesMap.keySet()) {
+            final Object o = cardinalitiesMap.get(k);
+            if (!(o instanceof CardinalityValueTraversal))
+                cardinalitiesMap.put(k, new CardinalityValueTraversal(cardinality, o));
+        }
+
+        ((TraversalOptionParent<M, E, E2>) lastStep).addChildOption((M) merge, (Traversal.Admin<E, E2>) new ConstantTraversal<>(GValue.ofMap(m.getName(), cardinalitiesMap)).asAdmin());
         return this;
     }
 

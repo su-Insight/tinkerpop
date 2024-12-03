@@ -936,6 +936,83 @@ Feature: Step - mergeV()
     And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"marko\").properties(\"age\")"
 
   @MultiProperties
+  Scenario: g_mergeVXname_markoX_optionXonMatch_age_33_var_singleX
+    Given the empty graph
+    And the graph initializer of
+      """
+      g.addV("person").property("name", "marko").property(Cardinality.list, "age", 29).property(Cardinality.list, "age", 31).property(Cardinality.list, "age", 32)
+      """
+    And using the parameter xx1 defined as "m[{\"age\":33}]"
+    And the traversal of
+      """
+      g.mergeV([name: "marko"]).
+          option(Merge.onMatch, xx1, Cardinality.single)
+      """
+    When iterated to list
+    Then the result should have a count of 1
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"marko\").has(\"age\", 33)"
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"marko\").has(\"age\")"
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"marko\").properties(\"age\")"
+
+  @MultiProperties
+  Scenario: g_mergeVXname_markoX_optionXonMatch_age_33_var_setX
+    Given the empty graph
+    And the graph initializer of
+      """
+      g.addV("person").property("name", "marko").property(Cardinality.list, "age", 29).property(Cardinality.list, "age", 31).property(Cardinality.list, "age", 32)
+      """
+    And using the parameter xx1 defined as "m[{\"age\":33}]"
+    And the traversal of
+      """
+      g.mergeV([name: "marko"]).
+          option(Merge.onMatch, xx1, Cardinality.set)
+      """
+    When iterated to list
+    Then the result should have a count of 1
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"marko\").has(\"age\", 33)"
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"marko\").has(\"age\")"
+    And the graph should return 4 for count of "g.V().has(\"person\",\"name\",\"marko\").properties(\"age\")"
+
+  @MultiProperties
+  Scenario: g_mergeVXname_markoX_optionXonMatch_age_32_var_setX
+    Given the empty graph
+    And the graph initializer of
+      """
+      g.addV("person").property("name", "marko").property(Cardinality.list, "age", 29).property(Cardinality.list, "age", 31).property(Cardinality.list, "age", 32)
+      """
+    And using the parameter xx1 defined as "m[{\"age\":32}]"
+    And the traversal of
+      """
+      g.mergeV([name: "marko"]).
+          option(Merge.onMatch, xx1, Cardinality.set)
+      """
+    When iterated to list
+    Then the result should have a count of 1
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"marko\").has(\"age\", 32)"
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"marko\").has(\"age\")"
+    And the graph should return 3 for count of "g.V().has(\"person\",\"name\",\"marko\").properties(\"age\")"
+
+  @MultiProperties
+  Scenario: g_mergeVXname_markoX_optionXonMatch_age_32_var_listX
+    Given the empty graph
+    And the graph initializer of
+      """
+      g.addV("person").property("name", "marko").property(Cardinality.list, "age", 29).property(Cardinality.list, "age", 31).property(Cardinality.list, "age", 32)
+      """
+    And using the parameter xx1 defined as "m[{\"age\":32}]"
+    And the traversal of
+      """
+      g.mergeV([name: "marko"]).
+          option(Merge.onMatch, xx1, Cardinality.list)
+      """
+    When iterated to list
+    Then the result should have a count of 1
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"marko\").has(\"age\", 32)"
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"marko\").has(\"age\")"
+    And the graph should return 4 for count of "g.V().has(\"person\",\"name\",\"marko\").properties(\"age\")"
+    And the graph should return 2 for count of "g.V().has(\"person\",\"name\",\"marko\").properties(\"age\").where(value().is(32))"
+
+  @MultiProperties
   Scenario: g_mergeVXname_markoX_optionXonMatch_name_allen_age_setX31X_singleX
     Given the empty graph
     And the graph initializer of
