@@ -988,7 +988,7 @@ Feature: Step - mergeE()
       """
       g.addV("person").property("name", "marko").property("age", 29).as("marko").
         addV("person").property("name", "vadas").property("age", 27).as("vadas").
-        addV("software").property("name", "lop").property("", "java").as("lop").
+        addV("software").property("name", "lop").property("lang", "java").as("lop").
         addV("person").property("name","josh").property("age", 32).as("josh").
         addV("software").property("name", "ripple").property("lang", "java").as("ripple").
         addV("person").property("name", "peter").property("age", 35).as('peter').
