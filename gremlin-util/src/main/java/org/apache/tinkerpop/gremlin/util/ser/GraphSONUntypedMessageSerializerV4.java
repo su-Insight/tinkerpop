@@ -19,10 +19,8 @@
 package org.apache.tinkerpop.gremlin.util.ser;
 
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONXModuleV2;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONXModuleV3;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.TypeInfo;
-
-import java.nio.ByteBuffer;
 
 /**
  * Serialize results to JSON with version 4 schema and the extended module without embedded types.
@@ -30,20 +28,11 @@ import java.nio.ByteBuffer;
 public final class GraphSONUntypedMessageSerializerV4 extends AbstractGraphSONMessageSerializerV4 {
     private static final String MIME_TYPE = SerTokens.MIME_GRAPHSON_V4_UNTYPED;
 
-    private static byte[] header;
-
-    static {
-        final ByteBuffer buffer = ByteBuffer.allocate(MIME_TYPE.length() + 1);
-        buffer.put((byte) MIME_TYPE.length());
-        buffer.put(MIME_TYPE.getBytes());
-        header = buffer.array();
-    }
-
     /**
      * Creates a default GraphSONMessageSerializer.
      *
      * By default this will internally instantiate a {@link GraphSONMapper} and register
-     * a {@link GremlinServerModule} and {@link GraphSONXModuleV2} to the mapper.
+     * a {@link GremlinServerModuleV4} and {@link GraphSONXModuleV3} to the mapper.
      *
      * @see #GraphSONUntypedMessageSerializerV4(GraphSONMapper.Builder)
      */
@@ -55,7 +44,7 @@ public final class GraphSONUntypedMessageSerializerV4 extends AbstractGraphSONMe
      * Create a GraphSONMessageSerializer with a provided {@link GraphSONMapper.Builder}.
      *
      * Note that to make this mapper usable in the context of request messages and responses,
-     * this method will automatically register a {@link GremlinServerModule} to the provided
+     * this method will automatically register a {@link GremlinServerModuleV4} to the provided
      * mapper.
      */
     public GraphSONUntypedMessageSerializerV4(final GraphSONMapper.Builder mapperBuilder) {
@@ -69,12 +58,7 @@ public final class GraphSONUntypedMessageSerializerV4 extends AbstractGraphSONMe
 
     @Override
     GraphSONMapper.Builder configureBuilder(final GraphSONMapper.Builder builder) {
-        return builder.typeInfo(TypeInfo.NO_TYPES).addCustomModule(new GraphSONMessageSerializerV4.GremlinServerModuleV4());
-    }
-
-    @Override
-    byte[] obtainHeader() {
-        return header;
+        return builder.typeInfo(TypeInfo.NO_TYPES).addCustomModule(new GremlinServerModuleV4());
     }
 
     @Override
