@@ -4,11 +4,11 @@ jobs:
   smoke:
     name: smoke
     timeout-minutes: 10
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Set up JDK 11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
         with:
           java-version: '11'
           distribution: 'temurin'
@@ -18,25 +18,29 @@ jobs:
     name: mvn clean install - jdk11
     timeout-minutes: 45
     needs: smoke
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Set up JDK 11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
         with:
           java-version: '11'
-          distribution: 'adopt'
+          distribution: 'temurin'
       - name: Build with Maven
-        run: mvn clean install -pl -:gremlin-javascript -Dci --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+        run: mvn clean install -pl -:gremlin-javascript,-:gremlin-dotnet-source,-:gremlin-dotnet-tests,-:gremlin-go,-:gremlin-python -Dci --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -Dcoverage
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d
+        with:
+         directory: ./gremlin-tools/gremlin-coverage/target/site
   java-jdk8:
     name: mvn clean install - jdk8
     timeout-minutes: 45
     needs: smoke
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Set up JDK 8
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
         with:
           java-version: '8'
           distribution: 'temurin'
@@ -46,11 +50,11 @@ jobs:
     name: gremlin-server default
     timeout-minutes: 45
     needs: smoke
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Set up JDK 11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
         with:
           java-version: '11'
           distribution: 'temurin'
@@ -62,11 +66,11 @@ jobs:
     name: gremlin-server unified
     timeout-minutes: 45
     needs: smoke
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Set up JDK 11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
         with:
           java-version: '11'
           distribution: 'temurin'
@@ -74,19 +78,60 @@ jobs:
         run: |
           mvn clean install -pl -:gremlin-javascript,-:gremlin-python,-gremlin-dotnet,-:gremlin-dotnet-source,-:gremlin-dotnet-tests,-:gremlint -q -DskipTests -Dci
           mvn verify -pl :gremlin-server -DskipTests -DskipIntegrationTests=false -DincludeNeo4j -DtestUnified=true
+  cache-gremlin-server-docker-image:
+      name: cache gremlin-server docker image
+      timeout-minutes: 10
+      needs: smoke
+      runs-on: ubuntu-22.04
+      steps:
+        - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        - name: Set up JDK 11
+          uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+          with:
+            java-version: '11'
+            distribution: 'temurin'
+        - name: Generate Gremlin Server Base
+          working-directory: .
+          run: |
+            mvn clean install -pl gremlin-server -DskipTests -DskipIntegrationTests=true -Dci -am
+        - name: Save Docker image
+          working-directory: ./gremlin-server
+          run: docker save --output gremlin-server.tar tinkerpop/gremlin-server
+        - uses: actions/cache@v4
+          id: gremlin-server-test-docker-image
+          with:
+            path: |
+              ./gremlin-server/*
+              ~/.m2/repository/org/apache/tinkerpop/*
+            key: ${{ github.sha }}
+         # Disabled until Linux containers are supported on Windows runners: https://github.com/actions/virtual-environments/issues/252
+#        - name: Upload Docker image for Windows
+#          uses: actions/upload-artifact@v4
+#          with:
+#            name: ${{ github.sha }}
+#            path: ./gremlin-server/gremlin-server.tar
+#            retention-days: 1
   spark-core:
     name: spark core
     timeout-minutes: 45
     needs: smoke
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, windows-2022]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Set up JDK 11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
         with:
           java-version: '11'
           distribution: 'temurin'
-      - name: Build with Maven
+      - name: Build with Maven Windows
+        if: runner.os == 'Windows'
+        run: |
+          mvn clean install -pl -:gremlin-javascript,-:gremlin-python,-gremlin-dotnet,-:gremlin-dotnet-source,-:gremlin-dotnet-tests,-:gremlint -q -DskipTests -DskipImageBuild -Dci
+      - name: Build with Maven Ubuntu
+        if: runner.os == 'Linux'
         run: |
           mvn clean install -pl -:gremlin-javascript,-:gremlin-python,-gremlin-dotnet,-:gremlin-dotnet-source,-:gremlin-dotnet-tests,-:gremlint -q -DskipTests -Dci
           mvn verify -pl :spark-gremlin -DskipTests -DskipIntegrationTests=false '-Dit.test=*IntegrateTest,!SparkGryoSerializerGraphComputerProcessIntegrateTest'
@@ -94,15 +139,23 @@ jobs:
     name: spark gryo
     timeout-minutes: 45
     needs: smoke
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, windows-2022]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Set up JDK 11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
         with:
           java-version: '11'
           distribution: 'temurin'
-      - name: Build with Maven
+      - name: Build with Maven Windows
+        if: runner.os == 'Windows'
+        run: |
+          mvn clean install -pl -:gremlin-javascript,-:gremlin-python,-gremlin-dotnet,-:gremlin-dotnet-source,-:gremlin-dotnet-tests,-:gremlint -q -DskipTests -DskipImageBuild -Dci
+      - name: Build with Maven Ubuntu
+        if: runner.os == 'Linux'
         run: |
           mvn clean install -pl -:gremlin-javascript,-:gremlin-python,-gremlin-dotnet,-:gremlin-dotnet-source,-:gremlin-dotnet-tests,-:gremlint -q -DskipTests -Dci
           mvn verify -pl :spark-gremlin -DskipTests -DskipIntegrationTests=false -Dit.test=SparkGryoSerializerGraphComputerProcessIntegrateTest
@@ -110,91 +163,137 @@ jobs:
     name: gremlin-console
     timeout-minutes: 20
     needs: smoke
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Set up JDK 11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
         with:
           java-version: '11'
           distribution: 'temurin'
       - name: Build with Maven
         run: |
+          touch gremlin-python/.glv
           mvn clean install -pl -:gremlin-javascript,-:gremlin-python,-gremlin-dotnet,-:gremlin-dotnet-source,-:gremlin-dotnet-tests,-:gremlint -q -DskipTests -Dci
           mvn verify -pl :gremlin-console -DskipTests -DskipIntegrationTests=false
+  gremlin-driver:
+    name: gremlin-driver
+    timeout-minutes: 20
+    needs: cache-gremlin-server-docker-image
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Set up JDK 11
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+      - name: Build with Maven
+        run: |
+          mvn clean install -pl -:gremlin-javascript,-gremlin-dotnet,-:gremlin-dotnet-source,-:gremlin-dotnet-tests,-:gremlint -q -DskipTests -Dci
+          mvn verify -pl gremlin-driver -DskipIntegrationTests=false
   javascript:
     name: javascript
     timeout-minutes: 15
-    needs: smoke
-    runs-on: ubuntu-latest
+    needs: cache-gremlin-server-docker-image
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # Windows Disabled until Linux containers are supported on Windows runners: https://github.com/actions/virtual-environments/issues/252
+        # os: [ubuntu-22.04, windows-2022]
+        os: [ubuntu-22.04]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Set up JDK 11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
         with:
           java-version: '11'
           distribution: 'temurin'
+      - name: Get Cached Server Base Image
+        if: matrix.os == 'ubuntu-22.04'
+        uses: actions/cache@v4
+        id: gremlin-server-test-docker-image
+        with:
+          path: |
+            ./gremlin-server/*
+            ~/.m2/repository/org/apache/tinkerpop/*
+          key: ${{ github.sha }}
+#      - name: Download Server Base Image
+#        if: matrix.os == 'windows-2022'
+#        uses: actions/download-artifact@v3
+#        with:
+#          name: ${{ github.sha }}
+#          path: ./gremlin-server
+      - name: Load Docker Image
+        working-directory: ./gremlin-server
+        run: docker load --input gremlin-server.tar
       - name: Build with Maven
         run: |
           mvn clean install -pl -:gremlin-python,-gremlin-dotnet,-:gremlin-dotnet-source,-:gremlin-dotnet-tests -q -DskipTests -Dci
-          mvn verify -pl :gremlin-javascript,:gremlint -DincludeNeo4j
+          mvn verify -pl :gremlin-javascript,:gremlint
   python:
     name: python
     timeout-minutes: 20
-    needs: smoke
-    runs-on: ubuntu-latest
+    needs: cache-gremlin-server-docker-image
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Set up JDK 11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
         with:
           java-version: '11'
           distribution: 'temurin'
       - name: Set up Python 3.x
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
         with:
           python-version: '3.8'
-      - name: Setup Python requirements
-        run: |
-          sudo apt install gcc libkrb5-dev
-          python3 -m pip install --upgrade pip
-          pip install virtualenv
       - name: Build with Maven
         run: |
           touch gremlin-python/.glv
           mvn clean install -pl -:gremlin-javascript,-gremlin-dotnet,-:gremlin-dotnet-source,-:gremlin-dotnet-tests,-:gremlint -q -DskipTests -Dci
-          mvn verify -pl gremlin-python -DincludeNeo4j
+          mvn verify -pl gremlin-python
   dotnet:
     name: .NET
     timeout-minutes: 20
-    needs: smoke
-    runs-on: ubuntu-latest
+    needs: cache-gremlin-server-docker-image
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Set up JDK11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
         with:
           java-version: '11'
           distribution: 'temurin'
       - name: Set up .NET 6.0.x
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3
         with:
           dotnet-version: '6.0.x'
+      - name: Get Cached Server Base Image
+        uses: actions/cache@v4
+        id: gremlin-server-test-docker-image
+        with:
+          path: |
+            ./gremlin-server/*
+            ~/.m2/repository/org/apache/tinkerpop/*
+          key: ${{ github.sha }}
+      - name: Load Docker Image
+        working-directory: ./gremlin-server
+        run: docker load --input gremlin-server.tar
       - name: Build with Maven
         run: |
           touch gremlin-dotnet/src/.glv
           touch gremlin-dotnet/test/.glv
           mvn clean install -pl -:gremlin-javascript,-:gremlin-python,-:gremlint -q -DskipTests -Dci
-          mvn verify -pl :gremlin-dotnet,:gremlin-dotnet-tests -P gremlin-dotnet -DincludeNeo4j
+          mvn verify -pl :gremlin-dotnet,:gremlin-dotnet-tests -P gremlin-dotnet
   neo4j-gremlin:
     name: neo4j-gremlin
     timeout-minutes: 20
     needs: smoke
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Set up JDK11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
         with:
           java-version: '11'
           distribution: 'temurin'
@@ -205,33 +304,36 @@ jobs:
   go:
     name: go
     timeout-minutes: 20
-    needs: smoke
-    runs-on: ubuntu-latest
+    needs: cache-gremlin-server-docker-image
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
-          go-version: '1.17'
-
-      - name: Generate Gremlin Server Base Image
+          go-version: '1.20'
+      - name: Get Cached Server Base Image
+        uses: actions/cache@v4
+        id: gremlin-server-test-docker-image
+        with:
+          path: |
+            ./gremlin-server/*
+            ~/.m2/repository/org/apache/tinkerpop/*
+          key: ${{ github.sha }}
+      - name: Load Docker Image
+        working-directory: ./gremlin-server
+        run: docker load --input gremlin-server.tar
+      - name: Build with Maven
         working-directory: .
         run: |
-          mvn clean install -pl :gremlin-server -DskipTests -DskipIntegrationTests=true -am && mvn install -Pdocker-images -pl :gremlin-server
-
-      - name: Execute Go tests
-        working-directory: ./gremlin-go
-        run: |
-          docker-compose up --exit-code-from gremlin-go-integration-tests
-          docker-compose down
-
+          touch gremlin-go/.glv
+          mvn clean install -pl -:gremlin-python,-:gremlin-javascript,-:gremlin-dotnet,-:gremlin-dotnet-source,-:gremlin-dotnet-tests -q -DskipTests -Dci
+          mvn verify -pl :gremlin-go
       - name: Upload to Codecov
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d
         with:
           working-directory: ./gremlin-go
-
       - name: Go-Vet
         working-directory: ./gremlin-go
         run: go vet ./...
