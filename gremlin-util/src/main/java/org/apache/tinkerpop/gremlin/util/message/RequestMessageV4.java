@@ -29,28 +29,23 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * The model for a request message sent to the server.
- *
- * @author Stephen Mallette (http://stephen.genoprime.com)
+ * The model for a request message in the HTTP body that is sent to the server beginning in 4.0.0.
  */
 public final class RequestMessageV4 {
     /**
      * An "invalid" message.  Used internally only.
      */
     public static final RequestMessageV4 INVALID = new RequestMessageV4();
-    private UUID requestId;
-//
+
+    private static final String REQUEST_ID = "requestId";
+
     private String gremlinType; // Type information needed to help deserialize "gremlin" into either String/Bytecode.
-//
+
     private Object gremlin; // Should be either a String or Bytecode type.
 
     private Map<String, Object> fields;
-//
-//    private String language;
-//
-//    private Map<String, Object> bindings;
-//
-//    private String g;
+
+    private UUID requestId;
 
     private RequestMessageV4(final Object gremlin, final Map<String, Object> fields) {
         if (null == gremlin) throw new IllegalArgumentException("RequestMessage requires gremlin argument");
@@ -58,15 +53,8 @@ public final class RequestMessageV4 {
             throw new IllegalArgumentException("gremlin argument for RequestMessage must be either String or Bytecode");
         }
 
-        Object requestId = fields.get(Tokens.REQUEST_ID);
-        if (null == requestId) throw new IllegalArgumentException("RequestMessage requires a requestId");
-        if (!(requestId instanceof UUID)) {
-            throw new IllegalArgumentException("requestId argument for RequestMessage must be a UUID");
-        }
-
         this.gremlin = gremlin;
         this.fields = fields;
-        this.requestId = (UUID) requestId;
 
         if (gremlin instanceof String) {
             gremlinType = Tokens.OPS_EVAL;
@@ -78,6 +66,8 @@ public final class RequestMessageV4 {
         }
 
         this.fields.put("gremlinType", gremlinType);
+
+        requestId = UUID.randomUUID();
     }
 
     /**
@@ -86,24 +76,24 @@ public final class RequestMessageV4 {
     private RequestMessageV4() { }
 
     /**
-     * The id of the current request and is used to track the message within Gremlin Server and in its response.  This
-     * value should be unique per request made.
+     * The id of the current request.
+     * Used only in GLV, not transmitted to the server.
      */
     public UUID getRequestId() {
         return requestId;
     }
 
-    public <T> Optional<T> optionalArgs(final String key) {
+    public <T> Optional<T> optionalField(final String key) {
         final Object o = fields.get(key);
         return o == null ? Optional.empty() : Optional.of((T) o);
     }
 
-    public <T> T getArg(final String key) {
+    public <T> T getField(final String key) {
         return (T) fields.get(key);
     }
 
-    public <T> T getArgOrDefault(final String key, final T def) {
-        return (T) optionalArgs(key).orElse(def);
+    public <T> T getFieldOrDefault(final String key, final T def) {
+        return (T) optionalField(key).orElse(def);
     }
 
     public String getGremlinType() {
@@ -118,21 +108,20 @@ public final class RequestMessageV4 {
         return Collections.unmodifiableMap(fields);
     }
 
+    public RequestMessageV4 trimMessage(int size) {
+        gremlin = gremlin.toString().substring(0, size) + "...";
+        return this;
+    }
+
     public static Builder from(final RequestMessageV4 msg) {
-        final Builder builder = build(msg.gremlin)
-                .overrideRequestId(msg.requestId)
-                .addLanguage(msg.getArg(Tokens.ARGS_LANGUAGE))
-                .addG(msg.getArg(Tokens.ARGS_G))
-                .addBindings(msg.getArg(Tokens.ARGS_BINDINGS));
+        final Builder builder = build(msg.gremlin);
+        builder.fields.putAll(msg.getFields());
         return builder;
     }
 
     public static Builder from(final RequestMessageV4 msg, final Object gremlin) {
-        final Builder builder = build(gremlin)
-                .overrideRequestId(msg.requestId)
-                .addLanguage(msg.getArg(Tokens.ARGS_LANGUAGE))
-                .addG(msg.getArg(Tokens.ARGS_G))
-                .addBindings(msg.getArg(Tokens.ARGS_BINDINGS));
+        final Builder builder = build(gremlin);
+        builder.fields.putAll(msg.getFields());
         return builder;
     }
 
@@ -142,18 +131,6 @@ public final class RequestMessageV4 {
                 ", fields=" + fields +
                 ", gremlin=" + gremlin +
                 '}';
-    }
-
-    public RequestMessage convertToV1() {
-        Map<String, String> alias = new HashMap<>();
-        if (fields.containsKey(Tokens.ARGS_G)) alias.put(Tokens.ARGS_G, (String) fields.get(Tokens.ARGS_G));
-
-        RequestMessage.Builder builder = RequestMessage.build(this.gremlinType);
-        builder.overrideRequestId(this.requestId).addArg(Tokens.ARGS_GREMLIN, this.gremlin).addArg(Tokens.ARGS_ALIASES, alias);
-        if (fields.containsKey(Tokens.ARGS_LANGUAGE)) builder.addArg(Tokens.ARGS_LANGUAGE, fields.get(Tokens.ARGS_LANGUAGE));
-        if (fields.containsKey(Tokens.ARGS_BINDINGS)) builder.addArg(Tokens.ARGS_BINDINGS, fields.get(Tokens.ARGS_BINDINGS));
-
-        return builder.create();
     }
 
     public static Builder build(final Object gremlin) {
@@ -172,17 +149,6 @@ public final class RequestMessageV4 {
 
         private Builder(final Object gremlin) {
             this.gremlin = gremlin;
-            this.fields.put(Tokens.REQUEST_ID, UUID.randomUUID());
-        }
-
-        /**
-         * Override the request identifier with a specified one, otherwise the {@link Builder} will randomly generate
-         * a {@link UUID}.
-         */
-        public Builder overrideRequestId(final UUID requestId) {
-            Objects.requireNonNull(requestId, "requestId argument cannot be null.");
-            this.fields.put(Tokens.REQUEST_ID, requestId);
-            return this;
         }
 
         public Builder addLanguage(final String language) {
@@ -205,6 +171,30 @@ public final class RequestMessageV4 {
         public Builder addG(final String g) {
             Objects.requireNonNull(g, "g argument cannot be null.");
             this.fields.put(Tokens.ARGS_G, g);
+            return this;
+        }
+
+        public Builder addChunkSize(final int chunkSize) {
+            Objects.requireNonNull(chunkSize, "chunkSize argument cannot be null.");
+            this.fields.put(Tokens.ARGS_BATCH_SIZE, chunkSize);
+            return this;
+        }
+
+        public Builder addMaterializeProperties(final String materializeProps) {
+            Objects.requireNonNull(materializeProps, "materializeProps argument cannot be null.");
+            if (!materializeProps.equals(Tokens.MATERIALIZE_PROPERTIES_TOKENS) && !materializeProps.equals(Tokens.MATERIALIZE_PROPERTIES_ALL)) {
+                throw new IllegalArgumentException("materializeProperties argument must be either token or all.");
+            }
+
+            this.fields.put(Tokens.ARGS_MATERIALIZE_PROPERTIES, materializeProps);
+            return this;
+        }
+
+        public Builder addTimeoutMillis(final long timeout) {
+            Objects.requireNonNull(timeout, "timeout argument cannot be null.");
+            if (timeout < 0) throw new IllegalArgumentException("timeout argument cannot be negative.");
+
+            this.fields.put(Tokens.TIMEOUT_MS, timeout);
             return this;
         }
 
