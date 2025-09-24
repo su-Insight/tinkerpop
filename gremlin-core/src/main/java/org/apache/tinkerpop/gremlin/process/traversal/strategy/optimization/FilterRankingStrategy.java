@@ -40,6 +40,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.javatuples.Pair;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,6 +48,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import java.util.stream.Collectors;
 
 /**
@@ -91,14 +93,23 @@ public final class FilterRankingStrategy extends AbstractTraversalStrategy<Trave
             // gather the parents and their Scoping/LambdaHolder steps to build up the cache. since the traversal is
             // processed in depth first manner, the entries gathered to m are deepest child first and held in order,
             // so that the cache can be constructed with parent's knowing their children were processed first
-            final Map<TraversalParent, List<Step<?,?>>> m =
-                    TraversalHelper.getStepsOfAssignableClassRecursivelyFromDepth(traversal, TraversalParent.class).stream().
-                    collect(Collectors.groupingBy(step -> ((Step) step).getTraversal().getParent(), LinkedHashMap::new, Collectors.toList()));
+            // Note: We should avoid using streams with groupingBy collectors for this (e.g., with code of the form
+            // TraversalHelper.getStepsOfAssignableClassRecursivelyFromDepth(traversal, TraversalParent.class).stream().
+            // collect(Collectors.groupingBy(step -> ((Step) step).getTraversal().getParent(), LinkedHashMap::new, Collectors.toList())) )
+            // since it would mean that we do hash computation multiple times for the traversal parent (which can be a
+            // complex step with many children).
+            // Also note that IdentityHashMap is not an option for above Collectors.groupingBy call since it would not
+            // retain the required order (deepest traversal parents first).
+            final List<Pair<TraversalParent, List<Step<?,?>>>> l =
+                    collectStepsOfAssignableClassRecursivelyFromDepthGroupedByParent(traversal, TraversalParent.class);
+
 
             // build the cache and use it to detect if any children impact the Pair in any way. in the case of a
             // child with a lambda, the parent would simply inherit that true. in the case of additional labels they
             // would just be appended to the list for the parent.
-            m.forEach((k, v) -> {
+            l.forEach(e -> {
+                final TraversalParent k = e.getValue0();
+                final List<Step<?,?>> v = e.getValue1();
                 final boolean hasLambda = v.stream().anyMatch(s -> s instanceof LambdaHolder ||
                         (traversalParentCache.containsKey(s) && traversalParentCache.get(s).getValue0()));
                 if (hasLambda) {
@@ -232,4 +243,67 @@ public final class FilterRankingStrategy extends AbstractTraversalStrategy<Trave
     public static FilterRankingStrategy instance() {
         return INSTANCE;
     }
+
+
+    /**
+     * Get steps of the specified class throughout the traversal and grouping them based on the traversal parent
+     * collecting them in a fashion that orders them from the deepest steps first
+     */
+    public static List<Pair<TraversalParent, List<Step<?,?>>>> collectStepsOfAssignableClassRecursivelyFromDepthGroupedByParent(
+            final Traversal.Admin<?, ?> traversal, final Class<?> stepClass) {
+
+        final Map<TraversalParent, List<Step<?,?>>> collectingMap = new LinkedHashMap<>();
+        final List<Pair<TraversalParent, List<Step<?,?>>>> collectionList = new ArrayList<>();
+        final Stack<Step<?,?>> stack = new Stack<>();
+
+        final List<Step<?,?>> noParentlist = new ArrayList<>();
+        traversal.getSteps().forEach(childStep -> {
+            handleChildStepCollection(stepClass, stack, noParentlist, childStep);
+        });
+        if (!noParentlist.isEmpty()) {
+            // we reverse the list here to keep it the same way as we had it before combining
+            // the recursive collection and grouping into this method
+            Collections.reverse(noParentlist);
+            // steps of the main/root traversal do not have any parent, so we just add them under the EmptyStep
+            collectionList.add(new Pair<>((TraversalParent)org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep.instance(), noParentlist));
+        }
+
+        while (!stack.isEmpty()) {
+            final List<Step<?,?>> list = new ArrayList<>();
+            final Step<?,?> current = stack.pop();
+
+            if (current instanceof TraversalParent) {
+                ((TraversalParent) current).getLocalChildren().forEach(localChild -> localChild.getSteps().forEach(childStep -> {
+                    handleChildStepCollection(stepClass, stack, list, childStep);
+                }));
+                ((TraversalParent) current).getGlobalChildren().forEach(globalChild -> globalChild.getSteps().forEach(childStep -> {
+                    handleChildStepCollection(stepClass, stack, list, childStep);
+                }));
+
+                if (!list.isEmpty()) {
+                    // we reverse the list here to keep it the same way as we had it before combining
+                    // the recursive collection and grouping into this method
+                    Collections.reverse(list);
+                    // desired children are added together/grouped on the traversal parent
+                    collectionList.add(new Pair<>((TraversalParent)current, list));
+                }
+            }
+        }
+        // reverse the list such that we get the deepest steps first
+        Collections.reverse(collectionList);
+        return collectionList;
+    }
+
+    /**
+     * Small helper method that collects desired children (i.e., for which the class is equal to stepClass).
+     * All children are added to the stack such that they are also processed.
+     */
+    private static void handleChildStepCollection(final Class<?> stepClass, final Stack<Step<?, ?>> stack,
+                                                  final List<Step<?, ?>> list, final Step childStep) {
+        if (stepClass.isAssignableFrom(childStep.getClass())) {
+            list.add(childStep);
+        }
+        stack.push(childStep);
+    }
+
 }
