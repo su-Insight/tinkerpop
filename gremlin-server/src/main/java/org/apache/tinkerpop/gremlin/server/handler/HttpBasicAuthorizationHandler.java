@@ -21,20 +21,20 @@ package org.apache.tinkerpop.gremlin.server.handler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.FullHttpMessage;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.ReferenceCountUtil;
-import org.apache.tinkerpop.gremlin.util.Tokens;
-import org.apache.tinkerpop.gremlin.util.message.RequestMessage;
+import org.apache.tinkerpop.gremlin.process.traversal.Bytecode;
 import org.apache.tinkerpop.gremlin.server.GremlinServer;
 import org.apache.tinkerpop.gremlin.server.auth.AuthenticatedUser;
 import org.apache.tinkerpop.gremlin.server.authz.AuthorizationException;
 import org.apache.tinkerpop.gremlin.server.authz.Authorizer;
+import org.apache.tinkerpop.gremlin.util.TokensV4;
+import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
+import java.util.HashMap;
+import java.util.Map;
+
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
 
@@ -58,44 +58,42 @@ public class HttpBasicAuthorizationHandler extends ChannelInboundHandlerAdapter 
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof FullHttpMessage){
-            final FullHttpMessage request = (FullHttpMessage) msg;
-            final boolean keepAlive = HttpUtil.isKeepAlive(request);
-            final RequestMessage requestMessage;
-            try {
-                requestMessage = HttpHandlerUtil.getRequestMessageFromHttpRequest((FullHttpRequest) request);
-            } catch (IllegalArgumentException iae) {
-                HttpHandlerUtil.sendError(ctx, BAD_REQUEST, iae.getMessage(), keepAlive);
-                return;
-            }
+        if (msg instanceof RequestMessageV4) {
+            final RequestMessageV4 requestMessage = (RequestMessageV4) msg;
 
             try {
                 user = ctx.channel().attr(StateKey.AUTHENTICATED_USER).get();
                 if (null == user) {    // This is expected when using the AllowAllAuthenticator
                     user = AuthenticatedUser.ANONYMOUS_USER;
                 }
-
-                authorizer.authorize(user, requestMessage);
-                ctx.fireChannelRead(request);
+                switch (requestMessage.getGremlinType()) {
+                    case TokensV4.OPS_BYTECODE:
+                        final Bytecode bytecode = (Bytecode) requestMessage.getGremlin();
+                        final Map<String, String> aliases = new HashMap<>();
+                        aliases.put(TokensV4.ARGS_G, requestMessage.getField(TokensV4.ARGS_G));
+                        final Bytecode restrictedBytecode = authorizer.authorize(user, bytecode, aliases);
+                        final RequestMessageV4 restrictedMsg = RequestMessageV4.from(requestMessage, restrictedBytecode).create();
+                        ctx.fireChannelRead(restrictedMsg);
+                        break;
+                    case TokensV4.OPS_EVAL:
+                        authorizer.authorize(user, requestMessage);
+                        ctx.fireChannelRead(requestMessage);
+                        break;
+                    default:
+                        throw new AuthorizationException("This AuthorizationHandler only handles requests with OPS_BYTECODE or OPS_EVAL.");
+                }
             } catch (AuthorizationException ex) {  // Expected: users can alternate between allowed and disallowed requests
                 String address = ctx.channel().remoteAddress().toString();
                 if (address.startsWith("/") && address.length() > 1) address = address.substring(1);
-                final String script;
-                try {
-                    script = HttpHandlerUtil.getRequestMessageFromHttpRequest((FullHttpRequest) request).getArgOrDefault(Tokens.ARGS_GREMLIN, "");
-                } catch (IllegalArgumentException iae) {
-                    HttpHandlerUtil.sendError(ctx, BAD_REQUEST, requestMessage.getRequestId(), iae.getMessage(), keepAlive);
-                    return;
-                }
+                final String script = requestMessage.getGremlin().toString();
                 auditLogger.info("User {} with address {} attempted an unauthorized http request: {}",
                     user.getName(), address, script);
-                final String message = String.format("No authorization for script [%s] - check permissions.", script);
-                HttpHandlerUtil.sendError(ctx, UNAUTHORIZED, requestMessage.getRequestId(), message, keepAlive);
+                HttpHandlerUtil.sendError(ctx, UNAUTHORIZED, "Failed to authorize: " + ex.getMessage());
                 ReferenceCountUtil.release(msg);
             } catch (Exception ex) {
                 final String message = String.format(
                         "%s is not ready to handle requests - unknown error", authorizer.getClass().getSimpleName());
-                HttpHandlerUtil.sendError(ctx, INTERNAL_SERVER_ERROR, requestMessage.getRequestId(), message, keepAlive);
+                HttpHandlerUtil.sendError(ctx, INTERNAL_SERVER_ERROR, message);
                 ReferenceCountUtil.release(msg);
             }
         } else {

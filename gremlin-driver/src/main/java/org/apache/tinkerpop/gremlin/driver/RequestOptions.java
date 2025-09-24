@@ -18,12 +18,11 @@
  */
 package org.apache.tinkerpop.gremlin.driver;
 
-import org.apache.tinkerpop.gremlin.util.message.RequestMessage;
+import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Options that can be supplied on a per request basis.
@@ -34,32 +33,24 @@ public final class RequestOptions {
 
     public static final RequestOptions EMPTY = RequestOptions.build().create();
 
-    private final Map<String,String> aliases;
+    private final String graphOrTraversalSource;
     private final Map<String, Object> parameters;
     private final Integer batchSize;
     private final Long timeout;
-    private final UUID overrideRequestId;
-    private final String userAgent;
     private final String language;
     private final String materializeProperties;
 
     private RequestOptions(final Builder builder) {
-        this.aliases = builder.aliases;
+        this.graphOrTraversalSource = builder.graphOrTraversalSource;
         this.parameters = builder.parameters;
         this.batchSize = builder.batchSize;
         this.timeout = builder.timeout;
-        this.overrideRequestId = builder.overrideRequestId;
-        this.userAgent = builder.userAgent;
         this.language = builder.language;
         this.materializeProperties = builder.materializeProperties;
     }
 
-    public Optional<UUID> getOverrideRequestId() {
-        return Optional.ofNullable(overrideRequestId);
-    }
-
-    public Optional<Map<String, String>> getAliases() {
-        return Optional.ofNullable(aliases);
+    public Optional<String> getG() {
+        return Optional.ofNullable(graphOrTraversalSource);
     }
 
     public Optional<Map<String, Object>> getParameters() {
@@ -74,10 +65,6 @@ public final class RequestOptions {
         return Optional.ofNullable(timeout);
     }
 
-    public Optional<String> getUserAgent() {
-        return Optional.ofNullable(userAgent);
-    }
-
     public Optional<String> getLanguage() {
         return Optional.ofNullable(language);
     }
@@ -89,24 +76,18 @@ public final class RequestOptions {
     }
 
     public static final class Builder {
-        private Map<String,String> aliases = null;
+        private String graphOrTraversalSource = null;
         private Map<String, Object> parameters = null;
         private Integer batchSize = null;
         private Long timeout = null;
-        private UUID overrideRequestId = null;
-        private String userAgent = null;
         private String materializeProperties = null;
         private String language = null;
-        private boolean maintainStateAfterException = false;
 
         /**
          * The aliases to set on the request.
          */
-        public Builder addAlias(final String aliasName, final String actualName) {
-            if (null == aliases)
-                aliases = new HashMap<>();
-
-            aliases.put(aliasName, actualName);
+        public Builder addG(final String graphOrTraversalSource) {
+            this.graphOrTraversalSource = graphOrTraversalSource;
             return this;
         }
 
@@ -122,17 +103,9 @@ public final class RequestOptions {
         }
 
         /**
-         * Overrides the identifier to be sent on the request.
-         */
-        public Builder overrideRequestId(final UUID overrideRequestId) {
-            this.overrideRequestId = overrideRequestId;
-            return this;
-        }
-
-        /**
          * The per client request override for the client and server configured {@code resultIterationBatchSize}. If
          * this value is not set, then the configuration for the {@link Cluster} is used unless the
-         * {@link RequestMessage} is configured completely by the user.
+         * {@link RequestMessageV4} is configured completely by the user.
          */
         public Builder batchSize(final int batchSize) {
             this.batchSize = batchSize;
@@ -145,14 +118,6 @@ public final class RequestOptions {
          */
         public Builder timeout(final long timeout) {
             this.timeout = timeout;
-            return this;
-        }
-
-        /**
-         * Sets the userAgent identifier to be sent on the request.
-         */
-        public Builder userAgent(final String userAgent) {
-            this.userAgent = userAgent;
             return this;
         }
 
@@ -175,6 +140,5 @@ public final class RequestOptions {
         public RequestOptions create() {
             return new RequestOptions(this);
         }
-
     }
 }

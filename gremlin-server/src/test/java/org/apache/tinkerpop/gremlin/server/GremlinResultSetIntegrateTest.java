@@ -38,10 +38,9 @@ import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedVertexProper
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferencePath;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceProperty;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
-import org.apache.tinkerpop.gremlin.util.MessageSerializer;
-import org.apache.tinkerpop.gremlin.util.Tokens;
-import org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV1;
-import org.apache.tinkerpop.gremlin.util.ser.Serializers;
+import org.apache.tinkerpop.gremlin.util.MessageSerializerV4;
+import org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV4;
+import org.apache.tinkerpop.gremlin.util.ser.SerializersV4;
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
@@ -53,7 +52,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -72,18 +70,18 @@ public class GremlinResultSetIntegrateTest extends AbstractGremlinServerIntegrat
 
     @Parameterized.Parameters(name = "{0}")
     public static Iterable<Object[]> data() {
-        final MessageSerializer<GraphBinaryMapper> graphBinaryMessageSerializerV1 = new GraphBinaryMessageSerializerV1();
+        final MessageSerializerV4<GraphBinaryMapper> graphBinaryMessageSerializerV4 = new GraphBinaryMessageSerializerV4();
 
         return Arrays.asList(new Object[][]{
-                {Serializers.GRAPHBINARY_V1, graphBinaryMessageSerializerV1}
+                {SerializersV4.GRAPHBINARY_V4, graphBinaryMessageSerializerV4}
         });
     }
 
     @Parameterized.Parameter(value = 0)
-    public Serializers name;
+    public SerializersV4 name;
 
     @Parameterized.Parameter(value = 1)
-    public MessageSerializer<?> messageSerializer;
+    public MessageSerializerV4<?> messageSerializer;
 
     @Before
     public void beforeTest() {
@@ -94,20 +92,6 @@ public class GremlinResultSetIntegrateTest extends AbstractGremlinServerIntegrat
     @After
     public void afterTest() {
         cluster.close();
-    }
-
-    @Test
-    public void shouldReturnResponseAttributesViaNoContent() throws Exception {
-        final ResultSet results = client.submit("[]");
-        final Map<String,Object> attr = results.statusAttributes().get(20000, TimeUnit.MILLISECONDS);
-        assertThat(attr.containsKey(Tokens.ARGS_HOST), is(true));
-    }
-
-    @Test
-    public void shouldReturnResponseAttributesViaSuccess() throws Exception {
-        final ResultSet results = client.submit("gmodern.V()");
-        final Map<String,Object> attr = results.statusAttributes().get(20000, TimeUnit.MILLISECONDS);
-        assertThat(attr.containsKey(Tokens.ARGS_HOST), is(true));
     }
 
     @Test

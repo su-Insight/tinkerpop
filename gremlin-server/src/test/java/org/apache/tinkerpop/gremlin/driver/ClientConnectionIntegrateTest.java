@@ -21,12 +21,11 @@ package org.apache.tinkerpop.gremlin.driver;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.netty.handler.codec.CorruptedFrameException;
+import io.netty.handler.codec.TooLongFrameException;
 import nl.altindag.log.LogCaptor;
-import org.apache.tinkerpop.gremlin.util.Tokens;
-import org.apache.tinkerpop.gremlin.util.message.RequestMessage;
+import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
 import org.apache.tinkerpop.gremlin.driver.exception.ConnectionException;
 import org.apache.tinkerpop.gremlin.driver.exception.NoHostAvailableException;
-import org.apache.tinkerpop.gremlin.util.ser.Serializers;
 import org.apache.tinkerpop.gremlin.server.AbstractGremlinServerIntegrationTest;
 import org.apache.tinkerpop.gremlin.server.TestClientFactory;
 import org.hamcrest.core.Is;
@@ -98,7 +97,6 @@ public class ClientConnectionIntegrateTest extends AbstractGremlinServerIntegrat
     public void shouldCloseConnectionDeadDueToUnRecoverableError() throws Exception {
         // Set a low value of maxContentLength to intentionally trigger CorruptedFrameException
         final Cluster cluster = TestClientFactory.build()
-                                                 .serializer(Serializers.GRAPHBINARY_V1)
                                                  .maxContentLength(64)
                                                  .minConnectionPoolSize(1)
                                                  .maxConnectionPoolSize(2)
@@ -113,7 +111,7 @@ public class ClientConnectionIntegrateTest extends AbstractGremlinServerIntegrat
 
                 fail("Should throw an exception.");
             } catch (Exception re) {
-                assertThat(re.getCause() instanceof CorruptedFrameException, is(true));
+                assertThat(re.getCause() instanceof TooLongFrameException, is(true));
             }
 
             // without this wait this test is failing randomly on docker/travis with ConcurrentModificationException
@@ -151,8 +149,7 @@ public class ClientConnectionIntegrateTest extends AbstractGremlinServerIntegrat
         final ExecutorService executorServiceForTesting = cluster.executor();
 
         try {
-            final RequestMessage.Builder request = client.buildMessage(RequestMessage.build(Tokens.OPS_EVAL))
-                    .add(Tokens.ARGS_GREMLIN, "Thread.sleep(5000)");
+            final RequestMessageV4.Builder request = client.buildMessage(RequestMessageV4.build("Thread.sleep(5000)"));
             final Callable<Connection> sendQueryCallable = () -> client.chooseConnection(request.create());
             final List<Callable<Connection>> listOfTasks = new ArrayList<>();
             for (int i = 0; i < connPoolSize; i++) {
@@ -187,22 +184,18 @@ public class ClientConnectionIntegrateTest extends AbstractGremlinServerIntegrat
     }
 
     @Test
-    public void overLimitOperationsShouldDelegateToSingleNewConnection() throws InterruptedException {
+    public void overLimitOperationsShouldCreateNewHttpConnectionPerRequestAsNeeded() throws InterruptedException {
         final int operations = 6;
-        final int usagePerConnection = 3;
         final Cluster cluster = TestClientFactory.build()
                 .minConnectionPoolSize(1)
                 .maxConnectionPoolSize(operations)
-                .minSimultaneousUsagePerConnection(1)
-                .maxSimultaneousUsagePerConnection(usagePerConnection)
                 .create();
         final Client.ClusteredClient client = cluster.connect();
         client.init();
         final ExecutorService executorServiceForTesting = cluster.executor();
 
         try {
-            final RequestMessage.Builder request = client.buildMessage(RequestMessage.build(Tokens.OPS_EVAL))
-                    .add(Tokens.ARGS_GREMLIN, "Thread.sleep(5000)");
+            final RequestMessageV4.Builder request = client.buildMessage(RequestMessageV4.build("Thread.sleep(5000)"));
             final Callable<Connection> sendQueryCallable = () -> client.chooseConnection(request.create());
             final List<Callable<Connection>> listOfTasks = new ArrayList<>();
             for (int i = 0; i < operations; i++) {
@@ -226,9 +219,9 @@ public class ClientConnectionIntegrateTest extends AbstractGremlinServerIntegrat
                 }
             });
 
-            assertEquals(2, connectionBorrowCount.size());
+            assertEquals(operations, connectionBorrowCount.size());
             for (int finalBorrowCount : connectionBorrowCount.values()) {
-                assertEquals(usagePerConnection, finalBorrowCount);
+                assertEquals(1, finalBorrowCount);
             }
 
         } finally {
@@ -244,7 +237,7 @@ public class ClientConnectionIntegrateTest extends AbstractGremlinServerIntegrat
      */
     @Test
     public void shouldSucceedWithJitteryConnection() throws Exception {
-        final Cluster cluster = TestClientFactory.build().minConnectionPoolSize(1).maxConnectionPoolSize(4).
+        final Cluster cluster = TestClientFactory.build().minConnectionPoolSize(1).maxConnectionPoolSize(128).
                 reconnectInterval(1000).
                 maxWaitForConnection(4000).validationRequest("g.inject()").create();
         final Client.ClusteredClient client = cluster.connect();
