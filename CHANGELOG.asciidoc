@@ -35,6 +35,7 @@ image::https://raw.githubusercontent.com/apache/tinkerpop/master/docs/static/ima
 * Fixed issue where server errors weren't being properly parsed when sending bytecode over HTTP.
 * Improved `Bulkset` contains check for elements if all elements in `Bulkset` are of the same type.
 * Fixed bug in `EarlyLimitStrategy` which was too aggressive when promoting `limit()` before `map()`.
+* Updated aliased client to pass along options via `with()` when submitting traversals.
 * Prevented mid-traversal `mergeE()` and `mergeV()` from operating on an incoming `Traverser` that contains an `Element`.
 * Improved performance of the application of `FilterRankingStrategy` for large traversals with deeply nested traversals by improving the cache operation.
 
