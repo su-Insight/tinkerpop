@@ -27,10 +27,9 @@ import io.netty.handler.ssl.SslProvider;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.concurrent.Future;
 import org.apache.commons.configuration2.Configuration;
-import org.apache.tinkerpop.gremlin.util.MessageSerializer;
-import org.apache.tinkerpop.gremlin.util.Tokens;
+import org.apache.tinkerpop.gremlin.util.MessageSerializerV4;
 import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
-import org.apache.tinkerpop.gremlin.util.ser.Serializers;
+import org.apache.tinkerpop.gremlin.util.ser.SerializersV4;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
@@ -80,7 +79,7 @@ import java.util.stream.Collectors;
 public final class Cluster {
     private static final Logger logger = LoggerFactory.getLogger(Cluster.class);
 
-    private Manager manager;
+    private final Manager manager;
 
     private Cluster(final Builder builder) {
         this.manager = new Manager(builder);
@@ -92,23 +91,7 @@ public final class Cluster {
     }
 
     /**
-     * Creates a {@link Client.ClusteredClient} instance to this {@code Cluster}, meaning requests will be routed to
-     * one or more servers (depending on the cluster configuration), where each request represents the entirety of a
-     * transaction.  A commit or rollback (in case of error) is automatically executed at the end of the request.
-     * <p/>
-     * Note that calling this method does not imply that a connection is made to the server itself at this point.
-     * Therefore, if there is only one server specified in the {@code Cluster} and that server is not available an
-     * error will not be raised at this point.  Connections get initialized in the {@link Client} when a request is
-     * submitted or can be directly initialized via {@link Client#init()}.
-     */
-    public <T extends Client> T connect() {
-        final Client client = new Client.ClusteredClient(this, Client.Settings.build().create());
-        manager.trackClient(client);
-        return (T) client;
-    }
-
-    /**
-     * Creates a {@link Client.SessionedClient} instance to this {@code Cluster}, meaning requests will be routed to
+     * Creates a SessionedClient instance to this {@code Cluster}, meaning requests will be routed to
      * a single server (randomly selected from the cluster), where the same bindings will be available on each request.
      * Requests are bound to the same thread on the server and thus transactions may extend beyond the bounds of a
      * single request.  The transactions are managed by the user and must be committed or rolled-back manually.
@@ -121,11 +104,11 @@ public final class Cluster {
      * @param sessionId user supplied id for the session which should be unique (a UUID is ideal).
      */
     public <T extends Client> T connect(final String sessionId) {
-        return connect(sessionId, false);
+        throw new UnsupportedOperationException("not implemented");
     }
 
     /**
-     * Creates a {@link Client.SessionedClient} instance to this {@code Cluster}, meaning requests will be routed to
+     * Creates a SessionedClient instance to this {@code Cluster}, meaning requests will be routed to
      * a single server (randomly selected from the cluster), where the same bindings will be available on each request.
      * Requests are bound to the same thread on the server and thus transactions may extend beyond the bounds of a
      * single request.  If {@code manageTransactions} is set to {@code false} then transactions are managed by the
@@ -141,19 +124,14 @@ public final class Cluster {
      * @param manageTransactions enables auto-transactions when set to true
      */
     public <T extends Client> T connect(final String sessionId, final boolean manageTransactions) {
-        final Client.SessionSettings sessionSettings = Client.SessionSettings.build()
-                .manageTransactions(manageTransactions)
-                .sessionId(sessionId).create();
-        final Client.Settings settings = Client.Settings.build().useSession(sessionSettings).create();
-        return connect(settings);
+        throw new UnsupportedOperationException("not implemented");
     }
 
     /**
      * Creates a new {@link Client} based on the settings provided.
      */
-    public <T extends Client> T connect(final Client.Settings settings) {
-        final Client client = settings.getSession().isPresent() ? new Client.SessionedClient(this, settings) :
-                new Client.ClusteredClient(this, settings);
+    public <T extends Client> T connect() {
+        final Client client = new Client.ClusteredClient(this);
         manager.trackClient(client);
         return (T) client;
     }
@@ -178,7 +156,7 @@ public final class Cluster {
 
     private static Builder getBuilderFromSettings(final Settings settings) {
         final List<String> addresses = settings.hosts;
-        if (addresses.size() == 0)
+        if (addresses.isEmpty())
             throw new IllegalStateException("At least one value must be specified to the hosts setting");
 
         final Builder builder = new Builder(settings.hosts.get(0))
@@ -310,21 +288,7 @@ public final class Cluster {
     }
 
     /**
-     * Size of the pool for handling request/response operations.
-     */
-    public int getNioPoolSize() {
-        return manager.nioPoolSize;
-    }
-
-    /**
-     * Size of the pool for handling background work.
-     */
-    public int getWorkerPoolSize() {
-        return manager.workerPoolSize;
-    }
-
-    /**
-     * Get the {@link MessageSerializer} MIME types supported.
+     * Get the {@link MessageSerializerV4} MIME types supported.
      */
     public String[] getSerializers() {
         return getSerializer().mimeTypesSupported();
@@ -435,7 +399,7 @@ public final class Cluster {
         return manager.factory;
     }
 
-    MessageSerializer<?> getSerializer() {
+    MessageSerializerV4<?> getSerializer() {
         return manager.serializer;
     }
 
@@ -545,10 +509,10 @@ public final class Cluster {
     }
 
     public final static class Builder {
-        private List<InetAddress> addresses = new ArrayList<>();
+        private final List<InetAddress> addresses = new ArrayList<>();
         private int port = 8182;
         private String path = "/gremlin";
-        private MessageSerializer<?> serializer = null;
+        private MessageSerializerV4<?> serializer = null;
         private int nioPoolSize = Runtime.getRuntime().availableProcessors();
         private int workerPoolSize = Runtime.getRuntime().availableProcessors() * 2;
         private int minConnectionPoolSize = ConnectionPool.MIN_POOL_SIZE;
@@ -612,28 +576,28 @@ public final class Cluster {
         }
 
         /**
-         * Set the {@link MessageSerializer} to use given the exact name of a {@link Serializers} enum.  Note that
+         * Set the {@link MessageSerializerV4} to use given the exact name of a {@link SerializersV4} enum.  Note that
          * setting this value this way will not allow specific configuration of the serializer itself.  If specific
-         * configuration is required * please use {@link #serializer(MessageSerializer)}.
+         * configuration is required * please use {@link #serializer(MessageSerializerV4)}.
          */
         public Builder serializer(final String mimeType) {
-            serializer = Serializers.valueOf(mimeType).simpleInstance();
+            serializer = SerializersV4.valueOf(mimeType).simpleInstance();
             return this;
         }
 
         /**
-         * Set the {@link MessageSerializer} to use via the {@link Serializers} enum. If specific configuration is
-         * required please use {@link #serializer(MessageSerializer)}.
+         * Set the {@link MessageSerializerV4} to use via the {@link SerializersV4} enum. If specific configuration is
+         * required please use {@link #serializer(MessageSerializerV4)}.
          */
-        public Builder serializer(final Serializers mimeType) {
+        public Builder serializer(final SerializersV4 mimeType) {
             serializer = mimeType.simpleInstance();
             return this;
         }
 
         /**
-         * Sets the {@link MessageSerializer} to use.
+         * Sets the {@link MessageSerializerV4} to use.
          */
-        public Builder serializer(final MessageSerializer<?> serializer) {
+        public Builder serializer(final MessageSerializerV4<?> serializer) {
             this.serializer = serializer;
             return this;
         }
@@ -952,7 +916,7 @@ public final class Cluster {
 
         public Cluster create() {
             if (addresses.isEmpty()) addContactPoint("localhost");
-            if (null == serializer) serializer = Serializers.GRAPHBINARY_V4.simpleInstance();
+            if (null == serializer) serializer = SerializersV4.GRAPHBINARY_V4.simpleInstance();
             return new Cluster(this);
         }
     }
@@ -987,7 +951,7 @@ public final class Cluster {
         private boolean initialized;
         private final List<InetSocketAddress> contactPoints;
         private final Factory factory;
-        private final MessageSerializer<?> serializer;
+        private final MessageSerializerV4<?> serializer;
         private final Settings.ConnectionPoolSettings connectionPoolSettings;
         private final LoadBalancingStrategy loadBalancingStrategy;
         private final AuthProperties authProps;
