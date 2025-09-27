@@ -28,15 +28,20 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
+import org.apache.tinkerpop.gremlin.driver.RequestInterceptor;
 import org.apache.tinkerpop.gremlin.driver.UserAgent;
+import org.apache.tinkerpop.gremlin.driver.auth.Auth.AuthenticationException;
 import org.apache.tinkerpop.gremlin.driver.exception.ResponseException;
 import org.apache.tinkerpop.gremlin.process.traversal.Bytecode;
 import org.apache.tinkerpop.gremlin.util.MessageSerializerV4;
 import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
-import org.apache.tinkerpop.gremlin.util.ser.SerTokens;
+import org.apache.tinkerpop.gremlin.util.ser.SerTokensV4;
+import org.apache.tinkerpop.gremlin.util.ser.SerializationException;
 
+import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.function.UnaryOperator;
+
+import static org.apache.tinkerpop.gremlin.driver.handler.SslCheckHandler.REQUEST_SENT;
 
 /**
  * Converts {@link RequestMessageV4} to a {@code HttpRequest}.
@@ -46,9 +51,9 @@ public final class HttpGremlinRequestEncoder extends MessageToMessageEncoder<Req
 
     private final MessageSerializerV4<?> serializer;
     private final boolean userAgentEnabled;
-    private final List<UnaryOperator<FullHttpRequest>> interceptors;
+    private final List<RequestInterceptor> interceptors;
 
-    public HttpGremlinRequestEncoder(final MessageSerializerV4<?> serializer, final List<UnaryOperator<FullHttpRequest>> interceptors, boolean userAgentEnabled) {
+    public HttpGremlinRequestEncoder(final MessageSerializerV4<?> serializer, final List<RequestInterceptor> interceptors, boolean userAgentEnabled) {
         this.serializer = serializer;
         this.interceptors = interceptors;
         this.userAgentEnabled = userAgentEnabled;
@@ -57,12 +62,11 @@ public final class HttpGremlinRequestEncoder extends MessageToMessageEncoder<Req
     @Override
     protected void encode(final ChannelHandlerContext channelHandlerContext, final RequestMessageV4 requestMessage, final List<Object> objects) throws Exception {
         final String mimeType = serializer.mimeTypesSupported()[0];
-        // only GraphSON3 and GraphBinary recommended for serialization of Bytecode requests
+        // only GraphSON4 and GraphBinary4 recommended for serialization of Bytecode requests
         if (requestMessage.getField("gremlin") instanceof Bytecode &&
-                !mimeType.equals(SerTokens.MIME_GRAPHSON_V4) &&
-                !mimeType.equals(SerTokens.MIME_GRAPHBINARY_V4)) {
-            // todo: correct status code !!!
-            throw new ResponseException(HttpResponseStatus.INTERNAL_SERVER_ERROR, String.format(
+                !mimeType.equals(SerTokensV4.MIME_GRAPHSON_V4) &&
+                !mimeType.equals(SerTokensV4.MIME_GRAPHBINARY_V4)) {
+            throw new ResponseException(HttpResponseStatus.BAD_REQUEST, String.format(
                     "An error occurred during serialization of this request [%s] - it could not be sent to the server - Reason: only GraphSON3 and GraphBinary recommended for serialization of Bytecode requests, but used %s",
                     requestMessage, serializer.getClass().getName()));
         }
@@ -73,20 +77,23 @@ public final class HttpGremlinRequestEncoder extends MessageToMessageEncoder<Req
             request.headers().add(HttpHeaderNames.CONTENT_TYPE, mimeType);
             request.headers().add(HttpHeaderNames.CONTENT_LENGTH, buffer.readableBytes());
             request.headers().add(HttpHeaderNames.ACCEPT, mimeType);
+            request.headers().add(HttpHeaderNames.HOST, ((InetSocketAddress) channelHandlerContext.channel().remoteAddress()).getAddress().getHostAddress());
             if (userAgentEnabled) {
                 request.headers().add(HttpHeaderNames.USER_AGENT, UserAgent.USER_AGENT);
             }
 
-            for (final UnaryOperator<FullHttpRequest> interceptor: interceptors ) {
+            for (final RequestInterceptor interceptor : interceptors) {
                 request = interceptor.apply(request);
             }
             objects.add(request);
-
-            System.out.println("----------------------------");
-        } catch (Exception ex) {
-            // todo: correct status code !!!
-            throw new ResponseException(HttpResponseStatus.INTERNAL_SERVER_ERROR, String.format(
+            channelHandlerContext.channel().attr(REQUEST_SENT).set(true);
+        } catch (SerializationException ex) {
+            throw new ResponseException(HttpResponseStatus.BAD_REQUEST, String.format(
                     "An error occurred during serialization of this request [%s] - it could not be sent to the server - Reason: %s",
+                    requestMessage, ex));
+        } catch (AuthenticationException ex) {
+            throw new ResponseException(HttpResponseStatus.BAD_REQUEST, String.format(
+                    "An error occurred during authentication [%s] - it could not be sent to the server - Reason: %s",
                     requestMessage, ex));
         }
     }

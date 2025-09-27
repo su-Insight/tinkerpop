@@ -19,12 +19,10 @@
 package org.apache.tinkerpop.gremlin.driver.remote;
 
 import org.apache.tinkerpop.gremlin.driver.RequestOptions;
-import org.apache.tinkerpop.gremlin.util.Tokens;
+import org.apache.tinkerpop.gremlin.util.TokensV4;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
 import org.junit.Test;
-
-import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
@@ -39,10 +37,10 @@ public class DriverRemoteConnectionTest {
         final RequestOptions options = DriverRemoteConnection.getRequestOptions(
                 g.with("x").
                         with("y", 100).
-                        with(Tokens.ARGS_BATCH_SIZE, 1000).
-                        with(Tokens.ARGS_EVAL_TIMEOUT, 100000L).
-                        with(Tokens.ARGS_USER_AGENT, "test").
-                        V().asAdmin().getBytecode());
+                        with(TokensV4.ARGS_BATCH_SIZE, 1000).
+                        with(TokensV4.ARGS_EVAL_TIMEOUT, 100000L).
+                        with(TokensV4.ARGS_USER_AGENT, "test").
+                        V().asAdmin().getGremlincode());
         assertEquals(1000, options.getBatchSize().get().intValue());
         assertEquals(100000L, options.getTimeout().get().longValue());
     }
@@ -50,9 +48,9 @@ public class DriverRemoteConnectionTest {
     @Test
     public void shouldBuildRequestOptionsWithNumerics() {
         final RequestOptions options = DriverRemoteConnection.getRequestOptions(
-                g.with(Tokens.ARGS_BATCH_SIZE, 100).
-                  with(Tokens.ARGS_EVAL_TIMEOUT, 1000).
-                  V().asAdmin().getBytecode());
+                g.with(TokensV4.ARGS_BATCH_SIZE, 100).
+                  with(TokensV4.ARGS_EVAL_TIMEOUT, 1000).
+                  V().asAdmin().getGremlincode());
         assertEquals(Integer.valueOf(100), options.getBatchSize().get());
         assertEquals(Long.valueOf(1000), options.getTimeout().get());
     }

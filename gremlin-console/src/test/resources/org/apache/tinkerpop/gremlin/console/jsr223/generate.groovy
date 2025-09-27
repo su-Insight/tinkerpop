@@ -16,28 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.tinkerpop.gremlin.console.commands
 
-import org.apache.groovy.groovysh.CommandSupport
-import org.apache.groovy.groovysh.Groovysh
-import org.apache.tinkerpop.gremlin.console.Mediator
+// an init script that returns a Map allows explicit setting of global bindings.
+def globals = [:]
 
-/**
- * Submit a script to a Gremlin Server instance.
- * @author Stephen Mallette (http://stephen.genoprime.com)
- */
-class SubmitCommand extends CommandSupport {
+// Generates the modern graph into an "empty" TinkerGraph via LifeCycleHook.
+// Note that the name of the key in the "global" map is unimportant.
+globals << [hook : [
+  onStartUp: { ctx ->
+    ctx.logger.info("Loading 'modern' graph data.")
+      org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerFactory.generateModern(graph)
+  }
+] as LifeCycleHook]
 
-    private final Mediator mediator
-
-    public SubmitCommand(final Groovysh shell, final Mediator mediator) {
-        super(shell, ":submit", ":>")
-        this.mediator = mediator
-    }
-
-    @Override
-    def Object execute(final List<String> arguments) {
-        if (mediator.remotes.size() == 0) return "No remotes are configured.  Use :remote command."
-        return mediator.currentRemote().submit(arguments)
-    }
-}
+// define the default TraversalSource to bind queries to - this one will be named "g".
+globals << [g : traversal().withEmbedded(graph)]

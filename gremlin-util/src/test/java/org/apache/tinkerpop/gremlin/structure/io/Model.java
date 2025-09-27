@@ -41,7 +41,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerFactory;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
-import org.apache.tinkerpop.gremlin.util.Tokens;
+import org.apache.tinkerpop.gremlin.util.TokensV4;
 import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
 import org.apache.tinkerpop.gremlin.util.message.ResponseMessageV4;
 
@@ -132,7 +132,7 @@ public class Model {
         bulkSet.add("josh", 2);
         addGraphProcessEntry(bulkSet, "BulkSet", "");
 
-        addGraphProcessEntry(g.V().hasLabel("person").out().in().tree().asAdmin().getBytecode(), "Bytecode", "The following `Bytecode` example represents the traversal of `g.V().hasLabel('person').out().in().tree()`. Obviously the serialized `Bytecode` woudl be quite different for the endless variations of commands that could be used together in the Gremlin language.");
+        addGraphProcessEntry(g.V().hasLabel("person").out().in().tree().asAdmin().getGremlincode(), "Bytecode", "The following `Bytecode` example represents the traversal of `g.V().hasLabel('person').out().in().tree()`. Obviously the serialized `Bytecode` woudl be quite different for the endless variations of commands that could be used together in the Gremlin language.");
         addGraphProcessEntry(VertexProperty.Cardinality.list, "Cardinality", "");
         addGraphProcessEntry(Column.keys, "Column", "");
         addGraphProcessEntry(Direction.OUT, "Direction", "");
@@ -165,7 +165,7 @@ public class Model {
                 addLanguage("gremlin-groovy").
                 addG("social").
                 addTimeoutMillis(100).
-                addMaterializeProperties(Tokens.MATERIALIZE_PROPERTIES_ALL).create();
+                addMaterializeProperties(TokensV4.MATERIALIZE_PROPERTIES_ALL).create();
         addRequestMessageEntry(requestMessage, "Standard Request", "The following `RequestMessageV4` is an example of a request for a script evaluation with an alias that binds the `TraversalSource` of \"g\" to \"social\".");
 
         ResponseMessageV4 responseMessage;
