@@ -19,7 +19,7 @@
 package org.apache.tinkerpop.gremlin.driver;
 
 import org.apache.commons.configuration2.Configuration;
-import org.apache.tinkerpop.gremlin.util.MessageSerializer;
+import org.apache.tinkerpop.gremlin.util.MessageSerializerV4;
 import org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV4;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.yaml.snakeyaml.LoaderOptions;
@@ -81,26 +81,6 @@ final class Settings {
     public int workerPoolSize = Runtime.getRuntime().availableProcessors() * 2;
 
     /**
-     * The username to submit on requests that require authentication.
-     */
-    public String username = null;
-
-    /**
-     * The password to submit on requests that require authentication.
-     */
-    public String password = null;
-
-    /**
-     * The JAAS to submit on requests that require authentication.
-     */
-    public String jaasEntry = null;
-
-    /**
-     * The JAAS protocol to submit on requests that require authentication.
-     */
-    public String protocol = null;
-
-    /**
      * Toggles if user agent should be sent in web socket handshakes.
      */
     public boolean enableUserAgentOnConnect = true;
@@ -139,18 +119,6 @@ final class Settings {
         if (conf.containsKey("workerPoolSize"))
             settings.workerPoolSize = conf.getInt("workerPoolSize");
 
-        if (conf.containsKey("username"))
-            settings.username = conf.getString("username");
-
-        if (conf.containsKey("password"))
-            settings.password = conf.getString("password");
-
-        if (conf.containsKey("jaasEntry"))
-            settings.jaasEntry = conf.getString("jaasEntry");
-
-        if (conf.containsKey("protocol"))
-            settings.protocol = conf.getString("protocol");
-
         if (conf.containsKey("enableUserAgentOnConnect"))
             settings.enableUserAgentOnConnect = conf.getBoolean("enableUserAgentOnConnect");
 
@@ -176,9 +144,6 @@ final class Settings {
         final Configuration connectionPoolConf = conf.subset("connectionPool");
         if (IteratorUtils.count(connectionPoolConf.getKeys()) > 0) {
             final ConnectionPoolSettings cpSettings = new ConnectionPoolSettings();
-
-            if (connectionPoolConf.containsKey("channelizer"))
-                cpSettings.channelizer = connectionPoolConf.getString("channelizer");
 
             if (connectionPoolConf.containsKey("enableSsl"))
                 cpSettings.enableSsl = connectionPoolConf.getBoolean("enableSsl");
@@ -218,18 +183,6 @@ final class Settings {
             if (connectionPoolConf.containsKey("maxSize"))
                 cpSettings.maxSize = connectionPoolConf.getInt("maxSize");
 
-            if (connectionPoolConf.containsKey("minSimultaneousUsagePerConnection"))
-                cpSettings.minSimultaneousUsagePerConnection = connectionPoolConf.getInt("minSimultaneousUsagePerConnection");
-
-            if (connectionPoolConf.containsKey("maxSimultaneousUsagePerConnection"))
-                cpSettings.maxSimultaneousUsagePerConnection = connectionPoolConf.getInt("maxSimultaneousUsagePerConnection");
-
-            if (connectionPoolConf.containsKey("maxInProcessPerConnection"))
-                cpSettings.maxInProcessPerConnection = connectionPoolConf.getInt("maxInProcessPerConnection");
-
-            if (connectionPoolConf.containsKey("minInProcessPerConnection"))
-                cpSettings.minInProcessPerConnection = connectionPoolConf.getInt("minInProcessPerConnection");
-
             if (connectionPoolConf.containsKey("maxWaitForConnection"))
                 cpSettings.maxWaitForConnection = connectionPoolConf.getInt("maxWaitForConnection");
 
@@ -244,9 +197,6 @@ final class Settings {
 
             if (connectionPoolConf.containsKey("resultIterationBatchSize"))
                 cpSettings.resultIterationBatchSize = connectionPoolConf.getInt("resultIterationBatchSize");
-
-            if (connectionPoolConf.containsKey("keepAliveInterval"))
-                cpSettings.keepAliveInterval = connectionPoolConf.getLong("keepAliveInterval");
 
             if (connectionPoolConf.containsKey("validationRequest"))
                 cpSettings.validationRequest = connectionPoolConf.getString("validationRequest");
@@ -332,37 +282,6 @@ final class Settings {
         public int maxSize = ConnectionPool.MAX_POOL_SIZE;
 
         /**
-         * Length of time in milliseconds to wait on an idle connection before sending a keep-alive request. Set to
-         * zero to disable this feature.
-         */
-        public long keepAliveInterval = Connection.KEEP_ALIVE_INTERVAL;
-
-        /**
-         * A connection under low use can be destroyed. This setting determines the threshold for determining when
-         * that connection can be released and is defaulted to 8.
-         */
-        public int minSimultaneousUsagePerConnection = ConnectionPool.MIN_SIMULTANEOUS_USAGE_PER_CONNECTION;
-
-        /**
-         * If a connection is over used, then it might mean that is necessary to expand the pool by adding a new
-         * connection.  This setting determines the threshold for a connections over use and is defaulted to 16
-         */
-        public int maxSimultaneousUsagePerConnection = ConnectionPool.MAX_SIMULTANEOUS_USAGE_PER_CONNECTION;
-
-        /**
-         * The maximum number of requests in flight on a connection where the default is 4.
-         */
-        public int maxInProcessPerConnection = Connection.MAX_IN_PROCESS;
-
-        /**
-         * A connection has available in-process requests which is calculated by subtracting the number of current
-         * in-flight requests on a connection and subtracting that from the {@link #maxInProcessPerConnection}. When
-         * that number drops below this configuration setting, the connection is recommended for replacement. The
-         * default for this setting is 1.
-         */
-        public int minInProcessPerConnection = Connection.MIN_IN_PROCESS;
-
-        /**
          * The amount of time in milliseconds to wait for a new connection before timing out where the default value
          * is 3000.
          */
@@ -394,16 +313,9 @@ final class Settings {
         public int resultIterationBatchSize = Connection.RESULT_ITERATION_BATCH_SIZE;
 
         /**
-         * The constructor for the channel that connects to the server. This value should be the fully qualified
-         * class name of a Gremlin Driver {@link Channelizer} implementation.  By default this value is set to
-         * {@link Channelizer.HttpChannelizer}.
-         */
-        public String channelizer = Channelizer.HttpChannelizer.class.getName();
-
-        /**
          * A valid Gremlin script that can be used to test remote operations.
          */
-        public String validationRequest = "''";
+        public String validationRequest = "g.inject(0)";
 
         /**
          * Duration of time in milliseconds provided for connection setup to complete which includes WebSocket
@@ -415,7 +327,7 @@ final class Settings {
 
     public static class SerializerSettings {
         /**
-         * The fully qualified class name of the {@link MessageSerializer} that will be used to communicate with the
+         * The fully qualified class name of the {@link MessageSerializerV4} that will be used to communicate with the
          * server. Note that the serializer configured on the client should be supported by the server configuration.
          * By default the setting is configured to {@link GraphBinaryMessageSerializerV4}.
          */
@@ -426,9 +338,9 @@ final class Settings {
          */
         public Map<String, Object> config = null;
 
-        public MessageSerializer<?> create() throws Exception {
+        public MessageSerializerV4<?> create() throws Exception {
             final Class<?> clazz = Class.forName(className);
-            final MessageSerializer<?> serializer = (MessageSerializer<?>) clazz.newInstance();
+            final MessageSerializerV4<?> serializer = (MessageSerializerV4<?>) clazz.newInstance();
             Optional.ofNullable(config).ifPresent(c -> serializer.configure(c, null));
             return serializer;
         }

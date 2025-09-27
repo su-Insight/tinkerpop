@@ -18,39 +18,38 @@
  */
 package org.apache.tinkerpop.gremlin.server;
 
-import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.util.AttributeKey;
 import nl.altindag.log.LogCaptor;
 import org.apache.commons.configuration2.BaseConfiguration;
 import org.apache.commons.configuration2.Configuration;
-import org.apache.tinkerpop.gremlin.server.channel.HttpTestChannelizer;
-import org.apache.tinkerpop.gremlin.server.channel.TestChannelizer;
-import org.apache.tinkerpop.gremlin.util.ExceptionHelper;
 import org.apache.tinkerpop.gremlin.TestHelper;
 import org.apache.tinkerpop.gremlin.driver.Client;
 import org.apache.tinkerpop.gremlin.driver.Cluster;
 import org.apache.tinkerpop.gremlin.driver.Result;
-import org.apache.tinkerpop.gremlin.driver.exception.ResponseException;
-import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
-import org.apache.tinkerpop.gremlin.util.message.ResponseMessage;
-import org.apache.tinkerpop.gremlin.util.message.ResponseStatusCode;
-import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
-import org.apache.tinkerpop.gremlin.util.ser.Serializers;
-import org.apache.tinkerpop.gremlin.driver.simple.SimpleClient;
 import org.apache.tinkerpop.gremlin.driver.UserAgent;
+import org.apache.tinkerpop.gremlin.driver.exception.ResponseException;
+import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
+import org.apache.tinkerpop.gremlin.driver.simple.SimpleClient;
 import org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import org.apache.tinkerpop.gremlin.groovy.jsr223.GroovyCompilerGremlinPlugin;
 import org.apache.tinkerpop.gremlin.groovy.jsr223.customizer.SimpleSandboxExtension;
 import org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin;
-import org.apache.tinkerpop.gremlin.structure.RemoteGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.server.channel.HttpTestChannelizer;
+import org.apache.tinkerpop.gremlin.server.channel.TestChannelizer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.RemoteGraph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.util.ExceptionHelper;
 import org.apache.tinkerpop.gremlin.util.function.Lambda;
+import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
+import org.apache.tinkerpop.gremlin.util.message.ResponseMessageV4;
+import org.apache.tinkerpop.gremlin.util.ser.SerializersV4;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -58,7 +57,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
@@ -77,9 +75,11 @@ import static org.apache.tinkerpop.gremlin.groovy.jsr223.GroovyCompilerGremlinPl
 import static org.apache.tinkerpop.gremlin.process.remote.RemoteConnection.GREMLIN_REMOTE;
 import static org.apache.tinkerpop.gremlin.process.remote.RemoteConnection.GREMLIN_REMOTE_CONNECTION_CLASS;
 import static org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal;
+import static org.apache.tinkerpop.gremlin.util.Tokens.ARGS_EVAL_TIMEOUT;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.hamcrest.core.StringStartsWith.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -94,7 +94,6 @@ import static org.junit.Assert.fail;
  */
 public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegrationTest {
 
-    private Level previousLogLevel;
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(GremlinServerIntegrateTest.class);
 
     private final Supplier<Graph> graphGetter = () -> server.getServerGremlinExecutor().getGraphManager().getGraph("graph");
@@ -106,7 +105,6 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
         setProperty("clusterConfiguration.port", TestClientFactory.PORT);
         setProperty("clusterConfiguration.hosts", "localhost");
     }};
-    private static final int POOL_SIZE_FOR_TIMEOUT_TESTS = 1;
 
     private static LogCaptor logCaptor;
 
@@ -172,10 +170,9 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
             case "shouldReturnInvalidRequestArgsWhenBindingCountExceedsAllowable":
                 settings.maxParameters = 1;
                 break;
-//                TODO: evalTimeout needs be part of script now
-//            case "shouldTimeOutRemoteTraversal":
-//                settings.evaluationTimeout = 500;
-//                break;
+            case "shouldTimeOutRemoteTraversal":
+                settings.evaluationTimeout = 500;
+                break;
             case "shouldBlowTheWorkQueueSize":
                 settings.gremlinPool = 1;
                 settings.maxWorkQueueSize = 1;
@@ -228,7 +225,6 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
             channelizer.resetChannelHandlerContext();
             assertNull(getUserAgentIfAvailable());
             final Cluster cluster = TestClientFactory.build()
-                    .channelizer(org.apache.tinkerpop.gremlin.driver.Channelizer.HttpChannelizer.class)
                     .enableUserAgentOnConnect(true)
                     .create();
             final Client client = cluster.connect();
@@ -287,7 +283,7 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
 //        for (int ix = 0; ix < 512 && !errorTriggered.get(); ix++) {
 //            blockers.add(client.submit("'test'").all().exceptionally(t -> {
 //                final ResponseException re = (ResponseException) t.getCause();
-//                errorTriggered.compareAndSet(false, ResponseStatusCode.TOO_MANY_REQUESTS == re.getResponseStatusCode());
+//                errorTriggered.compareAndSet(false, HttpResponseStatus.TOO_MANY_REQUESTS == re.getResponseStatusCode());
 //                return null;
 //            }));
 //        }
@@ -306,7 +302,7 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
 
     @Test
     public void shouldScriptEvaluationErrorForRemoteTraversal() throws Exception {
-        final GraphTraversalSource g = traversal().withRemote(conf);
+        final GraphTraversalSource g = traversal().with(conf);
 
         try {
             // tests bad lambda
@@ -315,7 +311,7 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
         } catch (Exception ex) {
             final Throwable t = ex.getCause();
             assertThat(t, instanceOf(ResponseException.class));
-            assertEquals(ResponseStatusCode.SERVER_ERROR_EVALUATION, ((ResponseException) t).getResponseStatusCode());
+            assertEquals(HttpResponseStatus.BAD_REQUEST, ((ResponseException) t).getResponseStatusCode());
         }
 
         // make a graph with a cycle in it to force a long run traversal
@@ -328,108 +324,105 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
         } catch (Exception ex) {
             final Throwable t = ex.getCause();
             assertThat(t, instanceOf(ResponseException.class));
-            assertEquals(ResponseStatusCode.SERVER_ERROR_TIMEOUT, ((ResponseException) t).getResponseStatusCode());
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, ((ResponseException) t).getResponseStatusCode());
         }
 
         g.close();
     }
 
-//    TODO: evalTimeout needs be part of script now
-//    @Test
-//    public void shouldTimeOutRemoteTraversal() throws Exception {
-//        final GraphTraversalSource g = traversal().withRemote(conf);
-//
-//        try {
-//            // tests sleeping thread
-//            g.inject(1).sideEffect(Lambda.consumer("Thread.sleep(20000)")).iterate();
-//            fail("This traversal should have timed out");
-//        } catch (Exception ex) {
-//            final Throwable t = ex.getCause();
-//            assertThat(t, instanceOf(ResponseException.class));
-//            assertEquals(ResponseStatusCode.SERVER_ERROR_TIMEOUT, ((ResponseException) t).getResponseStatusCode());
-//        }
-//
-//        // make a graph with a cycle in it to force a long run traversal
-//        graphGetter.get().traversal().addV("person").as("p").addE("self").to("p").iterate();
-//
-//        try {
-//            // tests an "unending" traversal
-//            g.V().repeat(__.out()).until(__.outE().count().is(0)).iterate();
-//            fail("This traversal should have timed out");
-//        } catch (Exception ex) {
-//            final Throwable t = ex.getCause();
-//            assertThat(t, instanceOf(ResponseException.class));
-//            assertEquals(ResponseStatusCode.SERVER_ERROR_TIMEOUT, ((ResponseException) t).getResponseStatusCode());
-//        }
-//
-//        g.close();
-//    }
+    @Test
+    public void shouldTimeOutRemoteTraversal() throws Exception {
+        final GraphTraversalSource g = traversal().with(conf);
 
-//    TODO: driver can't set EvalTimeout anymore in RequestMessage so this won't work.
-//    @Test
-//    public void shouldTimeOutRemoteTraversalWithPerRequestOption() throws Exception {
-//        final GraphTraversalSource g = traversal().withRemote(conf);
-//
-//        try {
-//            // tests sleeping thread
-//            g.with(ARGS_EVAL_TIMEOUT, 500L).inject(1).sideEffect(Lambda.consumer("Thread.sleep(10000)")).iterate();
-//            fail("This traversal should have timed out");
-//        } catch (Exception ex) {
-//            final Throwable t = ex.getCause();
-//            assertThat(t, instanceOf(ResponseException.class));
-//            assertEquals(ResponseStatusCode.SERVER_ERROR_TIMEOUT, ((ResponseException) t).getResponseStatusCode());
-//        }
-//
-//        // make a graph with a cycle in it to force a long run traversal
-//        graphGetter.get().traversal().addV("person").as("p").addE("self").to("p").iterate();
-//
-//        try {
-//            // tests an "unending" traversal
-//            g.with(ARGS_EVAL_TIMEOUT, 500L).V().repeat(__.out()).until(__.outE().count().is(0)).iterate();
-//            fail("This traversal should have timed out");
-//        } catch (Exception ex) {
-//            final Throwable t = ex.getCause();
-//            assertThat(t, instanceOf(ResponseException.class));
-//            assertEquals(ResponseStatusCode.SERVER_ERROR_TIMEOUT, ((ResponseException) t).getResponseStatusCode());
-//        }
-//
-//        g.close();
-//    }
+        try {
+            // tests sleeping thread
+            g.inject(1).sideEffect(Lambda.consumer("Thread.sleep(10000)")).iterate();
+            fail("This traversal should have timed out");
+        } catch (Exception ex) {
+            final Throwable t = ex.getCause();
+            assertThat(t, instanceOf(ResponseException.class));
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, ((ResponseException) t).getResponseStatusCode());
+        }
 
-//    TODO: can't set evalTimeout anymore
-//    @Test
-//    public void shouldProduceProperExceptionOnTimeout() throws Exception {
-//        final Cluster cluster = TestClientFactory.open();
-//        final Client client = cluster.connect(name.getMethodName());
-//
-//        boolean success = false;
-//        // Run a short test script a few times with progressively longer timeouts.
-//        // Each submissions should either succeed or fail with a timeout.
-//        // Note: the range of timeouts is intended to cover the case when the script finishes at about the
-//        // same time when the timeout occurs. In this situation either a timeout response or a successful
-//        // response is acceptable, however no other processing errors should occur.
-//        // Note: the timeout of 30 ms is generally sufficient for running a simple groovy script, so using longer
-//        // timeouts are not likely to results in a success/timeout response collision, which is the purpose
-//        // of this test.
-//        // Note: this test may have a false negative result, but a failure  would indicate a real problem.
-//        for(int i = 0; i < 30; i++) {
-//            int timeout = 1 + i;
-//            overrideEvaluationTimeout(timeout);
-//
-//            try {
-//                client.submit("x = 1 + 1").all().get().get(0).getInt();
-//                success = true;
-//            } catch (Exception ex) {
-//                final Throwable t = ex.getCause();
-//                assertThat("Unexpected exception with script evaluation timeout: " + timeout, t, instanceOf(ResponseException.class));
-//                assertEquals(ResponseStatusCode.SERVER_ERROR_TIMEOUT, ((ResponseException) t).getResponseStatusCode());
-//            }
-//        }
-//
-//        assertTrue("Some script submissions should succeed", success);
-//
-//        cluster.close();
-//    }
+        // make a graph with a cycle in it to force a long run traversal
+        graphGetter.get().traversal().addV("person").as("p").addE("self").to("p").iterate();
+
+        try {
+            // tests an "unending" traversal
+            g.V().repeat(__.out()).until(__.outE().count().is(0)).iterate();
+            fail("This traversal should have timed out");
+        } catch (Exception ex) {
+            final Throwable t = ex.getCause();
+            assertThat(t, instanceOf(ResponseException.class));
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, ((ResponseException) t).getResponseStatusCode());
+        }
+
+        g.close();
+    }
+
+    @Test
+    public void shouldTimeOutRemoteTraversalWithPerRequestOption() throws Exception {
+        final GraphTraversalSource g = traversal().with(conf);
+
+        try {
+            // tests sleeping thread
+            g.with(ARGS_EVAL_TIMEOUT, 500L).inject(1).sideEffect(Lambda.consumer("Thread.sleep(10000)")).iterate();
+            fail("This traversal should have timed out");
+        } catch (Exception ex) {
+            final Throwable t = ex.getCause();
+            assertThat(t, instanceOf(ResponseException.class));
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, ((ResponseException) t).getResponseStatusCode());
+        }
+
+        // make a graph with a cycle in it to force a long run traversal
+        graphGetter.get().traversal().addV("person").as("p").addE("self").to("p").iterate();
+
+        try {
+            // tests an "unending" traversal
+            g.with(ARGS_EVAL_TIMEOUT, 500L).V().repeat(__.out()).until(__.outE().count().is(0)).iterate();
+            fail("This traversal should have timed out");
+        } catch (Exception ex) {
+            final Throwable t = ex.getCause();
+            assertThat(t, instanceOf(ResponseException.class));
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, ((ResponseException) t).getResponseStatusCode());
+        }
+
+        g.close();
+    }
+
+    @Test
+    public void shouldProduceProperExceptionOnTimeout() throws Exception {
+        final Cluster cluster = TestClientFactory.open();
+        final Client client = cluster.connect(name.getMethodName());
+
+        boolean success = false;
+        // Run a short test script a few times with progressively longer timeouts.
+        // Each submissions should either succeed or fail with a timeout.
+        // Note: the range of timeouts is intended to cover the case when the script finishes at about the
+        // same time when the timeout occurs. In this situation either a timeout response or a successful
+        // response is acceptable, however no other processing errors should occur.
+        // Note: the timeout of 30 ms is generally sufficient for running a simple groovy script, so using longer
+        // timeouts are not likely to results in a success/timeout response collision, which is the purpose
+        // of this test.
+        // Note: this test may have a false negative result, but a failure  would indicate a real problem.
+        for(int i = 0; i < 30; i++) {
+            int timeout = 1 + i;
+            overrideEvaluationTimeout(timeout);
+
+            try {
+                client.submit("x = 1 + 1").all().get().get(0).getInt();
+                success = true;
+            } catch (Exception ex) {
+                final Throwable t = ex.getCause();
+                assertThat("Unexpected exception with script evaluation timeout: " + timeout, t, instanceOf(ResponseException.class));
+                assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, ((ResponseException) t).getResponseStatusCode());
+            }
+        }
+
+        assertTrue("Some script submissions should succeed", success);
+
+        cluster.close();
+    }
 
     @Test
     public void shouldUseBaseScript() throws Exception {
@@ -506,7 +499,7 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
     }
 
     @Test
-    public void shouldRespectHighWaterMarkSettingAndSucceed() throws Exception {
+    public void shouldRespectHighWaterMarkSettingAndSucceed() {
         // the highwatermark should get exceeded on the server and thus pause the writes, but have no problem catching
         // itself up - this is a tricky tests to get passing on all environments so this assumption will deny the
         // test for most cases
@@ -566,8 +559,8 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
             final CountDownLatch latch = new CountDownLatch(1);
             final AtomicBoolean pass = new AtomicBoolean(false);
             client.submit(request, result -> {
-                if (result.getStatus().getCode() != ResponseStatusCode.PARTIAL_CONTENT) {
-                    pass.set(ResponseStatusCode.REQUEST_ERROR_INVALID_REQUEST_ARGUMENTS == result.getStatus().getCode());
+                if (result.getStatus().getCode() != HttpResponseStatus.PARTIAL_CONTENT) {
+                    pass.set(HttpResponseStatus.BAD_REQUEST == result.getStatus().getCode());
                     latch.countDown();
                 }
             });
@@ -585,8 +578,8 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
             final CountDownLatch latch = new CountDownLatch(1);
             final AtomicBoolean pass = new AtomicBoolean(false);
             client.submit(request, result -> {
-                if (result.getStatus().getCode() != ResponseStatusCode.PARTIAL_CONTENT) {
-                    pass.set(ResponseStatusCode.REQUEST_ERROR_INVALID_REQUEST_ARGUMENTS == result.getStatus().getCode());
+                if (result.getStatus().getCode() != HttpResponseStatus.PARTIAL_CONTENT) {
+                    pass.set(HttpResponseStatus.BAD_REQUEST == result.getStatus().getCode());
                     latch.countDown();
                 }
             });
@@ -608,8 +601,8 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
             final CountDownLatch latch = new CountDownLatch(1);
             final AtomicBoolean pass = new AtomicBoolean(false);
             client.submit(request, result -> {
-                if (result.getStatus().getCode() != ResponseStatusCode.PARTIAL_CONTENT) {
-                    pass.set(ResponseStatusCode.REQUEST_ERROR_INVALID_REQUEST_ARGUMENTS == result.getStatus().getCode());
+                if (result.getStatus().getCode() != HttpResponseStatus.PARTIAL_CONTENT) {
+                    pass.set(HttpResponseStatus.BAD_REQUEST == result.getStatus().getCode());
                     latch.countDown();
                 }
             });
@@ -627,8 +620,8 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
             final CountDownLatch latch = new CountDownLatch(1);
             final AtomicBoolean pass = new AtomicBoolean(false);
             client.submit(request, result -> {
-                if (result.getStatus().getCode() != ResponseStatusCode.PARTIAL_CONTENT) {
-                    pass.set(ResponseStatusCode.SUCCESS == result.getStatus().getCode() && (((int) ((List) result.getResult().getData()).get(0) == 246)));
+                if (result.getStatus().getCode() != HttpResponseStatus.PARTIAL_CONTENT) {
+                    pass.set(HttpResponseStatus.OK == result.getStatus().getCode() && (((int) ((List) result.getResult().getData()).get(0) == 246)));
                     latch.countDown();
                 }
             });
@@ -649,8 +642,8 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
             final CountDownLatch latch = new CountDownLatch(1);
             final AtomicBoolean pass = new AtomicBoolean(false);
             client.submit(request, result -> {
-                if (result.getStatus().getCode() != ResponseStatusCode.PARTIAL_CONTENT) {
-                    pass.set(ResponseStatusCode.REQUEST_ERROR_INVALID_REQUEST_ARGUMENTS == result.getStatus().getCode());
+                if (result.getStatus().getCode() != HttpResponseStatus.PARTIAL_CONTENT) {
+                    pass.set(HttpResponseStatus.BAD_REQUEST == result.getStatus().getCode());
                     latch.countDown();
                 }
             });
@@ -702,7 +695,7 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
     public void shouldNotThrowNoSuchElementException() throws Exception {
         try (SimpleClient client = TestClientFactory.createSimpleHttpClient()){
             // this should return "nothing" - there should be no exception
-            final List<ResponseMessage> responses = client.submit("g.V().has('name','kadfjaldjfla')");
+            final List<ResponseMessageV4> responses = client.submit("g.V().has('name','kadfjaldjfla')");
             assertTrue(((List) responses.get(0).getResult().getData()).isEmpty());
         }
     }
@@ -711,7 +704,7 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
     @SuppressWarnings("unchecked")
     public void shouldReceiveFailureTimeOutOnScriptEval() throws Exception {
         try (SimpleClient client = TestClientFactory.createSimpleHttpClient()){
-            final List<ResponseMessage> responses = client.submit("Thread.sleep(3000);'some-stuff-that-should not return'");
+            final List<ResponseMessageV4> responses = client.submit("Thread.sleep(3000);'some-stuff-that-should not return'");
             assertTrue(responses.get(0).getStatus().getMessage().contains("timeout occurred"));
 
             // validate that we can still send messages to the server
@@ -719,29 +712,27 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
         }
     }
 
-    // TODO: evalTimeout no longer set in RequestMessage
-//    @Test
-//    @SuppressWarnings("unchecked")
-//    public void shouldReceiveFailureTimeOutOnEvalUsingOverride() throws Exception {
-//        try (SimpleClient client = TestClientFactory.createWebSocketClient()) {
-//            final RequestMessageV4 msg = RequestMessageV4.build("eval")
-//                    .addArg(Tokens.ARGS_EVAL_TIMEOUT, 100L)
-//                    .addArg(Tokens.ARGS_GREMLIN, "Thread.sleep(3000);'some-stuff-that-should not return'")
-//                    .create();
-//            final List<ResponseMessage> responses = client.submit(msg);
-//            assertThat(responses.get(0).getStatus().getMessage(), allOf(startsWith("Evaluation exceeded"), containsString("100 ms")));
-//
-//            // validate that we can still send messages to the server
-//            assertEquals(2, ((List<Integer>) client.submit("1+1").get(0).getResult().getData()).get(0).intValue());
-//        }
-//    }
+    @Test
+    @SuppressWarnings("unchecked")
+    public void shouldReceiveFailureTimeOutOnEvalUsingOverride() throws Exception {
+        try (SimpleClient client = TestClientFactory.createSimpleHttpClient()) {
+            final RequestMessageV4 msg = RequestMessageV4.build("Thread.sleep(3000);'some-stuff-that-should not return'")
+                    .addTimeoutMillis(100L)
+                    .create();
+            final List<ResponseMessageV4> responses = client.submit(msg);
+            assertThat(responses.get(0).getStatus().getMessage(), allOf(startsWith("Evaluation exceeded"), containsString("100 ms")));
+
+            // validate that we can still send messages to the server
+            assertEquals(2, ((List<Integer>) client.submit("1+1").get(0).getResult().getData()).get(0).intValue());
+        }
+    }
 
     @Test
     public void shouldReceiveFailureTimeOutOnScriptEvalOfOutOfControlLoop() throws Exception {
         try (SimpleClient client = TestClientFactory.createSimpleHttpClient()){
             // timeout configured for 1 second so the timed interrupt should trigger prior to the
             // evaluationTimeout which is at 30 seconds by default
-            final List<ResponseMessage> responses = client.submit("while(true){}");
+            final List<ResponseMessageV4> responses = client.submit("while(true){}");
             assertThat(responses.get(0).getStatus().getMessage(), startsWith("Timeout during script evaluation triggered by TimedInterruptCustomizerProvider"));
 
             // validate that we can still send messages to the server
@@ -780,24 +771,26 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
         }
     }
 
-    @Test
-    public void shouldReceiveFailureOnBadGraphSONSerialization() throws Exception {
-        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V4).create();
-        final Client client = cluster.connect();
+    // GraphSON does not support deserialization of streaming data
 
-        try {
-            client.submit("class C { def C getC(){return this}}; new C()").all().join();
-            fail("Should throw an exception.");
-        } catch (RuntimeException re) {
-            final Throwable root = ExceptionHelper.getRootCause(re);
-            assertThat(root.getMessage(), CoreMatchers.startsWith("Error during serialization: Direct self-reference leading to cycle (through reference chain:"));
-
-            // validate that we can still send messages to the server
-            assertEquals(2, client.submit("1+1").all().join().get(0).getInt());
-        } finally {
-            cluster.close();
-        }
-    }
+//    @Test
+//    public void shouldReceiveFailureOnBadGraphSONSerialization() throws Exception {
+//        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V4).create();
+//        final Client client = cluster.connect();
+//
+//        try {
+//            client.submit("class C { def C getC(){return this}}; new C()").all().join();
+//            fail("Should throw an exception.");
+//        } catch (RuntimeException re) {
+//            final Throwable root = ExceptionHelper.getRootCause(re);
+//            assertThat(root.getMessage(), CoreMatchers.startsWith("Error during serialization: Direct self-reference leading to cycle (through reference chain:"));
+//
+//            // validate that we can still send messages to the server
+//            assertEquals(2, client.submit("1+1").all().join().get(0).getInt());
+//        } finally {
+//            cluster.close();
+//        }
+//    }
 
 //    TODO: this test isn't valid right now since this error is thrown by netty so doesn't map properly to RequestId
 //          sent by the driver. Re-enable once this changes.
@@ -886,33 +879,34 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
     public void shouldNotHavePartialContentWithOneResult() throws Exception {
         try (SimpleClient client = TestClientFactory.createSimpleHttpClient()) {
             final RequestMessageV4 request = RequestMessageV4.build("10").create();
-            final List<ResponseMessage> responses = client.submit(request);
+            final List<ResponseMessageV4> responses = client.submit(request);
             assertEquals(1, responses.size());
-            assertEquals(ResponseStatusCode.SUCCESS, responses.get(0).getStatus().getCode());
+            assertEquals(HttpResponseStatus.OK, responses.get(0).getStatus().getCode());
         }
     }
 
-//    TODO: figure this failure out next.
-//    @Test
-//    public void shouldHavePartialContentWithLongResultsCollection() throws Exception {
-//        try (SimpleClient client = TestClientFactory.createSimpleHttpClient()) {
-//            final RequestMessageV4 request = RequestMessageV4.build("new String[100]").create();
-//            final List<ResponseMessage> responses = client.submit(request);
-//            assertThat(responses.size(), Matchers.greaterThan(1));
-//            for (Iterator<ResponseMessage> it = responses.iterator(); it.hasNext(); ) {
-//                final ResponseMessage msg = it.next();
-//                final ResponseStatusCode expected = it.hasNext() ? ResponseStatusCode.PARTIAL_CONTENT : ResponseStatusCode.SUCCESS;
-//                assertEquals(expected, msg.getStatus().getCode());
-//            }
-//        }
-//    }
+    @Test
+    public void shouldHavePartialContentWithLongResultsCollection() throws Exception {
+        try (SimpleClient client = TestClientFactory.createSimpleHttpClient()) {
+            final RequestMessageV4 request = RequestMessageV4.build("new String[100]").create();
+            final List<ResponseMessageV4> responses = client.submit(request);
+            assertThat(responses.size(), Matchers.greaterThan(1));
+
+            // first message have no status
+            assertNull(responses.get(0).getStatus());
+            // second one contains last piece of data
+            assertEquals(HttpResponseStatus.OK, responses.get(1).getStatus().getCode());
+            // last message with no data, but with trailing headers
+            assertEquals(HttpResponseStatus.NO_CONTENT, responses.get(2).getStatus().getCode());
+        }
+    }
 
     @Test
     public void shouldFailWithBadScriptEval() throws Exception {
         try (SimpleClient client = TestClientFactory.createSimpleHttpClient()) {
             final RequestMessageV4 request = RequestMessageV4.build("new String().doNothingAtAllBecauseThis is a syntax error").create();
-            final List<ResponseMessage> responses = client.submit(request);
-            assertEquals(ResponseStatusCode.SERVER_ERROR_EVALUATION, responses.get(0).getStatus().getCode());
+            final List<ResponseMessageV4> responses = client.submit(request);
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, responses.get(0).getStatus().getCode());
             assertEquals(1, responses.size());
         }
     }
@@ -990,7 +984,7 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
             final Throwable t = ex.getCause();
             assertThat(t, instanceOf(ResponseException.class));
             assertEquals("try again!", t.getMessage());
-            assertEquals(ResponseStatusCode.SERVER_ERROR_TEMPORARY, ((ResponseException) t).getResponseStatusCode());
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, ((ResponseException) t).getResponseStatusCode());
         } finally {
             cluster.close();
         }
@@ -1029,8 +1023,8 @@ public class GremlinServerIntegrateTest extends AbstractGremlinServerIntegration
         } catch (Exception ex) {
             final Throwable t = ex.getCause();
             assertThat(t, instanceOf(ResponseException.class));
-            assertEquals("make it stop", t.getMessage());
-            assertEquals(ResponseStatusCode.SERVER_ERROR_FAIL_STEP, ((ResponseException) t).getResponseStatusCode());
+            assertThat(t.getMessage(), startsWith("make it stop"));
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, ((ResponseException) t).getResponseStatusCode());
         }
     }
 }

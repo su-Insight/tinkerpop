@@ -18,6 +18,7 @@
  */
 package org.apache.tinkerpop.gremlin.driver;
 
+import org.apache.tinkerpop.gremlin.driver.handler.GremlinResponseHandler;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.javatuples.Pair;
 
@@ -33,17 +34,17 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * A queue of incoming {@link Result} objects.  The queue is updated by the {@link Handler.GremlinResponseHandler}
+ * A queue of incoming {@link Result} objects.  The queue is updated by the {@link GremlinResponseHandler}
  * until a response terminator is identified.
  *
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-final class ResultQueue {
+public final class ResultQueue {
 
     private final LinkedBlockingQueue<Result> resultLinkedBlockingQueue;
 
-    private Object aggregatedResult = null;
+    private final Object aggregatedResult = null;
 
     private final AtomicReference<Throwable> error = new AtomicReference<>();
 
@@ -104,7 +105,7 @@ final class ResultQueue {
         resultLinkedBlockingQueue.drainTo(collection);
     }
 
-    void markComplete(final Map<String,Object> statusAttributes) {
+     public void markComplete(final Map<String, Object> statusAttributes) {
         // if there was some aggregation performed in the queue then the full object is hanging out waiting to be
         // added to the ResultSet
         if (aggregatedResult != null)
@@ -117,7 +118,7 @@ final class ResultQueue {
         this.drainAllWaiting();
     }
 
-    void markError(final Throwable throwable) {
+    public void markError(final Throwable throwable) {
         error.set(throwable);
         this.readComplete.completeExceptionally(throwable);
         this.drainAllWaiting();

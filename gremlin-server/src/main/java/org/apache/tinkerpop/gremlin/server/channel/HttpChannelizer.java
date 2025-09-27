@@ -30,6 +30,7 @@ import org.apache.tinkerpop.gremlin.server.handler.AbstractAuthenticationHandler
 import org.apache.tinkerpop.gremlin.server.handler.HttpBasicAuthenticationHandler;
 import org.apache.tinkerpop.gremlin.server.handler.HttpBasicAuthorizationHandler;
 import org.apache.tinkerpop.gremlin.server.handler.HttpRequestCheckingHandler;
+import org.apache.tinkerpop.gremlin.server.handler.HttpRequestIdHandler;
 import org.apache.tinkerpop.gremlin.server.handler.HttpRequestMessageDecoder;
 import org.apache.tinkerpop.gremlin.server.handler.HttpUserAgentHandler;
 import org.apache.tinkerpop.gremlin.server.handler.HttpGremlinEndpointHandler;
@@ -51,14 +52,14 @@ public class HttpChannelizer extends AbstractChannelizer {
     private static final Logger logger = LoggerFactory.getLogger(HttpChannelizer.class);
 
     private HttpGremlinEndpointHandler httpGremlinEndpointHandler;
-
     private HttpRequestCheckingHandler httpRequestCheckingHandler = new HttpRequestCheckingHandler();
     private HttpRequestMessageDecoder httpRequestMessageDecoder = new HttpRequestMessageDecoder(serializers);
+    private HttpRequestIdHandler httpRequestIdHandler = new HttpRequestIdHandler();
 
     @Override
     public void init(final ServerGremlinExecutor serverGremlinExecutor) {
         super.init(serverGremlinExecutor);
-        httpGremlinEndpointHandler = new HttpGremlinEndpointHandler(serializers, gremlinExecutor, graphManager, settings);
+        httpGremlinEndpointHandler = new HttpGremlinEndpointHandler(gremlinExecutor, graphManager, settings);
     }
 
     @Override
@@ -71,6 +72,7 @@ public class HttpChannelizer extends AbstractChannelizer {
         if (logger.isDebugEnabled())
             pipeline.addLast(new LoggingHandler("http-io", LogLevel.DEBUG));
 
+        pipeline.addLast("http-requestid-handler", httpRequestIdHandler);
         pipeline.addLast("http-keepalive-handler", new HttpServerKeepAliveHandler());
         pipeline.addLast("http-cors-handler", new CorsHandler(CorsConfigBuilder.forAnyOrigin().build()));
 
