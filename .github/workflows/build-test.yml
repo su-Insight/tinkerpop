@@ -6,9 +6,9 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - name: Set up JDK 11
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9
         with:
           java-version: '11'
           distribution: 'temurin'
@@ -20,16 +20,16 @@ jobs:
     needs: smoke
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - name: Set up JDK 11
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9
         with:
           java-version: '11'
           distribution: 'temurin'
       - name: Build with Maven
         run: mvn clean install -pl -:gremlin-javascript,-:gremlin-dotnet-source,-:gremlin-dotnet-tests,-:gremlin-go,-:gremlin-python -Dci --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -Dcoverage
       - name: Upload to Codecov
-        uses: codecov/codecov-action@e0b68c6749509c5f83f984dd99a76a1c1a231044
+        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed
         with:
          directory: ./gremlin-tools/gremlin-coverage/target/site
   java-jdk8:
@@ -38,9 +38,9 @@ jobs:
     needs: smoke
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - name: Set up JDK 8
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9
         with:
           java-version: '8'
           distribution: 'temurin'
@@ -52,9 +52,9 @@ jobs:
     needs: smoke
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - name: Set up JDK 11
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9
         with:
           java-version: '11'
           distribution: 'temurin'
@@ -68,9 +68,9 @@ jobs:
     needs: smoke
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - name: Set up JDK 11
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9
         with:
           java-version: '11'
           distribution: 'temurin'
@@ -84,9 +84,9 @@ jobs:
       needs: smoke
       runs-on: ubuntu-22.04
       steps:
-        - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
         - name: Set up JDK 11
-          uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+          uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9
           with:
             java-version: '11'
             distribution: 'temurin'
@@ -120,9 +120,9 @@ jobs:
       matrix:
         os: [ubuntu-22.04, windows-2022]
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - name: Set up JDK 11
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9
         with:
           java-version: '11'
           distribution: 'temurin'
@@ -144,9 +144,9 @@ jobs:
       matrix:
         os: [ubuntu-22.04, windows-2022]
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - name: Set up JDK 11
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9
         with:
           java-version: '11'
           distribution: 'temurin'
@@ -165,9 +165,9 @@ jobs:
     needs: smoke
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - name: Set up JDK 11
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9
         with:
           java-version: '11'
           distribution: 'temurin'
@@ -182,9 +182,9 @@ jobs:
     needs: cache-gremlin-server-docker-image
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - name: Set up JDK 11
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9
         with:
           java-version: '11'
           distribution: 'temurin'
@@ -203,9 +203,9 @@ jobs:
         # os: [ubuntu-22.04, windows-2022]
         os: [ubuntu-22.04]
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - name: Set up JDK 11
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9
         with:
           java-version: '11'
           distribution: 'temurin'
@@ -237,14 +237,14 @@ jobs:
     needs: cache-gremlin-server-docker-image
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - name: Set up JDK 11
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9
         with:
           java-version: '11'
           distribution: 'temurin'
       - name: Set up Python 3.x
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
+        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d
         with:
           python-version: '3.8'
       - name: Build with Maven
@@ -258,16 +258,16 @@ jobs:
     needs: cache-gremlin-server-docker-image
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - name: Set up JDK11
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9
         with:
           java-version: '11'
           distribution: 'temurin'
-      - name: Set up .NET 6.0.x
+      - name: Set up .NET 8.0.x
         uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3
         with:
-          dotnet-version: '6.0.x'
+          dotnet-version: '8.0.x'
       - name: Get Cached Server Base Image
         uses: actions/cache@v4
         id: gremlin-server-test-docker-image
@@ -291,9 +291,9 @@ jobs:
     needs: smoke
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - name: Set up JDK11
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9
         with:
           java-version: '11'
           distribution: 'temurin'
@@ -308,11 +308,11 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - name: Setup Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
-          go-version: '1.20'
+          go-version: '1.21'
       - name: Get Cached Server Base Image
         uses: actions/cache@v4
         id: gremlin-server-test-docker-image
@@ -331,7 +331,7 @@ jobs:
           mvn clean install -pl -:gremlin-python,-:gremlin-javascript,-:gremlin-dotnet,-:gremlin-dotnet-source,-:gremlin-dotnet-tests -q -DskipTests -Dci
           mvn verify -pl :gremlin-go
       - name: Upload to Codecov
-        uses: codecov/codecov-action@e0b68c6749509c5f83f984dd99a76a1c1a231044
+        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed
         with:
           working-directory: ./gremlin-go
       - name: Go-Vet
