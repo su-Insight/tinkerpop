@@ -36,12 +36,14 @@ import io.netty.util.CharsetUtil;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.server.Context;
 import org.apache.tinkerpop.gremlin.server.GremlinServer;
+import org.apache.tinkerpop.gremlin.server.Settings;
 import org.apache.tinkerpop.gremlin.server.util.MetricManager;
 import org.apache.tinkerpop.gremlin.util.MessageSerializer;
 import org.apache.tinkerpop.gremlin.util.Tokens;
 import org.apache.tinkerpop.gremlin.util.message.RequestMessage;
 import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
 import org.apache.tinkerpop.gremlin.util.message.ResponseMessage;
+import org.apache.tinkerpop.gremlin.util.message.ResponseStatusCode;
 import org.apache.tinkerpop.gremlin.util.ser.MessageChunkSerializer;
 import org.apache.tinkerpop.gremlin.util.ser.MessageTextSerializerV4;
 import org.apache.tinkerpop.gremlin.util.ser.SerTokens;
@@ -176,9 +178,13 @@ public class HttpHandlerUtil {
         final JsonNode requestIdNode = body.get(Tokens.REQUEST_ID);
         final UUID requestId = null == requestIdNode ? UUID.randomUUID() : UUID.fromString(requestIdNode.asText());
 
+        final JsonNode chunkSizeNode = body.get(Tokens.ARGS_BATCH_SIZE);
+        final Integer chunkSize = null == chunkSizeNode ? null : chunkSizeNode.asInt();
+
         final RequestMessageV4.Builder builder = RequestMessageV4.build(scriptNode.asText()).overrideRequestId(requestId)
                 .addBindings(bindings).addLanguage(language);
         if (null != g) builder.addG(g);
+        if (null != chunkSize) builder.addChunkSize(chunkSize);
         return builder.create();
     }
 
@@ -264,17 +270,9 @@ public class HttpHandlerUtil {
         }
     }
 
-    static void writeErrorFrame(final ChannelHandlerContext ctx, final ResponseMessage responseMessage, final MessageSerializer<?> serializer) {
+    static void writeError(final Context context, ResponseMessage responseMessage, final MessageSerializer<?> serializer) {
         try {
-            ctx.writeAndFlush(new DefaultHttpContent(serializer.serializeResponseAsBinary(responseMessage, ctx.alloc())));
-            ctx.writeAndFlush(EMPTY_LAST_CONTENT);
-        } catch (SerializationException se) {
-            logger.warn("Unable to serialize ResponseMessage: {} ", responseMessage);
-        }
-    }
-
-    static void writeErrorFrame(final ChannelHandlerContext ctx, final Context context, ResponseMessage responseMessage, final MessageSerializer<?> serializer) {
-        try {
+            final ChannelHandlerContext ctx = context.getChannelHandlerContext();
             final ByteBuf ByteBuf = context.getRequestState() == HttpGremlinEndpointHandler.RequestState.STREAMING
                     ? ((MessageChunkSerializer) serializer).writeErrorFooter(responseMessage, ctx.alloc())
                     : serializer.serializeResponseAsBinary(responseMessage, ctx.alloc());
@@ -282,15 +280,15 @@ public class HttpHandlerUtil {
             context.setRequestState(HttpGremlinEndpointHandler.RequestState.ERROR);
             ctx.writeAndFlush(new DefaultHttpContent(ByteBuf));
 
-            sendTrailingHeaders(ctx, responseMessage.getStatus().getCode().getValue(), responseMessage.getStatus().getMessage());
+            sendTrailingHeaders(ctx, responseMessage.getStatus().getCode(), responseMessage.getStatus().getMessage());
         } catch (SerializationException se) {
             logger.warn("Unable to serialize ResponseMessage: {} ", responseMessage);
         }
     }
 
-    static void sendTrailingHeaders(final ChannelHandlerContext ctx, final int statusCode, final String message) {
+    static void sendTrailingHeaders(final ChannelHandlerContext ctx, final ResponseStatusCode statusCode, final String message) {
         final DefaultLastHttpContent defaultLastHttpContent = new DefaultLastHttpContent();
-        defaultLastHttpContent.trailingHeaders().add(SerTokens.TOKEN_CODE, statusCode);
+        defaultLastHttpContent.trailingHeaders().add(SerTokens.TOKEN_CODE, statusCode.getValue());
         defaultLastHttpContent.trailingHeaders().add(SerTokens.TOKEN_MESSAGE, message);
         ctx.writeAndFlush(defaultLastHttpContent);
     }

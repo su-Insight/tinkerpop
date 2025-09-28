@@ -16,33 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.tinkerpop.gremlin.server.channel;
+package org.apache.tinkerpop.gremlin.driver.handler;
 
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.MessageToMessageDecoder;
+import org.apache.tinkerpop.gremlin.util.message.ResponseMessage;
+
+import java.util.List;
 
 /**
- * A wrapper around WebSocketChannelizer which saves and exposes the ChannelHandlerContext for testing purposes
+ * Converts {@code HttpResponse} to a {@link ResponseMessage}.
  */
-public class WebSocketTestChannelizer extends WebSocketChannelizer implements TestChannelizer {
-
-    final ContextHandler contextHandler;
-
-    public WebSocketTestChannelizer() {
-        contextHandler = new ContextHandler();
-    }
+@ChannelHandler.Sharable
+public final class HttpGremlinResponseDebugStreamDecoder extends MessageToMessageDecoder<ResponseMessage> {
+    public HttpGremlinResponseDebugStreamDecoder() {}
 
     @Override
-    public void configure(final ChannelPipeline pipeline) {
-        super.configure(pipeline);
-        pipeline.addFirst(contextHandler);
-    }
-
-    public ChannelHandlerContext getMostRecentChannelHandlerContext() {
-        return contextHandler.getMostRecentChannelHandlerContext();
-    }
-
-    public void resetChannelHandlerContext() {
-        contextHandler.resetChannelHandlerContext();
+    protected void decode(final ChannelHandlerContext channelHandlerContext, final ResponseMessage response, final List<Object> objects) throws Exception {
+        System.out.println("HttpGremlinResponseStreamDecoder: ");
+        System.out.println(response.getResult());
     }
 }
