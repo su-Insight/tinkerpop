@@ -51,7 +51,9 @@ public final class RequestMessageV4 {
 
         if (gremlin instanceof String) {
             gremlinType = TokensV4.OPS_EVAL;
-            this.fields.putIfAbsent(TokensV4.ARGS_LANGUAGE, "gremlin-groovy");
+            // !!!
+//             this.fields.putIfAbsent(TokensV4.ARGS_LANGUAGE, "gremlin-groovy");
+            this.fields.putIfAbsent(TokensV4.ARGS_LANGUAGE, "gremlin-lang");
         } else if (gremlin instanceof Bytecode) {
             gremlinType = TokensV4.OPS_BYTECODE;
         } else {
@@ -99,12 +101,18 @@ public final class RequestMessageV4 {
     public static Builder from(final RequestMessageV4 msg) {
         final Builder builder = build(msg.gremlin);
         builder.fields.putAll(msg.getFields());
+        if (msg.getFields().containsKey(TokensV4.ARGS_BINDINGS)) {
+            builder.addBindings((Map<String, Object>) msg.getFields().get(TokensV4.ARGS_BINDINGS));
+        }
         return builder;
     }
 
     public static Builder from(final RequestMessageV4 msg, final Object gremlin) {
         final Builder builder = build(gremlin);
         builder.fields.putAll(msg.getFields());
+        if (msg.getFields().containsKey(TokensV4.ARGS_BINDINGS)) {
+            builder.addBindings((Map<String, Object>) msg.getFields().get(TokensV4.ARGS_BINDINGS));
+        }
         return builder;
     }
 

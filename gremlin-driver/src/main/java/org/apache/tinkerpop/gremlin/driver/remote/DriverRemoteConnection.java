@@ -39,6 +39,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.apache.tinkerpop.gremlin.util.TokensV4.ARGS_BATCH_SIZE;
 import static org.apache.tinkerpop.gremlin.util.TokensV4.ARGS_EVAL_TIMEOUT;
+import static org.apache.tinkerpop.gremlin.util.TokensV4.ARGS_LANGUAGE;
 import static org.apache.tinkerpop.gremlin.util.TokensV4.ARGS_MATERIALIZE_PROPERTIES;
 
 
@@ -223,9 +224,11 @@ public class DriverRemoteConnection implements RemoteConnection {
     }
 
     @Override
-    public <E> CompletableFuture<RemoteTraversal<?, E>> submitAsync(final Bytecode bytecode) throws RemoteConnectionException {
+    public <E> CompletableFuture<RemoteTraversal<?, E>> submitAsync(final Bytecode gremlincode) throws RemoteConnectionException {
         try {
-            return client.submitAsync(bytecode, getRequestOptions(bytecode)).thenApply(rs -> new DriverRemoteTraversal<>(rs, client, attachElements, conf));
+            gremlincode.addG(remoteTraversalSourceName);
+            return client.submitAsync(gremlincode.getGremlin(), gremlincode.getParameters())
+                    .thenApply(rs -> new DriverRemoteTraversal<>(rs, client, attachElements, conf));
         } catch (Exception ex) {
             throw new RemoteConnectionException(ex);
         }
@@ -241,7 +244,7 @@ public class DriverRemoteConnection implements RemoteConnection {
     }
 
     protected static RequestOptions getRequestOptions(final Bytecode bytecode) {
-        final Iterator<OptionsStrategy> itty = BytecodeHelper.findStrategies(bytecode, OptionsStrategy.class);
+        final Iterator<OptionsStrategy> itty = bytecode.getOptionsStrategies().iterator();
         final RequestOptions.Builder builder = RequestOptions.build();
         while (itty.hasNext()) {
             final OptionsStrategy optionsStrategy = itty.next();
@@ -252,6 +255,8 @@ public class DriverRemoteConnection implements RemoteConnection {
                 builder.batchSize(((Number) options.get(ARGS_BATCH_SIZE)).intValue());
             if (options.containsKey(ARGS_MATERIALIZE_PROPERTIES))
                 builder.materializeProperties((String) options.get(ARGS_MATERIALIZE_PROPERTIES));
+            if (options.containsKey(ARGS_LANGUAGE))
+                builder.language((String) options.get(ARGS_LANGUAGE));
         }
         return builder.create();
     }
