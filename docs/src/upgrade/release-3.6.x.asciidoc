@@ -21,17 +21,43 @@ image::https://raw.githubusercontent.com/apache/tinkerpop/master/docs/static/ima
 
 *Tinkerheart*
 
-== TinkerPop 3.6.7
+== TinkerPop 3.6.8
 
 *Release Date: NOT OFFICIALLY RELEASED YET*
+
+Please see the link:https://github.com/apache/tinkerpop/blob/3.6.8/CHANGELOG.asciidoc#release-3-6-8[changelog] for a
+complete list of all the modifications that are part of this release.
+
+=== Upgrading for Users
+
+=== Upgrading for Providers
+
+
+== TinkerPop 3.6.7
+
+*Release Date: April 8, 2024*
 
 Please see the link:https://github.com/apache/tinkerpop/blob/3.6.7/CHANGELOG.asciidoc#release-3-6-7[changelog] for a
 complete list of all the modifications that are part of this release.
 
 === Upgrading for Users
 
+==== Runtime Version Upgrades
+`gremlin-javascript` and `gremlint` have upgraded from Node 16 to Node 18 as Node 16 has passed end of life.
+`gremlin-go` has upgraded from Go 1.20 to Go 1.21 as Go 1.20 has passed end of life.
 
-=== Upgrading for Providers
+==== Gremlin.Net: Fixed a bug in traversal enumeration on .NET 8
+
+The behavior of `IEnumerable` was changed in .NET 8 when `Current` was accessed on it before starting the enumeration
+via `MoveNext()`.
+The Gremlin.Net driver unfortunately did exactly that in some cases which led to exceptions
+(`InvalidOperationException: Enumeration has not started. Call MoveNext.`) on .NET 8 for some traversals.
+Traversal enumeration has been changed for this version of Gremlin.Net to avoid this problem.
+
+Older platforms than .NET 8 are not affected as `IEnumerable.Current` returned `null` there which is what the
+Gremlin.Net driver expected.
+
+See: link:https://issues.apache.org/jira/browse/TINKERPOP-3029[TINKERPOP-3029]
 
 
 == TinkerPop 3.6.6

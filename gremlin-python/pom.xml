@@ -21,7 +21,7 @@ limitations under the License.
     <parent>
         <groupId>org.apache.tinkerpop</groupId>
         <artifactId>tinkerpop</artifactId>
-        <version>3.7.2-SNAPSHOT</version>
+        <version>3.7.3-SNAPSHOT</version>
     </parent>
     <artifactId>gremlin-python</artifactId>
     <name>Apache TinkerPop :: Gremlin Python</name>
@@ -140,6 +140,16 @@ limitations under the License.
                                             <env key="VERSION" value="${project.version}"/>
                                             <env key="PYTHONPATH" value=""/>
                                             <arg line="up --build --abort-on-container-exit gremlin-python-package"/>
+                                        </exec>
+                                        <exec executable="docker-compose" failonerror="true">
+                                            <env key="PYTHONPATH" value=""/>
+                                            <env key="PACKAGE_DIR" value="${project.build.directory}/python-packaged"/>
+                                            <arg line="down"/>
+                                        </exec>
+                                        <exec executable="docker" failonerror="true">
+                                            <env key="PYTHONPATH" value=""/>
+                                            <env key="PACKAGE_DIR" value="${project.build.directory}/python-packaged"/>
+                                            <arg line="image prune --filter label=maintainer=dev@tinkerpop.apache.org -f"/>
                                         </exec>
                                     </target>
                                 </configuration>

@@ -94,8 +94,11 @@ public class MergeVertexStep<S> extends MergeStep<S, Vertex, Map> {
             // attach the onMatch properties
             vertices = IteratorUtils.peek(vertices, v -> {
 
-                // if this was a start step the traverser is initialized with Boolean/false, so override that with
-                // the matched Vertex so that the option() traversal can operate on it properly
+                // override current traverser with the matched Vertex so that the option() traversal can operate
+                // on it properly. this should only work this way for the start step form to retain the original
+                // behavior for 3.6.0 where you might do g.inject(Map).mergeV() and want that Map to pass through.
+                // in 4.x this will be rectified such that the vertex will always be promoted and you will be forced
+                // to select() the map if you did want the behavior.
                 if (isStart) traverser.set((S) v);
 
                 // assume good input from GraphTraversal - folks might drop in a T here even though it is immutable
@@ -145,10 +148,23 @@ public class MergeVertexStep<S> extends MergeStep<S, Vertex, Map> {
          */
         final Map<?,?> onCreateMap = onCreateMap(traverser, mergeMap);
 
-        final Object[] flatArgs = onCreateMap.entrySet().stream()
-                .flatMap(e -> Stream.of(e.getKey(), e.getValue())).collect(toList()).toArray();
+        // extract the key/value pairs from the map and flatten them into an array but exclude any that have a
+        // CardinalityValueTraversal as the value. you have to ignore those in a call to addVertex because that would
+        // make it so that the Graph had to know how to deal with the CardinalityValueTraversal which it doesn't. this
+        // allows this feature to work out of the box.
+        final Object[] flatArgsWithoutExplicitCardinality = onCreateMap.entrySet().stream().
+                filter(e -> !(e.getValue() instanceof CardinalityValueTraversal)).
+                flatMap(e -> Stream.of(e.getKey(), e.getValue())).collect(toList()).toArray();
 
-        final Vertex vertex = graph.addVertex(flatArgs);
+        final Vertex vertex = graph.addVertex(flatArgsWithoutExplicitCardinality);
+
+        // deal with values that have the cardinality explicitly set which should only occur on string keys
+        onCreateMap.entrySet().stream().
+                filter(e -> e.getKey() instanceof String && e.getValue() instanceof CardinalityValueTraversal).
+                forEach(e -> {
+                    final CardinalityValueTraversal cardinalityValueTraversal = (CardinalityValueTraversal) e.getValue();
+                    vertex.property(cardinalityValueTraversal.getCardinality(), (String) e.getKey(), cardinalityValueTraversal.getValue());
+                });
 
         // trigger callbacks for eventing - in this case, it's a VertexAddedEvent
         if (this.callbackRegistry != null && !callbackRegistry.getCallbacks().isEmpty()) {

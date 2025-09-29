@@ -654,9 +654,7 @@ Feature: Step - mergeV()
           option(Merge.onMatch, __.sideEffect(__.properties("age").drop()).select("m"))
       """
     When iterated to list
-    Then the result should have a count of 1
-    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"marko\").has(\"age\", 19)"
-    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"marko\").has(\"age\")"
+    Then the traversal will raise an error with message containing text of "The incoming traverser for MergeVertexStep cannot be an Element"
 
   # onCreate inheritance from merge
   @UserSuppliedVertexIds
@@ -957,6 +955,48 @@ Feature: Step - mergeV()
     And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"allen\").has(\"age\")"
     And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"allen\").properties(\"age\")"
 
+  @MultiProperties
+  Scenario: g_mergeVXname_aliceX_optionXonCreate_age_singleX81XX
+    Given the empty graph
+    And the traversal of
+      """
+      g.mergeV([name: "alice", (T.label): "person"]).
+          option(Merge.onCreate, [age: Cardinality.single(81)])
+      """
+    When iterated to list
+    Then the result should have a count of 1
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"alice\").has(\"age\", 81)"
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"alice\").has(\"age\")"
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"alice\").properties(\"age\")"
+
+  @MultiProperties
+  Scenario: g_mergeVXname_aliceX_optionXonCreate_age_setX81XX
+    Given the empty graph
+    And the traversal of
+      """
+      g.mergeV([name: "alice", (T.label): "person"]).
+          option(Merge.onCreate, [age: Cardinality.set(81)])
+      """
+    When iterated to list
+    Then the result should have a count of 1
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"alice\").has(\"age\", 81)"
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"alice\").has(\"age\")"
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"alice\").properties(\"age\")"
+
+  @MultiProperties
+  Scenario: g_mergeVXname_aliceX_optionXonCreate_age_singleX81X_age_81_setX
+    Given the empty graph
+    And the traversal of
+      """
+      g.mergeV([name: "alice", (T.label): "person"]).
+          option(Merge.onCreate, [age: 81], Cardinality.set)
+      """
+    When iterated to list
+    Then the result should have a count of 1
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"alice\").has(\"age\", 81)"
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"alice\").has(\"age\")"
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"alice\").properties(\"age\")"
+
   # cannot use hidden namespace for label key for onMatch
   Scenario: g_mergeV_hidden_label_key_onMatch_matched_prohibited
     Given the empty graph
@@ -967,3 +1007,45 @@ Feature: Step - mergeV()
       """
     When iterated to list
     Then the traversal will raise an error with message containing text of "Property key can not be a hidden key: ~label"
+
+  Scenario: g_injectXlist1_list2X_mergeVXlimitXlocal_1XX_optionXonCreate_rangeXlocal_1_2X_optionXonMatch_tailXlocalXX_to_match
+    Given the empty graph
+    And the graph initializer of
+      """
+      g.addV("person").property("name", "marko").property("age", 29)
+      """
+    And using the parameter xx1 defined as "m[{\"t[label]\": \"person\", \"name\":\"marko\"}]"
+    And using the parameter xx2 defined as "m[{\"created\": \"N\"}]"
+    And the traversal of
+      """
+      g.inject(xx1, xx1, xx2).
+        fold().
+        mergeV(__.limit(Scope.local,1)).
+          option(Merge.onCreate, __.range(Scope.local, 1, 2)).
+          option(Merge.onMatch, __.tail(Scope.local))
+      """
+    When iterated to list
+    Then the result should have a count of 1
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"marko\").has(\"created\",\"N\")"
+    And the graph should return 1 for count of "g.V()"
+
+  Scenario: g_injectXlist1_list2X_mergeVXlimitXlocal_1XX_optionXonCreate_rangeXlocal_1_2X_optionXonMatch_tailXlocalXX_to_create
+    Given the empty graph
+    And the graph initializer of
+      """
+      g.addV("person").property("name", "marko").property("age", 29)
+      """
+    And using the parameter xx1 defined as "m[{\"t[label]\": \"person\", \"name\":\"stephen\"}]"
+    And using the parameter xx2 defined as "m[{\"created\": \"N\"}]"
+    And the traversal of
+      """
+      g.inject(xx1, xx1, xx2).
+        fold().
+        mergeV(__.limit(Scope.local,1)).
+          option(Merge.onCreate, __.range(Scope.local, 1, 2)).
+          option(Merge.onMatch, __.tail(Scope.local))
+      """
+    When iterated to list
+    Then the result should have a count of 1
+    And the graph should return 1 for count of "g.V().has(\"person\",\"name\",\"stephen\").hasNot(\"created\")"
+    And the graph should return 2 for count of "g.V()"
