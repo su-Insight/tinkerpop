@@ -43,7 +43,7 @@ jobs:
       - name: Build with Maven
         run: mvn clean install -pl -:gremlin-javascript,-:gremlin-dotnet-source,-:gremlin-dotnet-tests,-:gremlin-go,-:gremlin-python -Dci --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -Dcoverage
       - name: Upload to Codecov
-        uses: codecov/codecov-action@5ecb98a3c6b747ed38dc09f787459979aebb39be
+        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed
         with:
          directory: ./gremlin-tools/gremlin-coverage/target/site
   java-jdk8:
@@ -324,7 +324,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - name: Setup Go
-        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: '1.20'
       - name: Get Cached Server Base Image
@@ -345,7 +345,7 @@ jobs:
           mvn clean install -pl -:gremlin-python,-:gremlin-javascript,-:gremlin-dotnet,-:gremlin-dotnet-source,-:gremlin-dotnet-tests -q -DskipTests -Dci
           mvn verify -pl :gremlin-go
       - name: Upload to Codecov
-        uses: codecov/codecov-action@5ecb98a3c6b747ed38dc09f787459979aebb39be
+        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed
         with:
           working-directory: ./gremlin-go
       - name: Go-Vet
