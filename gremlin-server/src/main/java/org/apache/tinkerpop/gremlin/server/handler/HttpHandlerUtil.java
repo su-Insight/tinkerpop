@@ -21,56 +21,32 @@ package org.apache.tinkerpop.gremlin.server.handler;
 import com.codahale.metrics.Meter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpContent;
 import io.netty.handler.codec.http.DefaultLastHttpContent;
-import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.CharsetUtil;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.server.Context;
 import org.apache.tinkerpop.gremlin.server.GremlinServer;
-import org.apache.tinkerpop.gremlin.server.Settings;
+import org.apache.tinkerpop.gremlin.server.util.GremlinError;
 import org.apache.tinkerpop.gremlin.server.util.MetricManager;
-import org.apache.tinkerpop.gremlin.util.MessageSerializer;
-import org.apache.tinkerpop.gremlin.util.Tokens;
-import org.apache.tinkerpop.gremlin.util.message.RequestMessage;
-import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
-import org.apache.tinkerpop.gremlin.util.message.ResponseMessage;
-import org.apache.tinkerpop.gremlin.util.message.ResponseStatusCode;
-import org.apache.tinkerpop.gremlin.util.ser.MessageTextSerializerV4;
+import org.apache.tinkerpop.gremlin.util.MessageSerializerV4;
+import org.apache.tinkerpop.gremlin.util.message.ResponseMessageV4;
 import org.apache.tinkerpop.gremlin.util.ser.SerTokens;
 import org.apache.tinkerpop.gremlin.util.ser.SerializationException;
-import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
-import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
 import org.apache.tinkerpop.shaded.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
 import static com.codahale.metrics.MetricRegistry.name;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
-import static io.netty.handler.codec.http.HttpMethod.POST;
+import static io.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import static io.netty.handler.codec.http.LastHttpContent.EMPTY_LAST_CONTENT;
 
 /**
  * Provides methods shared by the HTTP handlers.
@@ -90,9 +66,9 @@ public class HttpHandlerUtil {
      * Helper method to send errors back as JSON. Only to be used when the RequestMessage couldn't be parsed, because
      * a proper serialized ResponseMessage should be sent in that case.
      *
-     * @param ctx       The netty channel context.
-     * @param status    The HTTP error status code.
-     * @param message   The error message to contain the body.
+     * @param ctx           The netty channel context.
+     * @param status        The HTTP error status code.
+     * @param message       The error message to contain the body.
      */
     public static void sendError(final ChannelHandlerContext ctx, final HttpResponseStatus status, final String message) {
         logger.warn(String.format("Invalid request - responding with %s and %s", status, message));
@@ -105,35 +81,67 @@ public class HttpHandlerUtil {
                 HTTP_1_1, status, Unpooled.copiedBuffer(node.toString(), CharsetUtil.UTF_8));
         response.headers().set(CONTENT_TYPE, "application/json");
         HttpUtil.setContentLength(response, response.content().readableBytes());
+
         ctx.writeAndFlush(response);
     }
 
-    static void writeError(final Context context, ResponseMessage responseMessage, final MessageSerializer<?> serializer) {
+    /**
+     * Writes and flushes a {@link ResponseMessageV4} that contains an error back to the client. Can be used to send
+     * errors while streaming or when no response chunk has been sent. This serves as the end of a response.
+     *
+     * @param context           The netty context.
+     * @param responseMessage   The response to send back.
+     * @param serializer        The serializer to use to serialize the error response.
+     */
+    static void writeError(final Context context, final ResponseMessageV4 responseMessage, final MessageSerializerV4<?> serializer) {
         try {
             final ChannelHandlerContext ctx = context.getChannelHandlerContext();
             final ByteBuf ByteBuf = context.getRequestState() == HttpGremlinEndpointHandler.RequestState.STREAMING
-                    ? ((MessageTextSerializerV4) serializer).writeErrorFooter(responseMessage, ctx.alloc())
+                    ? serializer.writeErrorFooter(responseMessage, ctx.alloc())
                     : serializer.serializeResponseAsBinary(responseMessage, ctx.alloc());
 
             context.setRequestState(HttpGremlinEndpointHandler.RequestState.ERROR);
             ctx.writeAndFlush(new DefaultHttpContent(ByteBuf));
 
-            sendTrailingHeaders(ctx, responseMessage.getStatus().getCode(), responseMessage.getStatus().getMessage());
+            sendTrailingHeaders(ctx, responseMessage.getStatus().getCode(), responseMessage.getStatus().getException());
         } catch (SerializationException se) {
             logger.warn("Unable to serialize ResponseMessage: {} ", responseMessage);
         }
     }
 
-    static void sendTrailingHeaders(final ChannelHandlerContext ctx, final ResponseStatusCode statusCode, final String message) {
+    /**
+     * Writes a {@link GremlinError} into the status object of a {@link ResponseMessageV4} and then flushes it. Used to
+     * send specific errors back to the client. This serves as the end of a response.
+     *
+     * @param context       The netty context.
+     * @param error         The GremlinError used to populate the status.
+     * @param serializer    The serializer to use to serialize the error response.
+     */
+    static void writeError(final Context context, final GremlinError error, final MessageSerializerV4<?> serializer) {
+        final ResponseMessageV4 responseMessage = ResponseMessageV4.build()
+                .code(error.getCode())
+                .statusMessage(error.getMessage())
+                .exception(error.getException())
+                .create();
+
+        writeError(context, responseMessage, serializer);
+    }
+
+    /**
+     * Adds trailing headers specified in the arguments to a {@link DefaultLastHttpContent} and then flushes it. This
+     * serves as the end of a response.
+     *
+     * @param ctx           The netty context.
+     * @param statusCode    The status code to include in the trailers.
+     * @param exceptionType The type of exception to include in the trailers. Leave blank or null if no error occurred.
+     */
+    static void sendTrailingHeaders(final ChannelHandlerContext ctx, final HttpResponseStatus statusCode, final String exceptionType) {
         final DefaultLastHttpContent defaultLastHttpContent = new DefaultLastHttpContent();
-        defaultLastHttpContent.trailingHeaders().add(SerTokens.TOKEN_CODE, statusCode.getValue());
-        try {
-            defaultLastHttpContent.trailingHeaders().add(
-                    SerTokens.TOKEN_MESSAGE, URLEncoder.encode(message, StandardCharsets.UTF_8.name()));
-        } catch (UnsupportedEncodingException uee) {
-            // This should never occur since we use UTF-8 so just log rather than handle.
-            logger.info(StandardCharsets.UTF_8.name() + " encoding not supported", uee);
+        defaultLastHttpContent.trailingHeaders().add(SerTokens.TOKEN_CODE, statusCode.code());
+        if (exceptionType != null && !exceptionType.isEmpty()) {
+            defaultLastHttpContent.trailingHeaders().add(SerTokens.TOKEN_EXCEPTION, exceptionType);
         }
+
         ctx.writeAndFlush(defaultLastHttpContent);
     }
 }

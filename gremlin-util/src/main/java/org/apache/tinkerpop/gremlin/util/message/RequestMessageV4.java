@@ -38,21 +38,14 @@ public final class RequestMessageV4 {
     public static final RequestMessageV4 INVALID = new RequestMessageV4();
 
     private String gremlinType; // Type information needed to help deserialize "gremlin" into either String/Bytecode.
-
     private Object gremlin; // Should be either a String or Bytecode type.
-
     private Map<String, Object> fields;
+    private UUID requestId;
 
     private RequestMessageV4(final Object gremlin, final Map<String, Object> fields) {
         if (null == gremlin) throw new IllegalArgumentException("RequestMessage requires gremlin argument");
         if (!(gremlin instanceof Bytecode || gremlin instanceof String)) {
             throw new IllegalArgumentException("gremlin argument for RequestMessage must be either String or Bytecode");
-        }
-
-        Object requestId = fields.get(Tokens.REQUEST_ID);
-        if (null == requestId) throw new IllegalArgumentException("RequestMessage requires a requestId");
-        if (!(requestId instanceof UUID)) {
-            throw new IllegalArgumentException("requestId argument for RequestMessage must be a UUID");
         }
 
         this.gremlin = gremlin;
@@ -68,6 +61,8 @@ public final class RequestMessageV4 {
         }
 
         this.fields.put("gremlinType", gremlinType);
+
+        requestId = UUID.randomUUID();
     }
 
     /**
@@ -76,11 +71,11 @@ public final class RequestMessageV4 {
     private RequestMessageV4() { }
 
     /**
-     * The id of the current request and is used to track the message within Gremlin Server and in its response.  This
-     * value should be unique per request made.
+     * The id of the current request.
+     * Used only in GLV, not transmitted to the server.
      */
     public UUID getRequestId() {
-        return getField(Tokens.REQUEST_ID);
+        return requestId;
     }
 
     public <T> Optional<T> optionalField(final String key) {
@@ -143,13 +138,12 @@ public final class RequestMessageV4 {
     public static final class Builder {
         private final Object gremlin; // Should be either a String or Bytecode type.
 
-        private Map<String, Object> bindings = new HashMap<>();
+        private final Map<String, Object> bindings = new HashMap<>();
 
-        private Map<String, Object> fields = new HashMap<>();
+        private final Map<String, Object> fields = new HashMap<>(); // Only allow certain items to be added to prevent breaking changes.
 
         private Builder(final Object gremlin) {
             this.gremlin = gremlin;
-            this.fields.put(Tokens.REQUEST_ID, UUID.randomUUID());
         }
 
         public Builder addLanguage(final String language) {
@@ -176,7 +170,6 @@ public final class RequestMessageV4 {
         }
 
         public Builder addChunkSize(final int chunkSize) {
-            Objects.requireNonNull(chunkSize, "chunkSize argument cannot be null.");
             this.fields.put(Tokens.ARGS_BATCH_SIZE, chunkSize);
             return this;
         }
@@ -192,10 +185,9 @@ public final class RequestMessageV4 {
         }
 
         public Builder addTimeoutMillis(final long timeout) {
-            Objects.requireNonNull(timeout, "timeout argument cannot be null.");
             if (timeout < 0) throw new IllegalArgumentException("timeout argument cannot be negative.");
 
-            this.fields.put(Tokens.ARGS_EVAL_TIMEOUT, timeout);
+            this.fields.put(Tokens.TIMEOUT_MS, timeout);
             return this;
         }
 

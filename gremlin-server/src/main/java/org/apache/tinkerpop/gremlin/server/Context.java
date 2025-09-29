@@ -83,7 +83,7 @@ public class Context {
                    final Settings settings, final GraphManager graphManager,
                    final GremlinExecutor gremlinExecutor, final ScheduledExecutorService scheduledExecutorService) {
         this(requestMessage, ctx, settings, graphManager, gremlinExecutor, scheduledExecutorService,
-                HttpGremlinEndpointHandler.RequestState.CHUNKING_NOT_SUPPORTED);
+                HttpGremlinEndpointHandler.RequestState.NOT_STARTED);
     }
 
     public Context(final RequestMessageV4 requestMessage, final ChannelHandlerContext ctx,
@@ -127,7 +127,7 @@ public class Context {
     /**
      * The timeout for the request. If the request is a script it examines the script for a timeout setting using
      * {@code with()}. If that is not found then it examines the request itself to see if the timeout is provided by
-     * {@link Tokens#ARGS_EVAL_TIMEOUT}. If that is not provided then the {@link Settings#evaluationTimeout} is
+     * {@link Tokens#TIMEOUT_MS}. If that is not provided then the {@link Settings#evaluationTimeout} is
      * utilized as the default.
      */
     public long getRequestTimeout() {
@@ -200,7 +200,7 @@ public class Context {
     private long determineTimeout() {
         // timeout override - handle both deprecated and newly named configuration. earlier logic should prevent
         // both configurations from being submitted at the same time
-        final Long timeoutMs = requestMessage.getField(Tokens.ARGS_EVAL_TIMEOUT);
+        final Long timeoutMs = requestMessage.getField(Tokens.TIMEOUT_MS);
         final long seto = (null != timeoutMs) ? timeoutMs : settings.getEvaluationTimeout();
 
         // override the timeout if the lifecycle has a value assigned. if the script contains with(timeout)
