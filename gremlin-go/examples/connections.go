@@ -21,38 +21,57 @@ package main
 
 import (
 	"fmt"
-	gremlingo "github.com/apache/tinkerpop/gremlin-go/driver"
+
 	"github.com/apache/tinkerpop/gremlin-go/v3/driver"
 )
 
-// syntactic sugar
-var __ = gremlingo.T__
-var gt = gremlingo.P.Gt
-var order = gremlingo.Order
-
 func main() {
-	// Creating the connection to the server.
-	driverRemoteConnection, err := gremlingo.NewDriverRemoteConnection("ws://localhost:8182/gremlin",
-		func(settings *gremlingo.DriverRemoteConnectionSettings) {
-			settings.TraversalSource = "gmodern"
-		})
+	withRemote()
+	withConfigs()
+}
+
+func withRemote() {
+    // Creating the connection to the server
+    driverRemoteConnection, err := gremlingo.NewDriverRemoteConnection("ws://localhost:8182/gremlin")
+
+	// Error handling
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+
 	// Cleanup
 	defer driverRemoteConnection.Close()
 
-	// Creating graph traversal
+    // Creating the graph traversal
 	g := gremlingo.Traversal_().WithRemote(driverRemoteConnection)
 
-	// Perform traversal
-	result, err := g.V().HasLabel("person").Has("age", __.Is(gt(28))).Order().By("age", order.Desc).Values("name").ToList()
+    // Simple query to verify connection
+    g.AddV().Iterate()
+    count, _ := g.V().Count().Next()
+    fmt.Println(*count)
+}
+
+func withConfigs() {
+	// Connecting to the server with customized configurations
+	driverRemoteConnection, err := gremlingo.NewDriverRemoteConnection("ws://localhost:8182/gremlin",
+		func(settings *gremlingo.DriverRemoteConnectionSettings) {
+			settings.TraversalSource = "g"
+			settings.NewConnectionThreshold = 4
+			settings.EnableCompression = false
+			settings.ReadBufferSize = 0
+			settings.WriteBufferSize = 0
+		})
+
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	for _, r := range result {
-		fmt.Println(r.GetString())
-	}
+
+	defer driverRemoteConnection.Close()
+	g := gremlingo.Traversal_().WithRemote(driverRemoteConnection)
+
+    g.AddV().Iterate()
+    count, _ := g.V().Count().Next()
+    fmt.Println(*count)
 }
