@@ -22,6 +22,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import nl.altindag.log.LogCaptor;
 import org.apache.tinkerpop.gremlin.driver.Channelizer;
+import org.apache.tinkerpop.gremlin.driver.handler.GremlinResponseHandler;
 import org.apache.tinkerpop.gremlin.server.channel.HttpChannelizer;
 import org.apache.tinkerpop.gremlin.util.ExceptionHelper;
 import org.apache.tinkerpop.gremlin.TestHelper;
@@ -34,8 +35,7 @@ import org.apache.tinkerpop.gremlin.util.Tokens;
 import org.apache.tinkerpop.gremlin.driver.exception.ConnectionException;
 import org.apache.tinkerpop.gremlin.driver.exception.NoHostAvailableException;
 import org.apache.tinkerpop.gremlin.driver.exception.ResponseException;
-import org.apache.tinkerpop.gremlin.driver.handler.WebSocketClientHandler;
-import org.apache.tinkerpop.gremlin.util.message.RequestMessage;
+import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
 import org.apache.tinkerpop.gremlin.util.message.ResponseStatusCode;
 import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
 import org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV1;
@@ -126,7 +126,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
     public void setupForEachTest() {
         if (name.getMethodName().equals("shouldKeepAliveForWebSockets") ||
                 name.getMethodName().equals("shouldKeepAliveForWebSocketsWithNoInFlightRequests")) {
-            final Logger webSocketClientHandlerLogger = (Logger) LoggerFactory.getLogger(WebSocketClientHandler.class);
+            final Logger webSocketClientHandlerLogger = (Logger) LoggerFactory.getLogger(GremlinResponseHandler.class);
             previousLogLevel = webSocketClientHandlerLogger.getLevel();
             webSocketClientHandlerLogger.setLevel(Level.DEBUG);
         }
@@ -138,7 +138,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
     public void afterEachTest() {
         if (name.getMethodName().equals("shouldKeepAliveForWebSockets") ||
                 name.getMethodName().equals("shouldKeepAliveForWebSocketsWithNoInFlightRequests")) {
-            final Logger webSocketClientHandlerLogger = (Logger) LoggerFactory.getLogger(WebSocketClientHandler.class);
+            final Logger webSocketClientHandlerLogger = (Logger) LoggerFactory.getLogger(GremlinResponseHandler.class);
             webSocketClientHandlerLogger.setLevel(previousLogLevel);
         }
     }
@@ -1367,8 +1367,6 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
     @Test
     public void shouldBeThreadSafeToUseOneClient() throws Exception {
         final Cluster cluster = TestClientFactory.build().workerPoolSize(2)
-                .maxInProcessPerConnection(64)
-                .minInProcessPerConnection(32)
                 .maxConnectionPoolSize(16)
                 .minConnectionPoolSize(8).create();
         final Client client = cluster.connect();
@@ -1705,38 +1703,40 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
         cluster.close();
     }
 
-    @Test
-    public void shouldSendUserAgent() throws Exception {
-        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V3).create();
-        final Client client = Mockito.spy(cluster.connect().alias("g"));
-        client.submit("", RequestOptions.build().userAgent("test").create()).all().get();
-        cluster.close();
+//    TODO: should probably remove and deprecate this old user-agent.
+//    @Test
+//    public void shouldSendUserAgent() throws Exception {
+//        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V3).create();
+//        final Client client = Mockito.spy(cluster.connect().alias("g"));
+//        client.submit("", RequestOptions.build().userAgent("test").create()).all().get();
+//        cluster.close();
+//
+//        final ArgumentCaptor<RequestMessage> requestMessageCaptor = ArgumentCaptor.forClass(RequestMessage.class);
+//        verify(client).submitAsync(requestMessageCaptor.capture());
+//        final RequestMessage requestMessage = requestMessageCaptor.getValue();
+//        assertEquals("test", requestMessage.getArgs().get(Tokens.ARGS_USER_AGENT));
+//    }
 
-        final ArgumentCaptor<RequestMessage> requestMessageCaptor = ArgumentCaptor.forClass(RequestMessage.class);
-        verify(client).submitAsync(requestMessageCaptor.capture());
-        final RequestMessage requestMessage = requestMessageCaptor.getValue();
-        assertEquals("test", requestMessage.getArgs().get(Tokens.ARGS_USER_AGENT));
-    }
-
-    @Test
-    public void shouldSendUserAgentBytecode() {
-        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V3).create();
-        final Client client = Mockito.spy(cluster.connect().alias("g"));
-        Mockito.when(client.alias("g")).thenReturn(client);
-        final GraphTraversalSource g = traversal().withRemote(DriverRemoteConnection.using(client));
-        g.with(Tokens.ARGS_USER_AGENT, "test").V().iterate();
-        cluster.close();
-
-        final ArgumentCaptor<RequestOptions> requestOptionsCaptor = ArgumentCaptor.forClass(RequestOptions.class);
-        verify(client).submitAsync(Mockito.any(Bytecode.class), requestOptionsCaptor.capture());
-        final RequestOptions requestOptions = requestOptionsCaptor.getValue();
-        assertEquals("test", requestOptions.getUserAgent().get());
-
-        final ArgumentCaptor<RequestMessage> requestMessageCaptor = ArgumentCaptor.forClass(RequestMessage.class);
-        verify(client).submitAsync(requestMessageCaptor.capture());
-        final RequestMessage requestMessage = requestMessageCaptor.getValue();
-        assertEquals("test", requestMessage.getArgs().getOrDefault(Tokens.ARGS_USER_AGENT, null));
-    }
+//    TODO: should probably remove and deprecate this old user-agent.
+//    @Test
+//    public void shouldSendUserAgentBytecode() {
+//        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V3).create();
+//        final Client client = Mockito.spy(cluster.connect().alias("g"));
+//        Mockito.when(client.alias("g")).thenReturn(client);
+//        final GraphTraversalSource g = traversal().withRemote(DriverRemoteConnection.using(client));
+//        g.with(Tokens.ARGS_USER_AGENT, "test").V().iterate();
+//        cluster.close();
+//
+//        final ArgumentCaptor<RequestOptions> requestOptionsCaptor = ArgumentCaptor.forClass(RequestOptions.class);
+//        verify(client).submitAsync(Mockito.any(Bytecode.class), requestOptionsCaptor.capture());
+//        final RequestOptions requestOptions = requestOptionsCaptor.getValue();
+//        assertEquals("test", requestOptions.getUserAgent().get());
+//
+//        final ArgumentCaptor<RequestMessage> requestMessageCaptor = ArgumentCaptor.forClass(RequestMessage.class);
+//        verify(client).submitAsync(requestMessageCaptor.capture());
+//        final RequestMessage requestMessage = requestMessageCaptor.getValue();
+//        assertEquals("test", requestMessage.getArgs().getOrDefault(Tokens.ARGS_USER_AGENT, null));
+//    }
 
     @Test
     public void shouldSendRequestIdBytecode() {
@@ -1754,9 +1754,9 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
         assertTrue(requestOptions.getOverrideRequestId().isPresent());
         assertEquals(overrideRequestId, requestOptions.getOverrideRequestId().get());
 
-        final ArgumentCaptor<RequestMessage> requestMessageCaptor = ArgumentCaptor.forClass(RequestMessage.class);
+        final ArgumentCaptor<RequestMessageV4> requestMessageCaptor = ArgumentCaptor.forClass(RequestMessageV4.class);
         verify(client).submitAsync(requestMessageCaptor.capture());
-        final RequestMessage requestMessage = requestMessageCaptor.getValue();
+        final RequestMessageV4 requestMessage = requestMessageCaptor.getValue();
         assertEquals(overrideRequestId, requestMessage.getRequestId());
     }
 
@@ -1803,10 +1803,6 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
                 .maxConnectionPoolSize(1)
                 .connectionSetupTimeoutMillis(100)
                 .maxWaitForConnection(150)
-                .minInProcessPerConnection(0)
-                .maxInProcessPerConnection(1)
-                .minSimultaneousUsagePerConnection(0)
-                .maxSimultaneousUsagePerConnection(1)
                 .create();
 
         final Client.ClusteredClient client = cluster.connect();

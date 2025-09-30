@@ -103,7 +103,15 @@ public final class ResponseMessage {
         }
     }
 
+    public static Builder build() {
+        return new Builder();
+    }
+
     public static Builder build(final RequestMessage requestMessage) {
+        return new Builder(requestMessage);
+    }
+
+    public static Builder build(final RequestMessageV4 requestMessage) {
         return new Builder(requestMessage);
     }
 
@@ -111,32 +119,34 @@ public final class ResponseMessage {
         return new Builder(requestId);
     }
 
-    public static Builder buildV4(final UUID requestId) {
-        return new Builder(requestId, true);
+    public static Builder buildV4() {
+        return new Builder();
     }
 
     public final static class Builder {
 
         private final UUID requestId;
-        private ResponseStatusCode code = ResponseStatusCode.SUCCESS;
+        private ResponseStatusCode code = null;
         private Object result = null;
-        private String statusMessage = "";
+        private String statusMessage = null;
+        private String exception = null;
         private Map<String, Object> attributes = Collections.emptyMap();
         private Map<String, Object> metaData = Collections.emptyMap();
+
+        private Builder() {
+            requestId = null;
+        }
 
         private Builder(final RequestMessage requestMessage) {
             this.requestId = requestMessage.getRequestId();
         }
 
-        private Builder(final UUID requestId) {
-            this.requestId = requestId;
+        private Builder(final RequestMessageV4 requestMessage) {
+            this.requestId = requestMessage.getRequestId();
         }
 
-        // builder for TP4
-        private Builder(final UUID requestId, final boolean v4) {
+        private Builder(final UUID requestId) {
             this.requestId = requestId;
-            this.code = null;
-            this.statusMessage = null;
         }
 
         public Builder code(final ResponseStatusCode code) {
@@ -146,6 +156,11 @@ public final class ResponseMessage {
 
         public Builder statusMessage(final String message) {
             this.statusMessage = message;
+            return this;
+        }
+
+        public Builder exception(final String exception) {
+            this.exception = exception;
             return this;
         }
 
@@ -184,7 +199,7 @@ public final class ResponseMessage {
             if (code == null && statusMessage == null) {
                 return new ResponseMessage(requestId, null, responseResult);
             }
-            final ResponseStatus responseStatus = new ResponseStatus(code, statusMessage, attributes);
+            final ResponseStatus responseStatus = new ResponseStatus(code, statusMessage, exception);
             return new ResponseMessage(requestId, responseStatus, responseResult);
         }
     }
