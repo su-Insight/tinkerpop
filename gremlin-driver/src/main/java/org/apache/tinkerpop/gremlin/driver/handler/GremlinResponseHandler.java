@@ -20,36 +20,29 @@ package org.apache.tinkerpop.gremlin.driver.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.AttributeMap;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.driver.Result;
 import org.apache.tinkerpop.gremlin.driver.ResultQueue;
 import org.apache.tinkerpop.gremlin.driver.exception.ResponseException;
-import org.apache.tinkerpop.gremlin.util.Tokens;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
-import org.apache.tinkerpop.gremlin.util.message.ResponseMessage;
-import org.apache.tinkerpop.gremlin.util.message.ResponseStatusCode;
+import org.apache.tinkerpop.gremlin.util.message.ResponseMessageV4;
 import org.apache.tinkerpop.gremlin.util.ser.SerializationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-
-import static org.apache.tinkerpop.gremlin.driver.handler.HttpGremlinRequestEncoder.REQUEST_ID;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Takes a map of requests pending responses and writes responses to the {@link ResultQueue} of a request
- * as the {@link ResponseMessage} objects are deserialized.
+ * as the {@link ResponseMessageV4} objects are deserialized.
  */
-public class GremlinResponseHandler extends SimpleChannelInboundHandler<ResponseMessage> {
+public class GremlinResponseHandler extends SimpleChannelInboundHandler<ResponseMessageV4> {
     private static final Logger logger = LoggerFactory.getLogger(GremlinResponseHandler.class);
-    private final ConcurrentMap<UUID, ResultQueue> pending;
+    private final AtomicReference<ResultQueue> pending;
 
-    public GremlinResponseHandler(final ConcurrentMap<UUID, ResultQueue> pending) {
+    public GremlinResponseHandler(final AtomicReference<ResultQueue> pending) {
         this.pending = pending;
     }
 
@@ -59,80 +52,50 @@ public class GremlinResponseHandler extends SimpleChannelInboundHandler<Response
         // should fire off a close message which will properly release the driver.
         super.channelInactive(ctx);
 
-        // the channel isn't going to get anymore results as it is closed so release all pending requests
-        pending.values().forEach(val -> val.markError(new IllegalStateException("Connection to server is no longer active")));
-        pending.clear();
+        final ResultQueue current = pending.getAndSet(null);
+        if (current != null) {
+            current.markError(new IllegalStateException("Connection to server is no longer active"));
+        }
     }
 
     @Override
-    protected void channelRead0(final ChannelHandlerContext channelHandlerContext, final ResponseMessage response) throws Exception {
-        final UUID requestId = ((AttributeMap) channelHandlerContext).attr(REQUEST_ID).get();
+    protected void channelRead0(final ChannelHandlerContext channelHandlerContext, final ResponseMessageV4 response) {
+        final HttpResponseStatus statusCode = response.getStatus() == null ? HttpResponseStatus.PARTIAL_CONTENT : response.getStatus().getCode();
+        final ResultQueue queue = pending.get();
 
-        final ResponseStatusCode statusCode = response.getStatus() == null ? ResponseStatusCode.PARTIAL_CONTENT : response.getStatus().getCode();
-        final ResultQueue queue = pending.get(requestId);
-        System.out.println("GremlinResponseHandler get requestId: " + requestId);
-        if (response.getResult().getData() != null) {
-            System.out.println("GremlinResponseHandler payload size: " + ((List) response.getResult().getData()).size());
-        }
-
-        if (statusCode == ResponseStatusCode.SUCCESS || statusCode == ResponseStatusCode.PARTIAL_CONTENT) {
-            final Object data = response.getResult().getData();
-
-            // this is a "result" from the server which is either the result of a script or a
-            // serialized traversal
-            if (data instanceof List) {
-                // unrolls the collection into individual results to be handled by the queue.
-                final List<Object> listToUnroll = (List<Object>) data;
-                listToUnroll.forEach(item -> queue.add(new Result(item)));
-            } else {
-                // since this is not a list it can just be added to the queue
-                queue.add(new Result(response.getResult().getData()));
-            }
+        if (statusCode == HttpResponseStatus.OK || statusCode == HttpResponseStatus.PARTIAL_CONTENT) {
+            final List<Object> data = response.getResult().getData();
+            // unrolls the collection into individual results to be handled by the queue.
+            data.forEach(item -> queue.add(new Result(item)));
         } else {
             // this is a "success" but represents no results otherwise it is an error
-            if (statusCode != ResponseStatusCode.NO_CONTENT) {
-                final Map<String, Object> attributes = response.getStatus().getAttributes();
-                final String stackTrace = attributes.containsKey(Tokens.STATUS_ATTRIBUTE_STACK_TRACE) ?
-                        (String) attributes.get(Tokens.STATUS_ATTRIBUTE_STACK_TRACE) : null;
-                final List<String> exceptions = attributes.containsKey(Tokens.STATUS_ATTRIBUTE_EXCEPTIONS) ?
-                        (List<String>) attributes.get(Tokens.STATUS_ATTRIBUTE_EXCEPTIONS) : null;
+            if (statusCode != HttpResponseStatus.NO_CONTENT) {
                 queue.markError(new ResponseException(response.getStatus().getCode(), response.getStatus().getMessage(),
-                        exceptions, stackTrace, cleanStatusAttributes(attributes)));
+                        response.getStatus().getException()));
             }
         }
 
-        // todo:
         // as this is a non-PARTIAL_CONTENT code - the stream is done.
-        if (statusCode != ResponseStatusCode.PARTIAL_CONTENT) {
-            pending.remove(requestId).markComplete(response.getStatus().getAttributes());
+        if (statusCode != HttpResponseStatus.PARTIAL_CONTENT) {
+            final ResultQueue current = pending.getAndSet(null);
+            if (current != null) {
+                current.markComplete(response.getStatus().getAttributes());
+            }
         }
-
-        System.out.println("----------------------------");
     }
 
     @Override
-    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
+    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
         // if this happens enough times (like the client is unable to deserialize a response) the pending
         // messages queue will not clear.  wonder if there is some way to cope with that.  of course, if
         // there are that many failures someone would take notice and hopefully stop the client.
         logger.error("Could not process the response", cause);
 
-        // the channel took an error because of something pretty bad so release all the futures out there
-        pending.values().forEach(val -> val.markError(cause));
-        pending.clear();
+        final ResultQueue pendingQueue = pending.getAndSet(null);
+        if (pendingQueue != null) pendingQueue.markError(cause);
 
         // serialization exceptions should not close the channel - that's worth a retry
         if (!IteratorUtils.anyMatch(ExceptionUtils.getThrowableList(cause).iterator(), t -> t instanceof SerializationException))
             if (ctx.channel().isActive()) ctx.close();
-    }
-
-    // todo: solution is not decided
-    private Map<String, Object> cleanStatusAttributes(final Map<String, Object> statusAttributes) {
-        final Map<String, Object> m = new HashMap<>();
-        statusAttributes.forEach((k, v) -> {
-            if (!k.equals(Tokens.STATUS_ATTRIBUTE_EXCEPTIONS) && !k.equals(Tokens.STATUS_ATTRIBUTE_STACK_TRACE))
-                m.put(k, v);
-        });
-        return m;
     }
 }

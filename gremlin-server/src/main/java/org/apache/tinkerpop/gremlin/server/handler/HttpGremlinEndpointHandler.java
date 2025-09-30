@@ -28,6 +28,7 @@ import io.netty.handler.codec.http.DefaultHttpContent;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.groovy.engine.GremlinExecutor;
 import org.apache.tinkerpop.gremlin.groovy.jsr223.TimedInterruptTimeoutException;
@@ -46,9 +47,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedE
 import org.apache.tinkerpop.gremlin.server.Context;
 import org.apache.tinkerpop.gremlin.server.GraphManager;
 import org.apache.tinkerpop.gremlin.server.GremlinServer;
+import org.apache.tinkerpop.gremlin.server.ProcessingException;
 import org.apache.tinkerpop.gremlin.server.Settings;
 import org.apache.tinkerpop.gremlin.server.auth.AuthenticatedUser;
-import org.apache.tinkerpop.gremlin.server.ProcessingException;
+import org.apache.tinkerpop.gremlin.server.util.GremlinError;
 import org.apache.tinkerpop.gremlin.server.util.MetricManager;
 import org.apache.tinkerpop.gremlin.server.util.TraverserIterator;
 import org.apache.tinkerpop.gremlin.structure.Column;
@@ -56,13 +58,11 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.util.TemporaryException;
 import org.apache.tinkerpop.gremlin.util.ExceptionHelper;
-import org.apache.tinkerpop.gremlin.util.MessageSerializer;
-import org.apache.tinkerpop.gremlin.util.Tokens;
+import org.apache.tinkerpop.gremlin.util.MessageSerializerV4;
+import org.apache.tinkerpop.gremlin.util.TokensV4;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
-import org.apache.tinkerpop.gremlin.util.message.ResponseMessage;
-import org.apache.tinkerpop.gremlin.util.message.ResponseStatusCode;
-import org.apache.tinkerpop.gremlin.util.ser.MessageTextSerializerV4;
+import org.apache.tinkerpop.gremlin.util.message.ResponseMessageV4;
 import org.codehaus.groovy.control.MultipleCompilationErrorsException;
 import org.javatuples.Pair;
 import org.slf4j.Logger;
@@ -96,7 +96,6 @@ import static io.netty.handler.codec.http.HttpHeaderValues.CHUNKED;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import static org.apache.tinkerpop.gremlin.server.handler.HttpGremlinEndpointHandler.RequestState.CHUNKING_NOT_SUPPORTED;
 import static org.apache.tinkerpop.gremlin.server.handler.HttpGremlinEndpointHandler.RequestState.FINISHED;
 import static org.apache.tinkerpop.gremlin.server.handler.HttpGremlinEndpointHandler.RequestState.FINISHING;
 import static org.apache.tinkerpop.gremlin.server.handler.HttpGremlinEndpointHandler.RequestState.NOT_STARTED;
@@ -105,7 +104,8 @@ import static org.apache.tinkerpop.gremlin.server.handler.HttpHandlerUtil.sendTr
 import static org.apache.tinkerpop.gremlin.server.handler.HttpHandlerUtil.writeError;
 
 /**
- * Handler that processes HTTP requests to the HTTP Gremlin endpoint.
+ * Handler that processes RequestMessageV4. This handler will attempt to execute the query and stream the results back
+ * in HTTP chunks to the client.
  *
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
@@ -150,20 +150,13 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
         }
     }
 
-    /**
-     * Serializers for the response.
-     */
-    private final Map<String, MessageSerializer<?>> serializers;
-
     private final GremlinExecutor gremlinExecutor;
     private final GraphManager graphManager;
     private final Settings settings;
 
-    public HttpGremlinEndpointHandler(final Map<String, MessageSerializer<?>> serializers,
-                                      final GremlinExecutor gremlinExecutor,
+    public HttpGremlinEndpointHandler(final GremlinExecutor gremlinExecutor,
                                       final GraphManager graphManager,
                                       final Settings settings) {
-        this.serializers = serializers;
         this.gremlinExecutor = gremlinExecutor;
         this.graphManager = graphManager;
         this.settings = settings;
@@ -171,16 +164,15 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
 
     @Override
     public void channelRead0(final ChannelHandlerContext ctx, final RequestMessageV4 requestMessage) {
-        Pair<String, MessageTextSerializerV4<?>> serializer = ctx.attr(StateKey.SERIALIZER).get();
-        final RequestState requestState = NOT_STARTED;
+        final Pair<String, MessageSerializerV4<?>> serializer = ctx.channel().attr(StateKey.SERIALIZER).get();
 
         final Context requestCtx = new Context(requestMessage, ctx, settings, graphManager, gremlinExecutor,
-                gremlinExecutor.getScheduledExecutorService(), requestState);
+                gremlinExecutor.getScheduledExecutorService(), NOT_STARTED);
 
         final Timer.Context timerContext = evalOpTimer.time();
         // timeout override - handle both deprecated and newly named configuration. earlier logic should prevent
         // both configurations from being submitted at the same time
-        Long timeoutMs = requestMessage.getField(Tokens.ARGS_EVAL_TIMEOUT);
+        final Long timeoutMs = requestMessage.getField(TokensV4.TIMEOUT_MS);
         final long seto = (null != timeoutMs) ? timeoutMs : requestCtx.getSettings().getEvaluationTimeout();
 
         final FutureTask<Void> evalFuture = new FutureTask<>(() -> {
@@ -188,8 +180,8 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
 
             try {
                 logger.debug("Processing request containing script [{}] and bindings of [{}] on {}",
-                        requestMessage.getFieldOrDefault(Tokens.ARGS_GREMLIN, ""),
-                        requestMessage.getFieldOrDefault(Tokens.ARGS_BINDINGS, Collections.emptyMap()),
+                        requestMessage.getFieldOrDefault(TokensV4.ARGS_GREMLIN, ""),
+                        requestMessage.getFieldOrDefault(TokensV4.ARGS_BINDINGS, Collections.emptyMap()),
                         Thread.currentThread().getName());
                 if (settings.enableAuditLog) {
                     AuthenticatedUser user = ctx.channel().attr(StateKey.AUTHENTICATED_USER).get();
@@ -199,7 +191,7 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
                     String address = ctx.channel().remoteAddress().toString();
                     if (address.startsWith("/") && address.length() > 1) address = address.substring(1);
                     auditLogger.info("User {} with address {} requested: {}", user.getName(), address,
-                            requestMessage.getFieldOrDefault(Tokens.ARGS_GREMLIN, ""));
+                            requestMessage.getGremlin());
                 }
 
                 // Send back the 200 OK response header here since the response is always chunk transfer encoded. Any
@@ -211,28 +203,16 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
 
                 switch (requestMessage.getGremlinType()) {
                     case "":
-                    case Tokens.OPS_EVAL:
+                    case TokensV4.OPS_EVAL:
                         iterateScriptEvalResult(requestCtx, serializer.getValue1(), requestMessage);
                         break;
-                    case Tokens.OPS_BYTECODE:
+                    case TokensV4.OPS_BYTECODE:
                         iterateTraversal(requestCtx, serializer.getValue1(), translateBytecodeToTraversal(requestCtx));
                         break;
-                    case Tokens.OPS_INVALID:
-                        final String msgInvalid =
-                                String.format("Message could not be parsed. Check the format of the request. [%s]", requestMessage);
-                        throw new ProcessingException(msgInvalid,
-                                ResponseMessage.buildV4()
-                                        .code(ResponseStatusCode.REQUEST_ERROR_MALFORMED_REQUEST)
-                                        .statusMessage(msgInvalid)
-                                        .create());
+                    case TokensV4.OPS_INVALID:
+                        throw new ProcessingException(GremlinError.invalidGremlinType(requestMessage));
                     default:
-                        final String msgDefault =
-                                String.format("Message with gremlin of type [%s] is not recognized.", requestMessage.getGremlinType());
-                        throw new ProcessingException(msgDefault,
-                                ResponseMessage.buildV4()
-                                        .code(ResponseStatusCode.REQUEST_ERROR_MALFORMED_REQUEST)
-                                        .statusMessage(msgDefault)
-                                        .create());
+                        throw new ProcessingException(GremlinError.unknownGremlinType(requestMessage));
                 }
             } catch (Throwable t) {
                 writeError(requestCtx, formErrorResponseMessage(t, requestMessage), serializer.getValue1());
@@ -258,27 +238,16 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
                 requestCtx.setTimeoutExecutor(requestCtx.getScheduledExecutorService().schedule(() -> {
                     executionFuture.cancel(true);
                     if (!requestCtx.getStartedResponse()) {
-                        final String errorMessage = String.format("A timeout occurred during traversal evaluation of [%s] - consider increasing the limit given to evaluationTimeout", requestMessage);
-                        writeError(requestCtx,
-                                ResponseMessage.buildV4()
-                                        .code(ResponseStatusCode.SERVER_ERROR_TIMEOUT)
-                                        .statusMessage(errorMessage)
-                                        .create(),
-                                serializer.getValue1());
+                        writeError(requestCtx, GremlinError.timeout(requestMessage), serializer.getValue1());
                     }
                 }, seto, TimeUnit.MILLISECONDS));
             }
         } catch (RejectedExecutionException ree) {
-            writeError(requestCtx,
-                    ResponseMessage.buildV4().code(ResponseStatusCode.TOO_MANY_REQUESTS).statusMessage("Rate limiting").create(),
-                    serializer.getValue1());
+            writeError(requestCtx, GremlinError.rateLimiting(), serializer.getValue1());
         }
     }
 
-    private ResponseMessage formErrorResponseMessage(Throwable t, RequestMessageV4 requestMessage) {
-        final ResponseMessage errorResponseMessage;
-        String logMessage = String.format("Exception processing request [%s].", requestMessage);
-
+    private GremlinError formErrorResponseMessage(Throwable t, RequestMessageV4 requestMessage) {
         if (t instanceof UndeclaredThrowableException) t = t.getCause();
 
         // if any exception in the chain is TemporaryException or Failure then we should respond with the
@@ -286,90 +255,66 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
         final Optional<Throwable> possibleSpecialException = determineIfSpecialException(t);
         if (possibleSpecialException.isPresent()) {
             final Throwable special = possibleSpecialException.get();
-            final ResponseMessage.Builder specialResponseMsg = ResponseMessage.buildV4().
-                    statusMessage(special.getMessage()).
-                    statusAttributeException(special);
             if (special instanceof TemporaryException) {
-                specialResponseMsg.code(ResponseStatusCode.SERVER_ERROR_TEMPORARY);
-            } else if (special instanceof Failure) {
-                final Failure failure = (Failure) special;
-                specialResponseMsg.code(ResponseStatusCode.SERVER_ERROR_FAIL_STEP).
-                        statusAttribute(Tokens.STATUS_ATTRIBUTE_FAIL_STEP_MESSAGE, failure.format());
+                return GremlinError.temporary(special);
             }
-            errorResponseMessage = specialResponseMsg.create();
-        } else if (t instanceof ProcessingException) {
-            errorResponseMessage = ((ProcessingException) t).getResponseMessage();
-        } else {
-            t = ExceptionHelper.getRootCause(t);
+            if (special instanceof Failure) {
+                return GremlinError.failStep((Failure) special);
+            }
+            return GremlinError.general(special);
+        }
+        if (t instanceof ProcessingException) {
+            return ((ProcessingException) t).getError();
+        }
+        t = ExceptionHelper.getRootCause(t);
 
-            if (t instanceof TooLongFrameException) {
-                return ResponseMessage.buildV4()
-                        .code(ResponseStatusCode.SERVER_ERROR)
-                        .statusMessage(t.getMessage() + " - increase the maxContentLength")
-                        .create();
-            } else if (t instanceof InterruptedException || t instanceof TraversalInterruptedException) {
-                final String errorMessage = String.format("A timeout occurred during traversal evaluation of [%s] - consider increasing the limit given to evaluationTimeout", requestMessage);
-                errorResponseMessage = ResponseMessage.buildV4()
-                        .code(ResponseStatusCode.SERVER_ERROR_TIMEOUT)
-                        .statusMessage(errorMessage)
-                        .statusAttributeException(t)
-                        .create();
-            } else if (t instanceof TimedInterruptTimeoutException) {
-                // occurs when the TimedInterruptCustomizerProvider is in play
-                logMessage = String.format("A timeout occurred within the script during evaluation of [%s] - consider increasing the limit given to TimedInterruptCustomizerProvider", requestMessage);
-                errorResponseMessage = ResponseMessage.buildV4().code(ResponseStatusCode.SERVER_ERROR_TIMEOUT)
-                        .statusMessage("Timeout during script evaluation triggered by TimedInterruptCustomizerProvider")
-                        .statusAttributeException(t).create();
-            } else if (t instanceof TimeoutException) {
-                logMessage = String.format("Script evaluation exceeded the configured threshold for request [%s]", requestMessage);
-                errorResponseMessage = ResponseMessage.buildV4().code(ResponseStatusCode.SERVER_ERROR_TIMEOUT)
-                        .statusMessage(t.getMessage())
-                        .statusAttributeException(t).create();
-            } else if (t instanceof MultipleCompilationErrorsException && t.getMessage().contains("Method too large") &&
-                    ((MultipleCompilationErrorsException) t).getErrorCollector().getErrorCount() == 1) {
-                final String errorMessage = String.format("The Gremlin statement that was submitted exceeds the maximum compilation size allowed by the JVM, please split it into multiple smaller statements - %s", requestMessage.trimMessage(1021));
-                logMessage = errorMessage;
-                errorResponseMessage = ResponseMessage.buildV4().code(ResponseStatusCode.SERVER_ERROR_EVALUATION)
-                        .statusMessage(errorMessage)
-                        .statusAttributeException(t).create();
-            } else {
-                errorResponseMessage = ResponseMessage.buildV4()
-                        .code(ResponseStatusCode.SERVER_ERROR_EVALUATION)
-                        .statusMessage((t.getMessage() == null) ? t.toString() : t.getMessage())
-                        .statusAttributeException(t)
-                        .create();
-            }
+        if (t instanceof TooLongFrameException) {
+            return GremlinError.longFrame(t);
+        }
+        if (t instanceof InterruptedException || t instanceof TraversalInterruptedException) {
+            return GremlinError.timeout(requestMessage);
+        }
+        if (t instanceof TimedInterruptTimeoutException) {
+            // occurs when the TimedInterruptCustomizerProvider is in play
+            logger.warn(String.format("A timeout occurred within the script during evaluation of [%s] - consider increasing the limit given to TimedInterruptCustomizerProvider", requestMessage));
+            return GremlinError.timedInterruptTimeout();
+        }
+        if (t instanceof TimeoutException) {
+            logger.warn(String.format("Script evaluation exceeded the configured threshold for request [%s]", requestMessage));
+            return GremlinError.timeout(requestMessage);
+        }
+        if (t instanceof MultipleCompilationErrorsException && t.getMessage().contains("Method too large") &&
+                ((MultipleCompilationErrorsException) t).getErrorCollector().getErrorCount() == 1) {
+            final GremlinError error = GremlinError.longRequest(requestMessage);
+            logger.warn(error.getMessage());
+            return error;
         }
 
-        logger.warn(logMessage, t);
-        return errorResponseMessage;
+        logger.warn(String.format("Exception processing request [%s].", requestMessage));
+        return GremlinError.general(t);
     }
 
-    private void iterateScriptEvalResult(final Context context, MessageTextSerializerV4<?> serializer, final RequestMessageV4 message)
+    private void iterateScriptEvalResult(final Context context, MessageSerializerV4<?> serializer, final RequestMessageV4 message)
             throws ProcessingException, InterruptedException, ScriptException {
-        if (message.optionalField(Tokens.ARGS_BINDINGS).isPresent()) {
-            final Map bindings = (Map) message.getFields().get(Tokens.ARGS_BINDINGS);
+        if (message.optionalField(TokensV4.ARGS_BINDINGS).isPresent()) {
+            final Map bindings = (Map) message.getFields().get(TokensV4.ARGS_BINDINGS);
             if (IteratorUtils.anyMatch(bindings.keySet().iterator(), k -> null == k || !(k instanceof String))) {
-                final String msg = String.format("The [%s] message is using one or more invalid binding keys - they must be of type String and cannot be null", Tokens.OPS_EVAL);
-                throw new ProcessingException(msg, ResponseMessage.buildV4().code(ResponseStatusCode.REQUEST_ERROR_INVALID_REQUEST_ARGUMENTS).statusMessage(msg).create());
+                throw new ProcessingException(GremlinError.binding());
             }
 
             final Set<String> badBindings = IteratorUtils.set(IteratorUtils.<String>filter(bindings.keySet().iterator(), INVALID_BINDINGS_KEYS::contains));
             if (!badBindings.isEmpty()) {
-                final String msg = String.format("The [%s] message supplies one or more invalid parameters key of [%s] - these are reserved names.", Tokens.OPS_EVAL, badBindings);
-                throw new ProcessingException(msg, ResponseMessage.buildV4().code(ResponseStatusCode.REQUEST_ERROR_INVALID_REQUEST_ARGUMENTS).statusMessage(msg).create());
+                throw new ProcessingException(GremlinError.binding(badBindings));
             }
 
             // ignore control bindings that get passed in with the "#jsr223" prefix - those aren't used in compilation
             if (IteratorUtils.count(IteratorUtils.filter(bindings.keySet().iterator(), k -> !k.toString().startsWith("#jsr223"))) > settings.maxParameters) {
-                final String msg = String.format("The [%s] message contains %s bindings which is more than is allowed by the server %s configuration",
-                        Tokens.OPS_EVAL, bindings.size(), settings.maxParameters);
-                throw new ProcessingException(msg, ResponseMessage.buildV4().code(ResponseStatusCode.REQUEST_ERROR_INVALID_REQUEST_ARGUMENTS).statusMessage(msg).create());
+                throw new ProcessingException(GremlinError.binding(bindings.size(), settings.maxParameters));
             }
         }
 
         final Map<String, Object> args = message.getFields();
-        final String language = args.containsKey(Tokens.ARGS_LANGUAGE) ? (String) args.get(Tokens.ARGS_LANGUAGE) : "gremlin-groovy";
+        final String language = args.containsKey(TokensV4.ARGS_LANGUAGE) ? (String) args.get(TokensV4.ARGS_LANGUAGE) : "gremlin-groovy";
         final GremlinScriptEngine scriptEngine = gremlinExecutor.getScriptEngineManager().getEngineByName(language);
 
         final Bindings mergedBindings = mergeBindingsFromRequest(context, new SimpleBindings(graphManager.getAsBindings()));
@@ -381,21 +326,17 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
     private static Traversal.Admin<?,?> translateBytecodeToTraversal(Context ctx) throws ProcessingException {
         final RequestMessageV4 requestMsg = ctx.getRequestMessage();
         if (!(requestMsg.getGremlin() instanceof Bytecode)) {
-            final String msg = String.format("A [%s] message requires a gremlin argument that is of type %s.",
-                    Tokens.OPS_BYTECODE, Tokens.ARGS_GREMLIN, Bytecode.class.getSimpleName());
-            throw new ProcessingException(msg, ResponseMessage.buildV4().code(ResponseStatusCode.REQUEST_ERROR_INVALID_REQUEST_ARGUMENTS).statusMessage(msg).create());
+            throw new ProcessingException(GremlinError.gremlinType());
         }
 
-        final Optional<String> alias = requestMsg.optionalField(Tokens.ARGS_G);
+        final Optional<String> alias = requestMsg.optionalField(TokensV4.ARGS_G);
         if (!alias.isPresent()) {
-            final String msg = String.format("A [%s] message requires a [%s] argument.", Tokens.OPS_BYTECODE, Tokens.ARGS_G);
-            throw new ProcessingException(msg, ResponseMessage.buildV4().code(ResponseStatusCode.REQUEST_ERROR_INVALID_REQUEST_ARGUMENTS).statusMessage(msg).create());
+            throw new ProcessingException(GremlinError.traversalSource());
         }
 
         final String traversalSourceName = alias.get();
         if (!ctx.getGraphManager().getTraversalSourceNames().contains(traversalSourceName)) {
-            final String msg = String.format("The traversal source [%s] for alias [%s] is not configured on the server.", traversalSourceName, Tokens.VAL_TRAVERSAL_SOURCE_ALIAS);
-            throw new ProcessingException(msg, ResponseMessage.buildV4().code(ResponseStatusCode.REQUEST_ERROR_INVALID_REQUEST_ARGUMENTS).statusMessage(msg).create());
+            throw new ProcessingException(GremlinError.traversalSource(traversalSourceName));
         }
 
         final TraversalSource g = ctx.getGraphManager().getTraversalSource(traversalSourceName);
@@ -408,16 +349,10 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
                 return ctx.getGremlinExecutor().eval(bytecode, EMPTY_BINDINGS, lambdaLanguage.get(), traversalSourceName);
         } catch (ScriptException ex) {
             logger.error("Traversal contains a lambda that cannot be compiled", ex);
-            throw new ProcessingException("Traversal contains a lambda that cannot be compiled",
-                    ResponseMessage.buildV4().code(ResponseStatusCode.SERVER_ERROR_EVALUATION)
-                            .statusMessage(ex.getMessage())
-                            .statusAttributeException(ex).create());
+            throw new ProcessingException(GremlinError.lambdaNotSupported(ex));
         } catch (Exception ex) {
             logger.error("Could not deserialize the Traversal instance", ex);
-            throw new ProcessingException("Could not deserialize the Traversal instance",
-                    ResponseMessage.buildV4().code(ResponseStatusCode.SERVER_ERROR_SERIALIZATION)
-                            .statusMessage(ex.getMessage())
-                            .statusAttributeException(ex).create());
+            throw new ProcessingException(GremlinError.deserializeTraversal(ex));
         }
     }
 
@@ -433,14 +368,14 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
     private Bindings mergeBindingsFromRequest(final Context ctx, final Bindings bindings) throws ProcessingException {
         // alias any global bindings to a different variable.
         final RequestMessageV4 msg = ctx.getRequestMessage();
-        if (msg.getFields().containsKey(Tokens.ARGS_G)) {
-            final String aliased = msg.getField(Tokens.ARGS_G);
+        if (msg.getFields().containsKey(TokensV4.ARGS_G)) {
+            final String aliased = msg.getField(TokensV4.ARGS_G);
             boolean found = false;
 
             // first check if the alias refers to a Graph instance
             final Graph graph = ctx.getGraphManager().getGraph(aliased);
             if (null != graph) {
-                bindings.put(Tokens.ARGS_G, graph);
+                bindings.put(TokensV4.ARGS_G, graph);
                 found = true;
             }
 
@@ -449,7 +384,7 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
             if (!found) {
                 final TraversalSource ts = ctx.getGraphManager().getTraversalSource(aliased);
                 if (null != ts) {
-                    bindings.put(Tokens.ARGS_G, ts);
+                    bindings.put(TokensV4.ARGS_G, ts);
                     found = true;
                 }
             }
@@ -457,29 +392,26 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
             // this validation is important to calls to GraphManager.commit() and rollback() as they both
             // expect that the aliases supplied are valid
             if (!found) {
-                final String error = String.format("Could not alias [%s] to [%s] as [%s] not in the Graph or TraversalSource global bindings",
-                        Tokens.ARGS_G, aliased, aliased);
-                throw new ProcessingException(error, ResponseMessage.buildV4()
-                        .code(ResponseStatusCode.REQUEST_ERROR_INVALID_REQUEST_ARGUMENTS).statusMessage(error).create());
+                throw new ProcessingException(GremlinError.binding(aliased));
             }
         }
 
         // add any bindings to override any other supplied
-        Optional.ofNullable((Map<String, Object>) msg.getFields().get(Tokens.ARGS_BINDINGS)).ifPresent(bindings::putAll);
+        Optional.ofNullable((Map<String, Object>) msg.getFields().get(TokensV4.ARGS_BINDINGS)).ifPresent(bindings::putAll);
         return bindings;
     }
 
-    private void iterateTraversal(final Context context, MessageTextSerializerV4<?> serializer, Traversal.Admin<?, ?> traversal)
+    private void iterateTraversal(final Context context, MessageSerializerV4<?> serializer, Traversal.Admin<?, ?> traversal)
             throws InterruptedException {
-        final RequestMessageV4 msg = context.getRequestMessage();
-        logger.debug("Traversal request {} for in thread {}", msg.getRequestId(), Thread.currentThread().getName());
+        final UUID requestId = context.getChannelHandlerContext().attr(StateKey.REQUEST_ID).get();
+        logger.debug("Traversal request {} for in thread {}", requestId, Thread.currentThread().getName());
 
         // compile the traversal - without it getEndStep() has nothing in it
         traversal.applyStrategies();
         handleIterator(context, new TraverserIterator(traversal), serializer);
     }
 
-    private void handleIterator(final Context context, final Iterator itty, final MessageTextSerializerV4<?> serializer) throws InterruptedException {
+    private void handleIterator(final Context context, final Iterator itty, final MessageSerializerV4<?> serializer) throws InterruptedException {
         final ChannelHandlerContext nettyContext = context.getChannelHandlerContext();
         final RequestMessageV4 msg = context.getRequestMessage();
         final Settings settings = context.getSettings();
@@ -496,12 +428,12 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
                 // it needs to be released here
                 if (chunk != null) chunk.release();
             }
-            sendTrailingHeaders(nettyContext, ResponseStatusCode.SUCCESS, "OK");
+            sendTrailingHeaders(nettyContext, HttpResponseStatus.OK, "");
             return;
         }
 
         // the batch size can be overridden by the request
-        final int resultIterationBatchSize = (Integer) msg.optionalField(Tokens.ARGS_BATCH_SIZE)
+        final int resultIterationBatchSize = (Integer) msg.optionalField(TokensV4.ARGS_BATCH_SIZE)
                 .orElse(settings.resultIterationBatchSize);
         List<Object> aggregate = new ArrayList<>(resultIterationBatchSize);
 
@@ -577,7 +509,7 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
                     nettyContext.writeAndFlush(new DefaultHttpContent(chunk));
 
                     if (!hasMore) {
-                        sendTrailingHeaders(nettyContext, ResponseStatusCode.SUCCESS, "OK");
+                        sendTrailingHeaders(nettyContext, HttpResponseStatus.OK, "");
                     }
                 }
             } else {
@@ -604,7 +536,7 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
     }
 
     private static ByteBuf makeChunk(final Context ctx, final RequestMessageV4 msg,
-                                     final MessageTextSerializerV4<?> serializer, final List<Object> aggregate,
+                                     final MessageSerializerV4<?> serializer, final List<Object> aggregate,
                                      final boolean hasMore) throws Exception {
         try {
             final ChannelHandlerContext nettyContext = ctx.getChannelHandlerContext();
@@ -615,22 +547,18 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
                 ctx.setRequestState(FINISHING);
             }
 
-            ResponseMessage responseMessage = null;
+            ResponseMessageV4 responseMessage = null;
 
             // for this state no need to build full ResponseMessage
             if (ctx.getRequestState() != STREAMING) {
-                final ResponseMessage.Builder builder = ResponseMessage.buildV4().result(aggregate);
+                final ResponseMessageV4.Builder builder = ResponseMessageV4.build().result(aggregate);
 
                 // need to put status in last message
-                if (ctx.getRequestState() == FINISHING || ctx.getRequestState() == CHUNKING_NOT_SUPPORTED) {
-                    builder.code(ResponseStatusCode.SUCCESS).statusMessage("OK");
+                if (ctx.getRequestState() == FINISHING) {
+                    builder.code(HttpResponseStatus.OK);
                 }
 
                 responseMessage = builder.create();
-            }
-
-            if (ctx.getRequestState() == CHUNKING_NOT_SUPPORTED) {
-                return serializer.serializeResponseAsBinary(responseMessage, nettyContext.alloc());
             }
 
             switch (ctx.getRequestState()) {
@@ -641,10 +569,9 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
                     }
                     ctx.setRequestState(FINISHED);
 
-                    return serializer.serializeResponseAsBinary(ResponseMessage.buildV4()
+                    return serializer.serializeResponseAsBinary(ResponseMessageV4.build()
                             .result(aggregate)
-                            .code(ResponseStatusCode.SUCCESS)
-                            .statusMessage("OK")
+                            .code(HttpResponseStatus.OK)
                             .create(), nettyContext.alloc());
 
                 case STREAMING:
@@ -654,24 +581,17 @@ public class HttpGremlinEndpointHandler extends SimpleChannelInboundHandler<Requ
                     return serializer.writeFooter(responseMessage, nettyContext.alloc());
             }
 
-            // todo: just throw?
             return serializer.serializeResponseAsBinary(responseMessage, nettyContext.alloc());
 
         } catch (Exception ex) {
-            logger.warn("The result [{}] in the request {} could not be serialized and returned.", aggregate, msg.getRequestId(), ex);
-            final String errorMessage = String.format("Error during serialization: %s", ExceptionHelper.getMessageFromExceptionOrCause(ex));
-            writeError(ctx,
-                    ResponseMessage.build(msg.getRequestId())
-                            .statusMessage(errorMessage)
-                            .statusAttributeException(ex)
-                            .code(ResponseStatusCode.SERVER_ERROR_SERIALIZATION).create(),
-                    serializer);
+            final UUID requestId = ctx.getChannelHandlerContext().attr(StateKey.REQUEST_ID).get();
+            logger.warn("The result [{}] in the request {} could not be serialized and returned.", aggregate, requestId, ex);
+            writeError(ctx, GremlinError.serialization(ex), serializer);
             throw ex;
         }
     }
 
     public enum RequestState {
-        CHUNKING_NOT_SUPPORTED,
         NOT_STARTED,
         STREAMING,
         // last portion of data

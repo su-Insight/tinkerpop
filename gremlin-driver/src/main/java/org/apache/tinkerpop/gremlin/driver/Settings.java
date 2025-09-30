@@ -19,7 +19,7 @@
 package org.apache.tinkerpop.gremlin.driver;
 
 import org.apache.commons.configuration2.Configuration;
-import org.apache.tinkerpop.gremlin.util.MessageSerializer;
+import org.apache.tinkerpop.gremlin.util.MessageSerializerV4;
 import org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV4;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.yaml.snakeyaml.LoaderOptions;
@@ -41,10 +41,10 @@ import java.util.stream.Collectors;
  *
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-final class Settings {
+public final class Settings {
 
     /**
-     * The port of the Gremlin Server to connect to which defaults to {@code 8192}. The same port will be applied for
+     * The port of the Gremlin Server to connect to which defaults to {@code 8182}. The same port will be applied for
      * all {@link #hosts}.
      */
     public int port = 8182;
@@ -71,6 +71,11 @@ final class Settings {
     public ConnectionPoolSettings connectionPool = new ConnectionPoolSettings();
 
     /**
+     * Settings for authentication.
+     */
+    public AuthSettings auth = new AuthSettings();
+
+    /**
      * The size of the thread pool defaulted to the number of available processors.
      */
     public int nioPoolSize = Runtime.getRuntime().availableProcessors();
@@ -79,26 +84,6 @@ final class Settings {
      * The number of worker threads defaulted to the number of available processors * 2.
      */
     public int workerPoolSize = Runtime.getRuntime().availableProcessors() * 2;
-
-    /**
-     * The username to submit on requests that require authentication.
-     */
-    public String username = null;
-
-    /**
-     * The password to submit on requests that require authentication.
-     */
-    public String password = null;
-
-    /**
-     * The JAAS to submit on requests that require authentication.
-     */
-    public String jaasEntry = null;
-
-    /**
-     * The JAAS protocol to submit on requests that require authentication.
-     */
-    public String protocol = null;
 
     /**
      * Toggles if user agent should be sent in web socket handshakes.
@@ -139,18 +124,6 @@ final class Settings {
         if (conf.containsKey("workerPoolSize"))
             settings.workerPoolSize = conf.getInt("workerPoolSize");
 
-        if (conf.containsKey("username"))
-            settings.username = conf.getString("username");
-
-        if (conf.containsKey("password"))
-            settings.password = conf.getString("password");
-
-        if (conf.containsKey("jaasEntry"))
-            settings.jaasEntry = conf.getString("jaasEntry");
-
-        if (conf.containsKey("protocol"))
-            settings.protocol = conf.getString("protocol");
-
         if (conf.containsKey("enableUserAgentOnConnect"))
             settings.enableUserAgentOnConnect = conf.getBoolean("enableUserAgentOnConnect");
 
@@ -176,9 +149,6 @@ final class Settings {
         final Configuration connectionPoolConf = conf.subset("connectionPool");
         if (IteratorUtils.count(connectionPoolConf.getKeys()) > 0) {
             final ConnectionPoolSettings cpSettings = new ConnectionPoolSettings();
-
-            if (connectionPoolConf.containsKey("channelizer"))
-                cpSettings.channelizer = connectionPoolConf.getString("channelizer");
 
             if (connectionPoolConf.containsKey("enableSsl"))
                 cpSettings.enableSsl = connectionPoolConf.getBoolean("enableSsl");
@@ -233,9 +203,6 @@ final class Settings {
             if (connectionPoolConf.containsKey("resultIterationBatchSize"))
                 cpSettings.resultIterationBatchSize = connectionPoolConf.getInt("resultIterationBatchSize");
 
-            if (connectionPoolConf.containsKey("keepAliveInterval"))
-                cpSettings.keepAliveInterval = connectionPoolConf.getLong("keepAliveInterval");
-
             if (connectionPoolConf.containsKey("validationRequest"))
                 cpSettings.validationRequest = connectionPoolConf.getString("validationRequest");
 
@@ -243,6 +210,22 @@ final class Settings {
                 cpSettings.connectionSetupTimeoutMillis = connectionPoolConf.getLong("connectionSetupTimeoutMillis");
 
             settings.connectionPool = cpSettings;
+        }
+
+        final Configuration authConf = conf.subset("auth");
+        if (IteratorUtils.count(authConf.getKeys()) > 0) {
+            final AuthSettings authSettings = new AuthSettings();
+
+            if (authConf.containsKey("type"))
+                authSettings.type = authConf.getString("type");
+
+            if (authConf.containsKey("username"))
+                authSettings.username = authConf.getString("username");
+
+            if (authConf.containsKey("password"))
+                authSettings.password = authConf.getString("password");
+
+            settings.auth = authSettings;
         }
 
         return settings;
@@ -320,12 +303,6 @@ final class Settings {
         public int maxSize = ConnectionPool.MAX_POOL_SIZE;
 
         /**
-         * Length of time in milliseconds to wait on an idle connection before sending a keep-alive request. Set to
-         * zero to disable this feature.
-         */
-        public long keepAliveInterval = Connection.KEEP_ALIVE_INTERVAL;
-
-        /**
          * The amount of time in milliseconds to wait for a new connection before timing out where the default value
          * is 3000.
          */
@@ -357,16 +334,9 @@ final class Settings {
         public int resultIterationBatchSize = Connection.RESULT_ITERATION_BATCH_SIZE;
 
         /**
-         * The constructor for the channel that connects to the server. This value should be the fully qualified
-         * class name of a Gremlin Driver {@link Channelizer} implementation.  By default this value is set to
-         * {@link Channelizer.HttpChannelizer}.
-         */
-        public String channelizer = Channelizer.HttpChannelizer.class.getName();
-
-        /**
          * A valid Gremlin script that can be used to test remote operations.
          */
-        public String validationRequest = "''";
+        public String validationRequest = "g.inject(0)";
 
         /**
          * Duration of time in milliseconds provided for connection setup to complete which includes WebSocket
@@ -378,7 +348,7 @@ final class Settings {
 
     public static class SerializerSettings {
         /**
-         * The fully qualified class name of the {@link MessageSerializer} that will be used to communicate with the
+         * The fully qualified class name of the {@link MessageSerializerV4} that will be used to communicate with the
          * server. Note that the serializer configured on the client should be supported by the server configuration.
          * By default the setting is configured to {@link GraphBinaryMessageSerializerV4}.
          */
@@ -389,11 +359,31 @@ final class Settings {
          */
         public Map<String, Object> config = null;
 
-        public MessageSerializer<?> create() throws Exception {
+        public MessageSerializerV4<?> create() throws Exception {
             final Class<?> clazz = Class.forName(className);
-            final MessageSerializer<?> serializer = (MessageSerializer<?>) clazz.newInstance();
+            final MessageSerializerV4<?> serializer = (MessageSerializerV4<?>) clazz.newInstance();
             Optional.ofNullable(config).ifPresent(c -> serializer.configure(c, null));
             return serializer;
         }
+    }
+
+    public static class AuthSettings {
+        /**
+         * Type of Auth to submit on requests that require authentication.
+         */
+        public String type = "";
+        /**
+         * The username to submit on requests that require authentication.
+         */
+        public String username = null;
+        /**
+         * The password to submit on requests that require authentication.
+         */
+        public String password = null;
+
+        /**
+         * The region setting for sigv4 authentication.
+         */
+        public String region = null;
     }
 }

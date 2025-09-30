@@ -19,12 +19,10 @@
 package org.apache.tinkerpop.gremlin.driver.remote;
 
 import org.apache.tinkerpop.gremlin.driver.RequestOptions;
-import org.apache.tinkerpop.gremlin.util.Tokens;
+import org.apache.tinkerpop.gremlin.util.TokensV4;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
 import org.junit.Test;
-
-import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
@@ -36,26 +34,22 @@ public class DriverRemoteConnectionTest {
 
     @Test
     public void shouldBuildRequestOptions() {
-        final UUID requestId = UUID.fromString("34a9f45f-8854-4d33-8b40-92a8171ee495");
         final RequestOptions options = DriverRemoteConnection.getRequestOptions(
                 g.with("x").
                         with("y", 100).
-                        with(Tokens.ARGS_BATCH_SIZE, 1000).
-                        with(Tokens.REQUEST_ID, requestId).
-                        with(Tokens.ARGS_EVAL_TIMEOUT, 100000L).
-                        with(Tokens.ARGS_USER_AGENT, "test").
+                        with(TokensV4.ARGS_BATCH_SIZE, 1000).
+                        with(TokensV4.ARGS_EVAL_TIMEOUT, 100000L).
+                        with(TokensV4.ARGS_USER_AGENT, "test").
                         V().asAdmin().getBytecode());
-        assertEquals(requestId, options.getOverrideRequestId().get());
         assertEquals(1000, options.getBatchSize().get().intValue());
         assertEquals(100000L, options.getTimeout().get().longValue());
-        assertEquals("test", options.getUserAgent().get());
     }
 
     @Test
     public void shouldBuildRequestOptionsWithNumerics() {
         final RequestOptions options = DriverRemoteConnection.getRequestOptions(
-                g.with(Tokens.ARGS_BATCH_SIZE, 100).
-                  with(Tokens.ARGS_EVAL_TIMEOUT, 1000).
+                g.with(TokensV4.ARGS_BATCH_SIZE, 100).
+                  with(TokensV4.ARGS_EVAL_TIMEOUT, 1000).
                   V().asAdmin().getBytecode());
         assertEquals(Integer.valueOf(100), options.getBatchSize().get());
         assertEquals(Long.valueOf(1000), options.getTimeout().get());

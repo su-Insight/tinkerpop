@@ -19,8 +19,10 @@
 package org.apache.tinkerpop.gremlin.server;
 
 import nl.altindag.log.LogCaptor;
+import org.apache.http.Consts;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
@@ -48,8 +50,8 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.apache.tinkerpop.gremlin.driver.auth.Auth.basic;
 import static org.apache.tinkerpop.gremlin.server.GremlinServer.AUDIT_LOGGER_NAME;
-import static org.apache.tinkerpop.gremlin.server.GremlinServerAuthKrb5IntegrateTest.TESTCONSOLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -187,7 +189,7 @@ public class GremlinServerAuditLogIntegrateTest extends AbstractGremlinServerInt
         final String username = "stephen";
         final String password = "password";
 
-        final Cluster cluster = TestClientFactory.build(kdcServer.gremlinHostname).credentials(username, password).create();
+        final Cluster cluster = TestClientFactory.build(kdcServer.gremlinHostname).auth(basic(username, password)).create();
         final Client client = cluster.connect();
 
         try {
@@ -215,35 +217,11 @@ public class GremlinServerAuditLogIntegrateTest extends AbstractGremlinServerInt
     }
 
     @Test
-    public void shouldAuditLogWithKrb5Authenticator() throws Exception {
-        final Cluster cluster = TestClientFactory.build(kdcServer.gremlinHostname).jaasEntry(TESTCONSOLE).protocol(kdcServer.serverPrincipalName).create();
-        final Client client = cluster.connect();
-        try {
-            assertEquals(2, client.submit("1+1").all().get().get(0).getInt());
-            assertEquals(3, client.submit("1+2").all().get().get(0).getInt());
-            assertEquals(4, client.submit("1+3").all().get().get(0).getInt());
-        } finally {
-            cluster.close();
-        }
-
-        // wait for logger to flush - (don't think there is a way to detect this)
-        stopServer();
-        Thread.sleep(1000);
-
-        final String authenticatorName = Krb5Authenticator.class.getSimpleName();
-        assertTrue(logCaptor.getLogs().stream().anyMatch(m -> m.matches(
-                String.format("User %s with address .+? authenticated by %s", kdcServer.clientPrincipalName, authenticatorName))));
-        assertTrue(logCaptor.getLogs().stream().anyMatch(m -> m.matches(
-                "User drankye with address .+? requested: 1\\+1")));
-        assertTrue(logCaptor.getLogs().stream().anyMatch(m -> m.matches(
-                "User drankye with address .+? requested: 1\\+2")));
-        assertTrue(logCaptor.getLogs().stream().anyMatch(m -> m.matches(
-                "User drankye with address .+? requested: 1\\+3")));
-    }
-
-    @Test
     public void shouldNotAuditLogWhenDisabled() throws Exception {
-        final Cluster cluster = TestClientFactory.build(kdcServer.gremlinHostname).jaasEntry(TESTCONSOLE).protocol(kdcServer.serverPrincipalName).create();
+        final String username = "stephen";
+        final String password = "password";
+
+        final Cluster cluster = TestClientFactory.build(kdcServer.gremlinHostname).auth(basic(username, password)).create();
         final Client client = cluster.connect();
         try {
             assertEquals(2, client.submit("1+1").all().get().get(0).getInt());
@@ -257,29 +235,30 @@ public class GremlinServerAuditLogIntegrateTest extends AbstractGremlinServerInt
         stopServer();
         Thread.sleep(1000);
 
-        final String authenticatorName = Krb5Authenticator.class.getSimpleName();
+        final String simpleAuthenticatorName = SimpleAuthenticator.class.getSimpleName();
         assertFalse(logCaptor.getLogs().stream().anyMatch(m -> m.matches(
-                String.format("User %s with address .+? authenticated by %s", kdcServer.clientPrincipalName, authenticatorName))));
+                String.format("User %s with address .+? authenticated by %s", username, simpleAuthenticatorName))));
         assertFalse(logCaptor.getLogs().stream().anyMatch(m -> m.matches(
-                "User drankye with address .+? requested: 1\\+1")));
+                "User stephen with address .+? requested: 1\\+1")));
         assertFalse(logCaptor.getLogs().stream().anyMatch(m -> m.matches(
-                "User drankye with address .+? requested: 1\\+2")));
+                "User stephen with address .+? requested: 1\\+2")));
         assertFalse(logCaptor.getLogs().stream().anyMatch(m -> m.matches(
-                "User drankye with address .+? requested: 1\\+3")));
+                "User stephen with address .+? requested: 1\\+3")));
     }
 
     @Test
     public void shouldAuditLogWithHttpTransport() throws Exception {
         final CloseableHttpClient httpclient = HttpClients.createDefault();
-        final HttpGet httpget = new HttpGet(TestClientFactory.createURLString("?gremlin=2-1"));
-        httpget.addHeader("Authorization", "Basic " + encoder.encodeToString("stephen:password".getBytes()));
+        final HttpPost httpPost = new HttpPost(TestClientFactory.createURLString());
+        httpPost.addHeader("Authorization", "Basic " + encoder.encodeToString("stephen:password".getBytes()));
+        httpPost.setEntity(new StringEntity("{\"gremlin\":\"2-1\"}", Consts.UTF_8));
 
-        try (final CloseableHttpResponse response = httpclient.execute(httpget)) {
+        try (final CloseableHttpResponse response = httpclient.execute(httpPost)) {
             assertEquals(200, response.getStatusLine().getStatusCode());
             assertEquals("application/json", response.getEntity().getContentType().getValue());
             final String json = EntityUtils.toString(response.getEntity());
             final JsonNode node = mapper.readTree(json);
-            assertEquals(1, node.get("result").get("data").get(GraphSONTokens.VALUEPROP).get(0).get(GraphSONTokens.VALUEPROP).intValue());
+            assertEquals(1, node.get("result").get(GraphSONTokens.VALUEPROP).get(0).get(GraphSONTokens.VALUEPROP).intValue());
         }
 
         // wait for logger to flush - (don't think there is a way to detect this)
@@ -298,7 +277,7 @@ public class GremlinServerAuditLogIntegrateTest extends AbstractGremlinServerInt
         final String username = "stephen";
         final String password = "password";
 
-        final Cluster cluster = TestClientFactory.build(kdcServer.gremlinHostname).credentials(username, password).create();
+        final Cluster cluster = TestClientFactory.build(kdcServer.gremlinHostname).auth(basic(username, password)).create();
         final GraphTraversalSource g = AnonymousTraversalSource.traversal().
                 withRemote(DriverRemoteConnection.using(cluster, "gmodern"));
 
@@ -317,54 +296,5 @@ public class GremlinServerAuditLogIntegrateTest extends AbstractGremlinServerInt
                 String.format("User %s with address .+? authenticated by %s", username, authenticatorName))));
         assertTrue(logCaptor.getLogs().stream().anyMatch(m ->
                 m.matches("User .+? with address .+? requested: \\[\\[], \\[V\\(\\), count\\(\\)]]")));
-    }
-
-    @Test
-    public void shouldAuditLogTwoClientsWithKrb5Authenticator() throws Exception {
-        // calling init to make sure the clusters get their connections primed in low resource environments like travis
-        final Cluster cluster = TestClientFactory.build(kdcServer.gremlinHostname).jaasEntry(TESTCONSOLE).
-                protocol(kdcServer.serverPrincipalName).create();
-        final Client client = cluster.connect();
-        client.init();
-
-        final Cluster cluster2 = TestClientFactory.build(kdcServer.gremlinHostname).jaasEntry(TESTCONSOLE2).
-                protocol(kdcServer.serverPrincipalName).create();
-        final Client client2 = cluster2.connect();
-        client2.init();
-
-        try {
-            assertEquals(2, client.submit("1+1").all().get().get(0).getInt());
-            assertEquals(22, client2.submit("11+11").all().get().get(0).getInt());
-            assertEquals(3, client.submit("1+2").all().get().get(0).getInt());
-            assertEquals(23, client2.submit("11+12").all().get().get(0).getInt());
-            assertEquals(24, client2.submit("11+13").all().get().get(0).getInt());
-            assertEquals(4, client.submit("1+3").all().get().get(0).getInt());
-        } finally {
-            cluster.close();
-            cluster2.close();
-        }
-
-        // wait for logger to flush - (don't think there is a way to detect this)
-        stopServer();
-        Thread.sleep(1000);
-
-        final String authenticatorName = Krb5Authenticator.class.getSimpleName();
-        assertTrue(logCaptor.getLogs().stream().anyMatch(m -> m.matches(
-                String.format("User %s with address .+? authenticated by %s", kdcServer.clientPrincipalName, authenticatorName))));
-        assertTrue(logCaptor.getLogs().stream().anyMatch(m ->
-                m.matches("User drankye with address .+? requested: 1\\+1")));
-        assertTrue(logCaptor.getLogs().stream().anyMatch(m ->
-                m.matches("User drankye with address .+? requested: 1\\+2")));
-        assertTrue(logCaptor.getLogs().stream().anyMatch(m ->
-                m.matches("User drankye with address .+? requested: 1\\+3")));
-
-        assertTrue(logCaptor.getLogs().stream().anyMatch(m -> m.matches(
-                String.format("User %s with address .+? authenticated by %s", kdcServer.clientPrincipalName2, authenticatorName))));
-        assertTrue(logCaptor.getLogs().stream().anyMatch(m ->
-                m.matches("User drankye2 with address .+? requested: 11\\+11")));
-        assertTrue(logCaptor.getLogs().stream().anyMatch(m ->
-                m.matches("User drankye2 with address .+? requested: 11\\+12")));
-        assertTrue(logCaptor.getLogs().stream().anyMatch(m ->
-                m.matches("User drankye2 with address .+? requested: 11\\+13")));
     }
 }

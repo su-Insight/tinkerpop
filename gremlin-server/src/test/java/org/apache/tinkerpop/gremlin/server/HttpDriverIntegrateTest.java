@@ -18,8 +18,8 @@
  */
 package org.apache.tinkerpop.gremlin.server;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.tinkerpop.gremlin.driver.Channelizer;
 import org.apache.tinkerpop.gremlin.driver.Client;
 import org.apache.tinkerpop.gremlin.driver.Cluster;
 import org.apache.tinkerpop.gremlin.driver.RequestOptions;
@@ -29,10 +29,8 @@ import org.apache.tinkerpop.gremlin.driver.exception.ResponseException;
 import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.server.channel.HttpChannelizer;
-import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.util.ExceptionHelper;
-import org.apache.tinkerpop.gremlin.util.message.ResponseStatusCode;
-import org.apache.tinkerpop.gremlin.util.ser.Serializers;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.awt.*;
@@ -41,11 +39,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.hamcrest.core.StringEndsWith.endsWith;
@@ -63,19 +63,6 @@ public class HttpDriverIntegrateTest extends AbstractGremlinServerIntegrationTes
         return settings;
     }
 
-//    @Test
-//    public void shouldSubmitScriptWithGraphSON() throws Exception {
-//        final Cluster cluster = TestClientFactory.build().create();
-//        try {
-//            final Client client = cluster.connect();
-//            assertEquals(2, client.submit("1+1").all().get().get(0).getInt());
-//        } catch (Exception ex) {
-//            throw ex;
-//        } finally {
-//            cluster.close();
-//        }
-//    }
-
     @Test
     public void shouldSubmitScriptWithGraphBinary() throws Exception {
         final Cluster cluster = TestClientFactory.build().create();
@@ -90,45 +77,56 @@ public class HttpDriverIntegrateTest extends AbstractGremlinServerIntegrationTes
         }
     }
 
-//    @Test
-//    public void shouldSubmitBytecodeWithGraphSON() throws Exception {
-//        final Cluster cluster = TestClientFactory.build()
-//                .channelizer(Channelizer.HttpChannelizer.class)
-//                .serializer(Serializers.GRAPHSON_V4)
-//                .create();
-//        try {
-//            final GraphTraversalSource g = traversal().withRemote(DriverRemoteConnection.using(cluster));
-//            final String result = g.inject("2").toList().get(0);
-//            assertEquals("2", result);
-//        } catch (Exception ex) {
-//            throw ex;
-//        } finally {
-//            cluster.close();
-//        }
-//    }
-
-//    @Test
-//    public void shouldGetErrorForBytecodeWithUntypedGraphSON() throws Exception {
-//        final Cluster cluster = TestClientFactory.build().create();
-//        try {
-//            final GraphTraversalSource g = traversal().withRemote(DriverRemoteConnection.using(cluster));
-//            g.inject("2").toList();
-//            fail("Exception expected");
-//        } catch (EncoderException ex) {
-//            assertThat(ex.getMessage(), allOf(containsString("An error occurred during serialization of this request"),
-//                    containsString("it could not be sent to the server - Reason: only GraphSON3 and GraphBinary recommended for serialization of Bytecode requests, but used org.apache.tinkerpop.gremlin.")));
-//        } finally {
-//            cluster.close();
-//        }
-//    }
-
     @Test
-    public void shouldSubmitBytecodeWithGraphBinary() throws Exception {
+    public void shouldHandleObjectBiggerThen8kb() throws Exception {
         final Cluster cluster = TestClientFactory.build().create();
         try {
-            final GraphTraversalSource g = traversal().withRemote(DriverRemoteConnection.using(cluster));
+            final Client client = cluster.connect();
+            final List r = client.submit("[\" \".repeat(200000), \" \".repeat(100000)]").all().get();
+            assertEquals(200000, ((Result) r.get(0)).getString().length());
+            assertEquals(100000, ((Result) r.get(1)).getString().length());
+        } catch (Exception ex) {
+            throw ex;
+        } finally {
+            cluster.close();
+        }
+    }
+
+    @Test
+    public void shouldSubmitBytecodeWithGraphBinary() {
+        final Cluster cluster = TestClientFactory.build().create();
+        try {
+            final GraphTraversalSource g = traversal().with(DriverRemoteConnection.using(cluster));
             final String result = g.inject("2").toList().get(0);
             assertEquals("2", result);
+        } catch (Exception ex) {
+            throw ex;
+        } finally {
+            cluster.close();
+        }
+    }
+
+    @Test
+    public void shouldSubmitMultipleQueriesWithSameConnection() throws InterruptedException, ExecutionException {
+        final Cluster cluster = TestClientFactory.build().create();
+        final Client client = cluster.connect();
+
+        try {
+            final int result = client.submit("Thread.sleep(1000);1").all().get().get(0).getInt();
+            assertEquals(1, result);
+
+            final AtomicInteger result2 = new AtomicInteger(-1);
+            final Thread thread = new Thread(() -> {
+                try {
+                    result2.set(client.submit("2").all().get().get(0).getInt());
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            thread.start();
+            thread.join();
+
+            assertEquals(2, result2.get());
         } catch (Exception ex) {
             throw ex;
         } finally {
@@ -145,34 +143,18 @@ public class HttpDriverIntegrateTest extends AbstractGremlinServerIntegrationTes
             fail("Can't use session with HTTP");
         } catch (Exception ex) {
             final Throwable t = ExceptionUtils.getRootCause(ex);
-            assertEquals("Cannot use sessions or tx() with HttpChannelizer", t.getMessage());
+            // assertEquals("Cannot use sessions or tx() with HttpChannelizer", t.getMessage());
+            assertEquals("not implemented", t.getMessage());
         } finally {
             cluster.close();
         }
     }
 
     @Test
-    public void shouldFailToUseTx() {
+    public void shouldDeserializeErrorWithGraphBinary() {
         final Cluster cluster = TestClientFactory.build().create();
         try {
-            final GraphTraversalSource g = traversal().withRemote(DriverRemoteConnection.using(cluster));
-            final Transaction tx = g.tx();
-            final GraphTraversalSource gtx = tx.begin();
-            gtx.inject("1").toList();
-            fail("Can't use tx() with HTTP");
-        } catch (Exception ex) {
-            final Throwable t = ExceptionUtils.getRootCause(ex);
-            assertEquals("Cannot use sessions or tx() with HttpChannelizer", t.getMessage());
-        } finally {
-            cluster.close();
-        }
-    }
-
-    @Test
-    public void shouldDeserializeErrorWithGraphBinary() throws Exception {
-        final Cluster cluster = TestClientFactory.build().create();
-        try {
-            final GraphTraversalSource g = traversal().withRemote(DriverRemoteConnection.using(cluster, "doesNotExist"));
+            final GraphTraversalSource g = traversal().with(DriverRemoteConnection.using(cluster, "doesNotExist"));
             g.V().next();
             fail("Expected exception to be thrown.");
         } catch (Exception ex) {
@@ -181,20 +163,6 @@ public class HttpDriverIntegrateTest extends AbstractGremlinServerIntegrationTes
             cluster.close();
         }
     }
-
-//    @Test
-//    public void shouldDeserializeErrorWithGraphSON() throws Exception {
-//        final Cluster cluster = TestClientFactory.build().create();
-//        try {
-//            final GraphTraversalSource g = traversal().withRemote(DriverRemoteConnection.using(cluster, "doesNotExist"));
-//            g.V().next();
-//            fail("Expected exception to be thrown.");
-//        } catch (Exception ex) {
-//            assert ex.getMessage().contains("Could not rebind");
-//        } finally {
-//            cluster.close();
-//        }
-//    }
 
     @Test
     public void shouldReportErrorWhenRequestCantBeSerialized() throws Exception {
@@ -210,7 +178,7 @@ public class HttpDriverIntegrateTest extends AbstractGremlinServerIntegrationTes
             } catch (Exception ex) {
                 final Throwable inner = ExceptionHelper.getRootCause(ex);
                 assertThat(inner, instanceOf(ResponseException.class));
-                assertEquals(ResponseStatusCode.REQUEST_ERROR_SERIALIZATION, ((ResponseException) inner).getResponseStatusCode());
+                assertEquals(HttpResponseStatus.BAD_REQUEST, ((ResponseException) inner).getResponseStatusCode());
                 assertTrue(ex.getMessage().contains("An error occurred during serialization of this request"));
             }
 
@@ -222,7 +190,7 @@ public class HttpDriverIntegrateTest extends AbstractGremlinServerIntegrationTes
         }
     }
 
-    // not supported on server side now
+    @Ignore("not implemented in driver")
     @Test
     public void shouldProcessTraversalInterruption() {
         final Cluster cluster = TestClientFactory.build().create();
@@ -233,13 +201,13 @@ public class HttpDriverIntegrateTest extends AbstractGremlinServerIntegrationTes
             fail("Should have timed out");
         } catch (Exception ex) {
             final ResponseException re = (ResponseException) ex.getCause();
-            assertEquals(ResponseStatusCode.SERVER_ERROR_TIMEOUT, re.getResponseStatusCode());
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, re.getResponseStatusCode());
         } finally {
             cluster.close();
         }
     }
 
-    // not supported on server side now
+    @Ignore("not implemented in driver")
     @Test
     public void shouldProcessEvalInterruption() {
         final Cluster cluster = TestClientFactory.build().create();
@@ -250,7 +218,7 @@ public class HttpDriverIntegrateTest extends AbstractGremlinServerIntegrationTes
             fail("Should have timed out");
         } catch (Exception ex) {
             final ResponseException re = (ResponseException) ex.getCause();
-            assertEquals(ResponseStatusCode.SERVER_ERROR_TIMEOUT, re.getResponseStatusCode());
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, re.getResponseStatusCode());
         } finally {
             cluster.close();
         }
@@ -262,7 +230,6 @@ public class HttpDriverIntegrateTest extends AbstractGremlinServerIntegrationTes
         final Client client = cluster.connect();
 
         try {
-
             final ResultSet results = client.submit("java.awt.Color.RED");
 
             try {
@@ -271,7 +238,7 @@ public class HttpDriverIntegrateTest extends AbstractGremlinServerIntegrationTes
             } catch (Exception ex) {
                 final Throwable inner = ExceptionHelper.getRootCause(ex);
                 assertThat(inner, instanceOf(ResponseException.class));
-                assertEquals(ResponseStatusCode.SERVER_ERROR_SERIALIZATION, ((ResponseException) inner).getResponseStatusCode());
+                assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, ((ResponseException) inner).getResponseStatusCode());
             }
 
             // should not die completely just because we had a bad serialization error.  that kind of stuff happens
@@ -296,12 +263,7 @@ public class HttpDriverIntegrateTest extends AbstractGremlinServerIntegrationTes
                 final Throwable inner = ExceptionHelper.getRootCause(ex);
                 assertTrue(inner instanceof ResponseException);
                 assertThat(inner.getMessage(), endsWith("Division by zero"));
-
-                final ResponseException rex = (ResponseException) inner;
-                // todo: not implemented
-//                assertEquals("java.lang.ArithmeticException", rex.getRemoteExceptionHierarchy().get().get(0));
-//                assertEquals(1, rex.getRemoteExceptionHierarchy().get().size());
-//                assertThat(rex.getRemoteStackTrace().get(), containsString("Division by zero"));
+                assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, ((ResponseException) inner).getResponseStatusCode());
             }
 
             // should not die completely just because we had a bad serialization error.  that kind of stuff happens
@@ -486,7 +448,8 @@ public class HttpDriverIntegrateTest extends AbstractGremlinServerIntegrationTes
             } catch (Exception ex) {
                 final Throwable inner = ExceptionHelper.getRootCause(ex);
                 assertTrue(inner instanceof ResponseException);
-                assertEquals(ResponseStatusCode.SERVER_ERROR_SERIALIZATION, ((ResponseException) inner).getResponseStatusCode());
+                assertThat(inner.getMessage(), startsWith("Error during serialization"));
+                assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, ((ResponseException) inner).getResponseStatusCode());
             }
 
             // should not die completely just because we had a bad serialization error.  that kind of stuff happens

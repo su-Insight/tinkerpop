@@ -20,6 +20,8 @@ package org.apache.tinkerpop.gremlin.driver;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -29,11 +31,19 @@ import io.netty.handler.ssl.SslHandler;
 import org.apache.tinkerpop.gremlin.driver.handler.GremlinResponseHandler;
 import org.apache.tinkerpop.gremlin.driver.handler.HttpGremlinRequestEncoder;
 import org.apache.tinkerpop.gremlin.driver.handler.HttpGremlinResponseStreamDecoder;
-import org.apache.tinkerpop.gremlin.util.ser.MessageTextSerializerV4;
+import org.apache.tinkerpop.gremlin.driver.handler.SslCheckHandler;
+import org.apache.tinkerpop.gremlin.util.MessageSerializerV4;
 
 import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static io.netty.handler.codec.http.HttpClientCodec.DEFAULT_FAIL_ON_MISSING_RESPONSE;
+import static io.netty.handler.codec.http.HttpClientCodec.DEFAULT_PARSE_HTTP_AFTER_CONNECT_REQUEST;
+import static io.netty.handler.codec.http.HttpObjectDecoder.DEFAULT_ALLOW_DUPLICATE_CONTENT_LENGTHS;
+import static io.netty.handler.codec.http.HttpObjectDecoder.DEFAULT_INITIAL_BUFFER_SIZE;
+import static io.netty.handler.codec.http.HttpObjectDecoder.DEFAULT_MAX_HEADER_SIZE;
+import static io.netty.handler.codec.http.HttpObjectDecoder.DEFAULT_MAX_INITIAL_LINE_LENGTH;
+import static io.netty.handler.codec.http.HttpObjectDecoder.DEFAULT_VALIDATE_HEADERS;
 
 /**
  * Client-side channel initializer interface.  It is responsible for constructing the Netty {@code ChannelPipeline}
@@ -46,7 +56,7 @@ public interface Channelizer extends ChannelHandler {
     /**
      * Initializes the {@code Channelizer}. Called just after construction.
      */
-    public void init(final Connection connection);
+    void init(final Connection connection);
 
     /**
      * Called on {@link Connection#closeAsync()} to perform an {@code Channelizer} specific functions.  Note that the
@@ -54,19 +64,19 @@ public interface Channelizer extends ChannelHandler {
      * An implementation will typically use this method to send a {@code Channelizer} specific message to the
      * server to notify of shutdown coming from the client side.
      */
-    public void close(final Channel channel);
+    void close(final Channel channel);
 
     /**
      * Called after the channel connects. The {@code Channelizer} may need to perform some functions, such as a
      * handshake.
      */
-    public default void connected() {
+    default void connected() {
     }
 
     /**
      * Gets the scheme to use to construct the URL and by default uses HTTP.
      */
-    public default String getScheme(final boolean sslEnabled) {
+    default String getScheme(final boolean sslEnabled) {
         return sslEnabled ? "https" : "http";
     }
 
@@ -76,7 +86,7 @@ public interface Channelizer extends ChannelHandler {
     abstract class AbstractChannelizer extends ChannelInitializer<SocketChannel> implements Channelizer {
         protected Connection connection;
         protected Cluster cluster;
-        private ConcurrentMap<UUID, ResultQueue> pending;
+        private AtomicReference<ResultQueue> pending;
 
         protected static final String PIPELINE_GREMLIN_HANDLER = "gremlin-handler";
         public static final String PIPELINE_SSL_HANDLER = "gremlin-ssl-handler";
@@ -84,6 +94,8 @@ public interface Channelizer extends ChannelHandler {
         protected static final String PIPELINE_HTTP_CODEC = "http-codec";
         protected static final String PIPELINE_HTTP_ENCODER = "gremlin-encoder";
         protected static final String PIPELINE_HTTP_DECODER = "gremlin-decoder";
+
+        private static final SslCheckHandler sslCheckHandler = new SslCheckHandler();
 
         public boolean supportsSsl() {
             return cluster.connectionPoolSettings().enableSsl;
@@ -108,7 +120,7 @@ public interface Channelizer extends ChannelHandler {
         }
 
         @Override
-        protected void initChannel(final SocketChannel socketChannel) throws Exception {
+        protected void initChannel(final SocketChannel socketChannel) {
             final ChannelPipeline pipeline = socketChannel.pipeline();
             final Optional<SslContext> sslCtx;
             if (supportsSsl()) {
@@ -128,6 +140,8 @@ public interface Channelizer extends ChannelHandler {
                 // will instead be capped by connectionSetupTimeoutMillis.
                 sslHandler.setHandshakeTimeoutMillis(0);
                 pipeline.addLast(PIPELINE_SSL_HANDLER, sslHandler);
+            } else {
+                pipeline.addLast(PIPELINE_SSL_HANDLER, sslCheckHandler);
             }
 
             configure(pipeline);
@@ -140,7 +154,7 @@ public interface Channelizer extends ChannelHandler {
      * meaning that sessions are not available and as such {@code tx()} (i.e. transactions) are not available over this
      * channelizer. Only sessionless requests are possible.
      */
-    public final class HttpChannelizer extends AbstractChannelizer {
+    final class HttpChannelizer extends AbstractChannelizer {
 
         private HttpGremlinRequestEncoder gremlinRequestEncoder;
         private HttpGremlinResponseStreamDecoder gremlinResponseDecoder;
@@ -149,12 +163,8 @@ public interface Channelizer extends ChannelHandler {
         public void init(final Connection connection) {
             super.init(connection);
 
-            // server does not support sessions so this channerlizer can't support the SessionedClient
-            if (connection.getClient() instanceof Client.SessionedClient)
-                throw new IllegalStateException(String.format("Cannot use sessions or tx() with %s", HttpChannelizer.class.getSimpleName()));
-
             gremlinRequestEncoder = new HttpGremlinRequestEncoder(cluster.getSerializer(), cluster.getRequestInterceptor(), cluster.isUserAgentOnConnectEnabled());
-            gremlinResponseDecoder = new HttpGremlinResponseStreamDecoder((MessageTextSerializerV4<?>) cluster.getSerializer());
+            gremlinResponseDecoder = new HttpGremlinResponseStreamDecoder(cluster.getSerializer(), cluster.getMaxContentLength());
         }
 
         @Override
@@ -177,7 +187,10 @@ public interface Channelizer extends ChannelHandler {
             if (!supportsSsl() && "https".equalsIgnoreCase(scheme))
                 throw new IllegalStateException("To use https scheme ensure that enableSsl is set to true in configuration");
 
-            final HttpClientCodec handler = new HttpClientCodec();
+            final HttpClientCodec handler = new HttpClientCodec(DEFAULT_MAX_INITIAL_LINE_LENGTH, DEFAULT_MAX_HEADER_SIZE,
+                    1024 * 1024, DEFAULT_FAIL_ON_MISSING_RESPONSE,
+                    DEFAULT_VALIDATE_HEADERS, DEFAULT_INITIAL_BUFFER_SIZE, DEFAULT_PARSE_HTTP_AFTER_CONNECT_REQUEST,
+                    DEFAULT_ALLOW_DUPLICATE_CONTENT_LENGTHS, false);
 
             pipeline.addLast(PIPELINE_HTTP_CODEC, handler);
             pipeline.addLast(PIPELINE_HTTP_ENCODER, gremlinRequestEncoder);
