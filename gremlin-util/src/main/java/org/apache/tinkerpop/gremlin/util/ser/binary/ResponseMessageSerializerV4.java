@@ -19,24 +19,23 @@
 package org.apache.tinkerpop.gremlin.util.ser.binary;
 
 import io.netty.buffer.ByteBuf;
-import org.apache.tinkerpop.gremlin.util.ser.NettyBufferFactory;
-import org.apache.tinkerpop.gremlin.util.message.ResponseMessage;
-import org.apache.tinkerpop.gremlin.util.message.ResponseResult;
-import org.apache.tinkerpop.gremlin.util.message.ResponseStatus;
-import org.apache.tinkerpop.gremlin.util.message.ResponseStatusCode;
-import org.apache.tinkerpop.gremlin.util.ser.SerializationException;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.tinkerpop.gremlin.structure.io.Buffer;
 import org.apache.tinkerpop.gremlin.structure.io.binary.GraphBinaryReader;
 import org.apache.tinkerpop.gremlin.structure.io.binary.GraphBinaryWriter;
+import org.apache.tinkerpop.gremlin.util.message.ResponseMessageV4;
+import org.apache.tinkerpop.gremlin.util.message.ResponseResult;
+import org.apache.tinkerpop.gremlin.util.message.ResponseStatusV4;
+import org.apache.tinkerpop.gremlin.util.ser.NettyBufferFactory;
+import org.apache.tinkerpop.gremlin.util.ser.SerializationException;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.UUID;
 
-public class ResponseMessageSerializer {
+public class ResponseMessageSerializerV4 {
     private static final NettyBufferFactory bufferFactory = new NettyBufferFactory();
 
-    public ResponseMessage readValue(final ByteBuf byteBuf, final GraphBinaryReader context) throws SerializationException {
+    public ResponseMessageV4 readValue(final ByteBuf byteBuf, final GraphBinaryReader context) throws SerializationException {
         // Wrap netty's buffer
         final Buffer buffer = bufferFactory.create(byteBuf);
         final int version = buffer.readByte() & 0xff;
@@ -48,8 +47,8 @@ public class ResponseMessageSerializer {
         }
 
         try {
-            return ResponseMessage.build(context.readValue(buffer, UUID.class, true))
-                    .code(ResponseStatusCode.getFromValue(context.readValue(buffer, Integer.class, false)))
+            return ResponseMessageV4.build()
+                    .code(HttpResponseStatus.valueOf(context.readValue(buffer, Integer.class, false)))
                     .statusMessage(context.readValue(buffer, String.class, true))
                     .statusAttributes(context.readValue(buffer, Map.class, false))
                     .responseMetaData(context.readValue(buffer, Map.class, false))
@@ -60,20 +59,18 @@ public class ResponseMessageSerializer {
         }
     }
 
-    public void writeValue(final ResponseMessage value, final ByteBuf byteBuf, final GraphBinaryWriter context) throws SerializationException {
+    public void writeValue(final ResponseMessageV4 value, final ByteBuf byteBuf, final GraphBinaryWriter context) throws SerializationException {
         // Wrap netty's buffer
         final Buffer buffer = bufferFactory.create(byteBuf);
 
         final ResponseResult result = value.getResult();
-        final ResponseStatus status = value.getStatus();
+        final ResponseStatusV4 status = value.getStatus();
 
         try {
             // Version
             buffer.writeByte(GraphBinaryWriter.VERSION_BYTE);
-            // Nullable request id
-            context.writeValue(value.getRequestId(), buffer, true);
             // Status code
-            context.writeValue(status.getCode().getValue(), buffer, false);
+            context.writeValue(status.getCode().code(), buffer, false);
             // Nullable status message
             context.writeValue(status.getMessage(), buffer, true);
             // Status attributes

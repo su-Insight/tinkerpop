@@ -23,9 +23,10 @@ import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import org.apache.tinkerpop.gremlin.driver.HandshakeInterceptor;
+import org.apache.tinkerpop.gremlin.driver.RequestInterceptor;
 import org.apache.tinkerpop.gremlin.driver.handler.HttpGremlinResponseStreamDecoder;
 import org.apache.tinkerpop.gremlin.driver.handler.HttpGremlinRequestEncoder;
+import org.apache.tinkerpop.gremlin.util.MessageSerializerV4;
 import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -36,7 +37,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
 import org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV4;
 import org.apache.tinkerpop.gremlin.structure.io.binary.GraphBinaryMapper;
-import org.apache.tinkerpop.gremlin.util.ser.MessageTextSerializerV4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +87,7 @@ public class SimpleHttpClient extends AbstractClient {
                 sslCtx = null;
             }
 
-            final MessageTextSerializerV4<GraphBinaryMapper> serializer = new GraphBinaryMessageSerializerV4();
+            final MessageSerializerV4<GraphBinaryMapper> serializer = new GraphBinaryMessageSerializerV4();
             b.channel(NioSocketChannel.class)
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
@@ -100,7 +100,7 @@ public class SimpleHttpClient extends AbstractClient {
                                     new HttpClientCodec(),
                                     // new HttpObjectAggregator(65536),
                                     new HttpGremlinResponseStreamDecoder(serializer),
-                                    new HttpGremlinRequestEncoder(serializer, HandshakeInterceptor.NO_OP, false),
+                                    new HttpGremlinRequestEncoder(serializer, RequestInterceptor.NO_OP, false),
                                     // new HttpGremlinResponseDebugStreamDecoder(),
 
                                     callbackResponseHandler);

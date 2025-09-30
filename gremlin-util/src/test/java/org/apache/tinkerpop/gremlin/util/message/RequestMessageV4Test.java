@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -87,7 +88,7 @@ public class RequestMessageV4Test {
     public void shouldSetTimeout() {
         final long timeout = 101L;
         final RequestMessageV4 msg = RequestMessageV4.build("g").addTimeoutMillis(timeout).create();
-        assertEquals(timeout, (long) msg.getField(Tokens.ARGS_EVAL_TIMEOUT));
+        assertEquals(timeout, (long) msg.getField(Tokens.TIMEOUT_MS));
     }
 
     @Test
@@ -151,5 +152,11 @@ public class RequestMessageV4Test {
         final String query = "gmodern";
         final RequestMessageV4 msg = RequestMessageV4.build(query).create();
         assertTrue(null == msg.getField(Tokens.ARGS_GREMLIN));
+    }
+
+    @Test
+    public void shouldNotContainRequestId() {
+        final RequestMessageV4 msg = RequestMessageV4.build("g.V()").create();
+        assertNull(msg.getField("requestId"));
     }
 }

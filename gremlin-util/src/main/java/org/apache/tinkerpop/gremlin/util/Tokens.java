@@ -18,7 +18,6 @@
  */
 package org.apache.tinkerpop.gremlin.util;
 
-import org.apache.tinkerpop.gremlin.util.message.ResponseMessage;
 import org.apache.tinkerpop.gremlin.process.traversal.Failure;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -38,12 +37,7 @@ public final class Tokens {
     public static final String OPS_CLOSE = "close";
 
     /**
-     * The key for the unique identifier of the request.
-     */
-    public static final String REQUEST_ID = "requestId";
-
-    /**
-     * Argument name that allows definition of the number of iterations each {@link ResponseMessage} should contain -
+     * Argument name that allows definition of the number of iterations each HTTP chunk should contain -
      * overrides the @{code resultIterationBatchSize} server setting.
      */
     public static final String ARGS_BATCH_SIZE = "batchSize";
@@ -59,13 +53,13 @@ public final class Tokens {
      */
     public static final String ARGS_ALIASES = "aliases";
 
+    public static final String ARGS_FORCE = "force";
+
     /**
      * Argument name that allows definition of alias names for {@link Graph} and {@link TraversalSource} objects on
      * the remote system.
      */
     public static final String ARGS_G = "g";
-
-    public static final String ARGS_FORCE = "force";
 
     /**
      * Argument name that corresponds to the Gremlin to evaluate.
@@ -82,9 +76,6 @@ public final class Tokens {
      * request to execute on the server.
      */
     public static final String ARGS_EVAL_TIMEOUT = "evaluationTimeout";
-    public static final String ARGS_HOST = "host";
-    public static final String ARGS_SESSION = "session";
-    public static final String ARGS_MANAGE_TRANSACTION = "manageTransaction";
     /**
      * The name of the argument that allows to control the serialization of properties on the server.
      */
@@ -105,18 +96,17 @@ public final class Tokens {
     public static final String ARGS_SASL_MECHANISM = "saslMechanism";
 
     /**
+     * The key for the per request server-side timeout in milliseconds.
+     */
+    public static final String TIMEOUT_MS = "timeoutMs";
+
+    /**
      * A value that is a custom string that the user can pass to a server that might accept it for purpose of
      * identifying the kind of client it came from.
      */
     public static final String ARGS_USER_AGENT = "userAgent";
 
     public static final String VAL_TRAVERSAL_SOURCE_ALIAS = "g";
-
-    /**
-     * The value of this key holds a string representation of the data held by a {@link Failure} as produced by
-     * {@link Failure#format()}.
-     */
-    public static final String STATUS_ATTRIBUTE_FAIL_STEP_MESSAGE = "failStepMessage";
 
     /**
      * Refers to the hierarchy of exception names for a particular exception thrown on the server.

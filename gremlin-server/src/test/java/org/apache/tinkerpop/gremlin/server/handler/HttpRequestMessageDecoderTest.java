@@ -31,14 +31,14 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.CharsetUtil;
-import org.apache.tinkerpop.gremlin.util.MessageSerializer;
+import org.apache.tinkerpop.gremlin.util.MessageSerializerV4;
 import org.apache.tinkerpop.gremlin.util.Tokens;
 import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
 import org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV4;
 import org.apache.tinkerpop.gremlin.util.ser.GraphSONMessageSerializerV4;
 import org.apache.tinkerpop.gremlin.util.ser.SerTokens;
 import org.apache.tinkerpop.gremlin.util.ser.SerializationException;
-import org.apache.tinkerpop.gremlin.util.ser.Serializers;
+import org.apache.tinkerpop.gremlin.util.ser.SerializersV4;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -59,12 +59,12 @@ public class HttpRequestMessageDecoderTest {
     private final GraphBinaryMessageSerializerV4 graphBinarySerializer = new GraphBinaryMessageSerializerV4();
     public final GraphSONMessageSerializerV4 graphSONSerializer = new GraphSONMessageSerializerV4();
 
-    private final static Map<String, MessageSerializer<?>> serializers = new HashMap<>();
+    private final static Map<String, MessageSerializerV4<?>> serializers = new HashMap<>();
     static {
-        serializers.put(Serializers.GRAPHSON_V4_UNTYPED.getValue(), Serializers.GRAPHSON_V4_UNTYPED.simpleInstance());
-        serializers.put("application/json", Serializers.GRAPHSON_V4_UNTYPED.simpleInstance());
-        serializers.put(Serializers.GRAPHSON_V4.getValue(), Serializers.GRAPHSON_V4.simpleInstance());
-        serializers.put(Serializers.GRAPHBINARY_V4.getValue(), Serializers.GRAPHBINARY_V4.simpleInstance());
+        serializers.put(SerializersV4.GRAPHSON_V4_UNTYPED.getValue(), SerializersV4.GRAPHSON_V4_UNTYPED.simpleInstance());
+        serializers.put("application/json", SerializersV4.GRAPHSON_V4_UNTYPED.simpleInstance());
+        serializers.put(SerializersV4.GRAPHSON_V4.getValue(), SerializersV4.GRAPHSON_V4.simpleInstance());
+        serializers.put(SerializersV4.GRAPHBINARY_V4.getValue(), SerializersV4.GRAPHBINARY_V4.simpleInstance());
     }
 
     @Test
@@ -74,7 +74,7 @@ public class HttpRequestMessageDecoderTest {
 
         final RequestMessageV4 request = RequestMessageV4.build("g.V()").create();
 
-        final ByteBuf buffer = graphSONSerializer.serializeRequestMessageV4(request, allocator);
+        final ByteBuf buffer = graphSONSerializer.serializeRequestAsBinary(request, allocator);
 
         final HttpHeaders headers = new DefaultHttpHeaders();
         headers.add(HttpHeaderNames.CONTENT_TYPE, SerTokens.MIME_GRAPHBINARY_V4);
@@ -98,7 +98,7 @@ public class HttpRequestMessageDecoderTest {
 
         final RequestMessageV4 request = RequestMessageV4.build("g.V()").addLanguage("gremlin-lang").create();
 
-        final ByteBuf buffer = graphBinarySerializer.serializeRequestMessageV4(request, allocator);
+        final ByteBuf buffer = graphBinarySerializer.serializeRequestAsBinary(request, allocator);
 
         final HttpHeaders headers = new DefaultHttpHeaders();
         headers.add(HttpHeaderNames.CONTENT_TYPE, SerTokens.MIME_GRAPHBINARY_V4);
@@ -350,7 +350,8 @@ public class HttpRequestMessageDecoderTest {
         final UUID rid = UUID.randomUUID();
         final ByteBuf buffer = allocator.buffer();
         buffer.writeCharSequence("{\"gremlin\":\"g.V().limit(2)\",\"batchSize\":\"10\",\"language\":\"gremlin-lang\"," +
-                "\"g\":\"gmodern\",\"bindings\":{\"x\":\"1\"},\"requestId\":\"" + rid + "\"}", CharsetUtil.UTF_8);
+                "\"g\":\"gmodern\",\"bindings\":{\"x\":\"1\"},\"timeoutMs\":\"12\"," +
+                "\"materializeProperties\":\"" + Tokens.MATERIALIZE_PROPERTIES_TOKENS + "\"}", CharsetUtil.UTF_8);
 
         final HttpHeaders headers = new DefaultHttpHeaders();
         headers.add(HttpHeaderNames.CONTENT_TYPE, SerTokens.MIME_JSON);
@@ -368,6 +369,7 @@ public class HttpRequestMessageDecoderTest {
         assertEquals("gmodern", decodedRequest.getField(Tokens.ARGS_G));
         assertEquals("1", ((Map) decodedRequest.getField(Tokens.ARGS_BINDINGS)).get("x"));
         assertEquals(1, ((Map) decodedRequest.getField(Tokens.ARGS_BINDINGS)).size());
-        assertEquals(rid, decodedRequest.getField(Tokens.REQUEST_ID));
+        assertEquals(12, (long) decodedRequest.getField(Tokens.TIMEOUT_MS));
+        assertEquals(Tokens.MATERIALIZE_PROPERTIES_TOKENS, decodedRequest.getField(Tokens.ARGS_MATERIALIZE_PROPERTIES));
     }
 }
