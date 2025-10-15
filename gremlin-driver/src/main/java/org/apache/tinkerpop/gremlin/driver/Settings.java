@@ -20,7 +20,7 @@ package org.apache.tinkerpop.gremlin.driver;
 
 import org.apache.commons.configuration2.Configuration;
 import org.apache.tinkerpop.gremlin.util.MessageSerializer;
-import org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV1;
+import org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV4;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.TypeDescription;
@@ -218,18 +218,6 @@ final class Settings {
             if (connectionPoolConf.containsKey("maxSize"))
                 cpSettings.maxSize = connectionPoolConf.getInt("maxSize");
 
-            if (connectionPoolConf.containsKey("minSimultaneousUsagePerConnection"))
-                cpSettings.minSimultaneousUsagePerConnection = connectionPoolConf.getInt("minSimultaneousUsagePerConnection");
-
-            if (connectionPoolConf.containsKey("maxSimultaneousUsagePerConnection"))
-                cpSettings.maxSimultaneousUsagePerConnection = connectionPoolConf.getInt("maxSimultaneousUsagePerConnection");
-
-            if (connectionPoolConf.containsKey("maxInProcessPerConnection"))
-                cpSettings.maxInProcessPerConnection = connectionPoolConf.getInt("maxInProcessPerConnection");
-
-            if (connectionPoolConf.containsKey("minInProcessPerConnection"))
-                cpSettings.minInProcessPerConnection = connectionPoolConf.getInt("minInProcessPerConnection");
-
             if (connectionPoolConf.containsKey("maxWaitForConnection"))
                 cpSettings.maxWaitForConnection = connectionPoolConf.getInt("maxWaitForConnection");
 
@@ -338,31 +326,6 @@ final class Settings {
         public long keepAliveInterval = Connection.KEEP_ALIVE_INTERVAL;
 
         /**
-         * A connection under low use can be destroyed. This setting determines the threshold for determining when
-         * that connection can be released and is defaulted to 8.
-         */
-        public int minSimultaneousUsagePerConnection = ConnectionPool.MIN_SIMULTANEOUS_USAGE_PER_CONNECTION;
-
-        /**
-         * If a connection is over used, then it might mean that is necessary to expand the pool by adding a new
-         * connection.  This setting determines the threshold for a connections over use and is defaulted to 16
-         */
-        public int maxSimultaneousUsagePerConnection = ConnectionPool.MAX_SIMULTANEOUS_USAGE_PER_CONNECTION;
-
-        /**
-         * The maximum number of requests in flight on a connection where the default is 4.
-         */
-        public int maxInProcessPerConnection = Connection.MAX_IN_PROCESS;
-
-        /**
-         * A connection has available in-process requests which is calculated by subtracting the number of current
-         * in-flight requests on a connection and subtracting that from the {@link #maxInProcessPerConnection}. When
-         * that number drops below this configuration setting, the connection is recommended for replacement. The
-         * default for this setting is 1.
-         */
-        public int minInProcessPerConnection = Connection.MIN_IN_PROCESS;
-
-        /**
          * The amount of time in milliseconds to wait for a new connection before timing out where the default value
          * is 3000.
          */
@@ -396,9 +359,9 @@ final class Settings {
         /**
          * The constructor for the channel that connects to the server. This value should be the fully qualified
          * class name of a Gremlin Driver {@link Channelizer} implementation.  By default this value is set to
-         * {@link Channelizer.WebSocketChannelizer}.
+         * {@link Channelizer.HttpChannelizer}.
          */
-        public String channelizer = Channelizer.WebSocketChannelizer.class.getName();
+        public String channelizer = Channelizer.HttpChannelizer.class.getName();
 
         /**
          * A valid Gremlin script that can be used to test remote operations.
@@ -417,9 +380,9 @@ final class Settings {
         /**
          * The fully qualified class name of the {@link MessageSerializer} that will be used to communicate with the
          * server. Note that the serializer configured on the client should be supported by the server configuration.
-         * By default the setting is configured to {@link GraphBinaryMessageSerializerV1}.
+         * By default the setting is configured to {@link GraphBinaryMessageSerializerV4}.
          */
-        public String className = GraphBinaryMessageSerializerV1.class.getCanonicalName();
+        public String className = GraphBinaryMessageSerializerV4.class.getCanonicalName();
 
         /**
          * The configuration for the specified serializer with the {@link #className}.

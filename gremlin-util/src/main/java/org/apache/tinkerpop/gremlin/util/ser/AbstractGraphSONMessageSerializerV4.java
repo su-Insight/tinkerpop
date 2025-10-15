@@ -20,6 +20,7 @@ package org.apache.tinkerpop.gremlin.util.ser;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.util.ReferenceCountUtil;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
@@ -27,7 +28,6 @@ import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONUtil;
 import org.apache.tinkerpop.gremlin.util.message.RequestMessage;
 import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
 import org.apache.tinkerpop.gremlin.util.message.ResponseMessage;
-import org.apache.tinkerpop.gremlin.util.message.ResponseStatusCode;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
 import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
@@ -41,9 +41,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
-public abstract class AbstractGraphSONMessageSerializerV4 extends AbstractGraphSONMessageSerializerV2 implements MessageTextSerializerV4<ObjectMapper>, MessageChunkSerializer<ObjectMapper> {
+public abstract class AbstractGraphSONMessageSerializerV4 extends AbstractGraphSONMessageSerializerV2 implements MessageTextSerializerV4<ObjectMapper> {
     private static final Logger logger = LoggerFactory.getLogger(AbstractGraphSONMessageSerializerV4.class);
 
     public AbstractGraphSONMessageSerializerV4() {
@@ -286,9 +285,6 @@ public abstract class AbstractGraphSONMessageSerializerV4 extends AbstractGraphS
         public RequestMessageV4 createObject(final Map<String, Object> data) {
             RequestMessageV4.Builder builder = RequestMessageV4.build(data.get(SerTokens.TOKEN_GREMLIN));
 
-            if (data.containsKey(SerTokens.TOKEN_REQUEST)) {
-                builder.overrideRequestId(UUID.fromString(data.get(SerTokens.TOKEN_REQUEST).toString()));
-            }
             if (data.containsKey(SerTokens.TOKEN_LANGUAGE)) {
                 builder.addLanguage(data.get(SerTokens.TOKEN_LANGUAGE).toString());
             }
@@ -327,9 +323,6 @@ public abstract class AbstractGraphSONMessageSerializerV4 extends AbstractGraphS
             final ResponseMessage responseMessage = responseMessageHeader.getResponseMessage();
 
             GraphSONUtil.writeStartObject(responseMessage, jsonGenerator, typeSerializer);
-
-            jsonGenerator.writeStringField(SerTokens.TOKEN_REQUEST, responseMessage.getRequestId() != null ? responseMessage.getRequestId().toString() : null);
-            // todo: write tx id
 
             jsonGenerator.writeFieldName(SerTokens.TOKEN_RESULT);
             jsonGenerator.writeObject(Collections.emptyList());
@@ -371,7 +364,11 @@ public abstract class AbstractGraphSONMessageSerializerV4 extends AbstractGraphS
             jsonGenerator.writeFieldName(SerTokens.TOKEN_STATUS);
             GraphSONUtil.writeStartObject(responseMessage, jsonGenerator, typeSerializer);
             jsonGenerator.writeStringField(SerTokens.TOKEN_MESSAGE, responseMessage.getStatus().getMessage());
-            jsonGenerator.writeNumberField(SerTokens.TOKEN_CODE, responseMessage.getStatus().getCode().getValue());
+            jsonGenerator.writeNumberField(SerTokens.TOKEN_CODE, responseMessage.getStatus().getCode().code());
+            if (responseMessage.getStatus().getCode() != HttpResponseStatus.OK &&
+                    responseMessage.getStatus().getException() != null) {
+                jsonGenerator.writeStringField(SerTokens.TOKEN_EXCEPTION, responseMessage.getStatus().getException());
+            }
             GraphSONUtil.writeEndObject(responseMessage, jsonGenerator, typeSerializer);
 
             GraphSONUtil.writeEndObject(responseMessage, jsonGenerator, typeSerializer);
@@ -386,9 +383,10 @@ public abstract class AbstractGraphSONMessageSerializerV4 extends AbstractGraphS
         @Override
         public ResponseMessage createObject(final Map<String, Object> data) {
             final Map<String, Object> status = (Map<String, Object>) data.get(SerTokens.TOKEN_STATUS);
-            return ResponseMessage.build(UUID.fromString(data.get(SerTokens.TOKEN_REQUEST).toString()))
-                    .code(ResponseStatusCode.getFromValue((Integer) status.get(SerTokens.TOKEN_CODE)))
+            return ResponseMessage.build()
+                    .code(HttpResponseStatus.valueOf((Integer) status.get(SerTokens.TOKEN_CODE)))
                     .statusMessage(String.valueOf(status.get(SerTokens.TOKEN_MESSAGE)))
+                    .exception(String.valueOf(status.get(SerTokens.TOKEN_EXCEPTION)))
                     .result(data.get(SerTokens.TOKEN_RESULT))
                     .create();
         }

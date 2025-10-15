@@ -23,7 +23,7 @@ import ch.qos.logback.classic.Logger;
 import io.netty.handler.codec.CorruptedFrameException;
 import nl.altindag.log.LogCaptor;
 import org.apache.tinkerpop.gremlin.util.Tokens;
-import org.apache.tinkerpop.gremlin.util.message.RequestMessage;
+import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
 import org.apache.tinkerpop.gremlin.driver.exception.ConnectionException;
 import org.apache.tinkerpop.gremlin.driver.exception.NoHostAvailableException;
 import org.apache.tinkerpop.gremlin.util.ser.Serializers;
@@ -151,8 +151,7 @@ public class ClientConnectionIntegrateTest extends AbstractGremlinServerIntegrat
         final ExecutorService executorServiceForTesting = cluster.executor();
 
         try {
-            final RequestMessage.Builder request = client.buildMessage(RequestMessage.build(Tokens.OPS_EVAL))
-                    .add(Tokens.ARGS_GREMLIN, "Thread.sleep(5000)");
+            final RequestMessageV4.Builder request = client.buildMessage(RequestMessageV4.build("Thread.sleep(5000)"));
             final Callable<Connection> sendQueryCallable = () -> client.chooseConnection(request.create());
             final List<Callable<Connection>> listOfTasks = new ArrayList<>();
             for (int i = 0; i < connPoolSize; i++) {
@@ -189,20 +188,16 @@ public class ClientConnectionIntegrateTest extends AbstractGremlinServerIntegrat
     @Test
     public void overLimitOperationsShouldDelegateToSingleNewConnection() throws InterruptedException {
         final int operations = 6;
-        final int usagePerConnection = 3;
         final Cluster cluster = TestClientFactory.build()
                 .minConnectionPoolSize(1)
                 .maxConnectionPoolSize(operations)
-                .minSimultaneousUsagePerConnection(1)
-                .maxSimultaneousUsagePerConnection(usagePerConnection)
                 .create();
         final Client.ClusteredClient client = cluster.connect();
         client.init();
         final ExecutorService executorServiceForTesting = cluster.executor();
 
         try {
-            final RequestMessage.Builder request = client.buildMessage(RequestMessage.build(Tokens.OPS_EVAL))
-                    .add(Tokens.ARGS_GREMLIN, "Thread.sleep(5000)");
+            final RequestMessageV4.Builder request = client.buildMessage(RequestMessageV4.build("Thread.sleep(5000)"));
             final Callable<Connection> sendQueryCallable = () -> client.chooseConnection(request.create());
             final List<Callable<Connection>> listOfTasks = new ArrayList<>();
             for (int i = 0; i < operations; i++) {
@@ -228,7 +223,7 @@ public class ClientConnectionIntegrateTest extends AbstractGremlinServerIntegrat
 
             assertEquals(2, connectionBorrowCount.size());
             for (int finalBorrowCount : connectionBorrowCount.values()) {
-                assertEquals(usagePerConnection, finalBorrowCount);
+                assertEquals(1, finalBorrowCount);
             }
 
         } finally {

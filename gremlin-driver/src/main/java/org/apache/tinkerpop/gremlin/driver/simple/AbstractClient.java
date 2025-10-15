@@ -22,10 +22,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-import org.apache.tinkerpop.gremlin.util.message.RequestMessage;
+import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
 import org.apache.tinkerpop.gremlin.util.message.ResponseMessage;
-import org.apache.tinkerpop.gremlin.util.message.ResponseStatusCode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,16 +45,16 @@ public abstract class AbstractClient implements SimpleClient {
         group = new NioEventLoopGroup(1, threadFactory);
     }
 
-    public abstract void writeAndFlush(final RequestMessage requestMessage) throws Exception;
+    public abstract void writeAndFlush(final RequestMessageV4 requestMessage) throws Exception;
 
     @Override
-    public void submit(final RequestMessage requestMessage, final Consumer<ResponseMessage> callback) throws Exception {
+    public void submit(final RequestMessageV4 requestMessage, final Consumer<ResponseMessage> callback) throws Exception {
         callbackResponseHandler.callback = callback;
         writeAndFlush(requestMessage);
     }
 
     @Override
-    public List<ResponseMessage> submit(final RequestMessage requestMessage) throws Exception {
+    public List<ResponseMessage> submit(final RequestMessageV4 requestMessage) throws Exception {
         // this is just a test client to force certain behaviors of the server. hanging tests are a pain to deal with
         // especially in travis as it's not always clear where the hang is. a few reasonable timeouts might help
         // make debugging easier when we look at logs
@@ -62,17 +62,19 @@ public abstract class AbstractClient implements SimpleClient {
     }
 
     @Override
-    public CompletableFuture<List<ResponseMessage>> submitAsync(final RequestMessage requestMessage) throws Exception {
+    public CompletableFuture<List<ResponseMessage>> submitAsync(final RequestMessageV4 requestMessage) throws Exception {
         final List<ResponseMessage> results = new ArrayList<>();
         final CompletableFuture<List<ResponseMessage>> f = new CompletableFuture<>();
         callbackResponseHandler.callback = response -> {
-            if (f.isDone())
+            // message with trailers
+            if (f.isDone() && response.getStatus().getCode() != HttpResponseStatus.NO_CONTENT)
                 throw new RuntimeException("A terminating message was already encountered - no more messages should have been received");
 
             results.add(response);
 
             // check if the current message is terminating - if it is then we can mark complete
-            if (response.getStatus().getCode().isFinalResponse()) {
+            if (response.getStatus() != null && response.getStatus().getCode() != HttpResponseStatus.PARTIAL_CONTENT
+                    && response.getStatus().getCode() != HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED) {
                 f.complete(results);
             }
         };

@@ -16,22 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.tinkerpop.gremlin.server;
+package org.apache.tinkerpop.gremlin.driver.handler;
 
-import org.apache.tinkerpop.gremlin.server.util.GremlinError;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageDecoder;
+import org.apache.tinkerpop.gremlin.util.message.ResponseMessage;
+
+import java.util.List;
 
 /**
- * @author Stephen Mallette (http://stephen.genoprime.com)
+ * Converts {@code HttpResponse} to a {@link ResponseMessage}.
  */
-public class ProcessingException extends Exception {
-    private final GremlinError error;
+@ChannelHandler.Sharable
+public final class HttpGremlinResponseDebugStreamDecoder extends MessageToMessageDecoder<ResponseMessage> {
+    public HttpGremlinResponseDebugStreamDecoder() {}
 
-    public ProcessingException(final GremlinError error) {
-        super(error.getMessage());
-        this.error = error;
-    }
-
-    public GremlinError getError() {
-        return this.error;
+    @Override
+    protected void decode(final ChannelHandlerContext channelHandlerContext, final ResponseMessage response, final List<Object> objects) throws Exception {
+        System.out.println("HttpGremlinResponseStreamDecoder: ");
+        System.out.println(response.getResult());
     }
 }

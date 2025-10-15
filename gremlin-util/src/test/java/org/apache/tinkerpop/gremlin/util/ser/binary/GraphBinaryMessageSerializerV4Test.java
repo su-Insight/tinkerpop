@@ -20,8 +20,8 @@ package org.apache.tinkerpop.gremlin.util.ser.binary;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.tinkerpop.gremlin.util.message.ResponseMessage;
-import org.apache.tinkerpop.gremlin.util.message.ResponseStatusCode;
 import org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV4;
 import org.apache.tinkerpop.gremlin.util.ser.SerializationException;
 import org.junit.Test;
@@ -33,6 +33,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class GraphBinaryMessageSerializerV4Test {
 
@@ -42,7 +43,7 @@ public class GraphBinaryMessageSerializerV4Test {
     @Test
     public void shouldSerializeAndDeserializeResponseInSingleChunk() throws SerializationException {
         final ResponseMessage response = ResponseMessage.build(UUID.randomUUID())
-                .code(ResponseStatusCode.SUCCESS)
+                .code(HttpResponseStatus.OK)
                 .statusMessage("OK")
                 .result(Arrays.asList(1, "test"))
                 .create();
@@ -74,9 +75,9 @@ public class GraphBinaryMessageSerializerV4Test {
 
     @Test
     public void shouldSerializeAndDeserializeResponseInFooterChunk() throws SerializationException {
-        final ResponseMessage response = ResponseMessage.build((UUID)null)
+        final ResponseMessage response = ResponseMessage.build()
                 .result(Arrays.asList(1, "test"))
-                .code(ResponseStatusCode.SUCCESS)
+                .code(HttpResponseStatus.OK)
                 .statusMessage("OK")
                 .create();
 
@@ -88,7 +89,7 @@ public class GraphBinaryMessageSerializerV4Test {
     @Test
     public void shouldSerializeAndDeserializeErrorResponseWithEmptyData() throws SerializationException {
         final ResponseMessage response = ResponseMessage.build(UUID.randomUUID())
-                .code(ResponseStatusCode.FORBIDDEN)
+                .code(HttpResponseStatus.FORBIDDEN)
                 .statusMessage("FORBIDDEN")
                 .create();
 
@@ -100,7 +101,7 @@ public class GraphBinaryMessageSerializerV4Test {
     @Test
     public void shouldSerializeAndDeserializeCompositeResponse() throws SerializationException {
         final List headerData = Arrays.asList(0, "header");
-        final ResponseMessage header = ResponseMessage.buildV4(UUID.randomUUID())
+        final ResponseMessage header = ResponseMessage.buildV4()
                 .result(headerData)
                 .create();
 
@@ -108,9 +109,9 @@ public class GraphBinaryMessageSerializerV4Test {
         final List chunkData2 = Arrays.asList(2, "data2");
 
         final List footerData = Arrays.asList(0xFF, "footer");
-        final ResponseMessage footer = ResponseMessage.build((UUID)null)
+        final ResponseMessage footer = ResponseMessage.build()
                 .result(footerData)
-                .code(ResponseStatusCode.SUCCESS)
+                .code(HttpResponseStatus.OK)
                 .statusMessage("OK")
                 .create();
 
@@ -123,7 +124,7 @@ public class GraphBinaryMessageSerializerV4Test {
 
         final ResponseMessage deserialized = serializer.readChunk(bbCombined, true);
 
-        assertEquals(header.getRequestId(), deserialized.getRequestId());
+        assertNull(deserialized.getRequestId());
         // Status
         assertEquals(footer.getStatus().getCode(), deserialized.getStatus().getCode());
         assertEquals(footer.getStatus().getMessage(), deserialized.getStatus().getMessage());
@@ -136,7 +137,7 @@ public class GraphBinaryMessageSerializerV4Test {
     @Test
     public void shouldSerializeAndDeserializeCompositeResponseWithError() throws SerializationException {
         final List headerData = Arrays.asList(0, "header");
-        final ResponseMessage header = ResponseMessage.buildV4(UUID.randomUUID())
+        final ResponseMessage header = ResponseMessage.buildV4()
                 .result(headerData)
                 .create();
 
@@ -144,10 +145,11 @@ public class GraphBinaryMessageSerializerV4Test {
         final List chunkData2 = Arrays.asList(2, "data2");
 
         final List footerData = Arrays.asList(0xFF, "footer");
-        final ResponseMessage footer = ResponseMessage.build((UUID)null)
+        final ResponseMessage footer = ResponseMessage.build()
                 .result(footerData)
-                .code(ResponseStatusCode.SERVER_ERROR)
+                .code(HttpResponseStatus.INTERNAL_SERVER_ERROR)
                 .statusMessage("SERVER_ERROR")
+                .exception("fire in data center")
                 .create();
 
         final ByteBuf bb0 = serializer.writeHeader(header, allocator);
@@ -159,10 +161,11 @@ public class GraphBinaryMessageSerializerV4Test {
 
         final ResponseMessage deserialized = serializer.readChunk(bbCombined, true);
 
-        assertEquals(header.getRequestId(), deserialized.getRequestId());
+        assertNull(deserialized.getRequestId());
         // Status
         assertEquals(footer.getStatus().getCode(), deserialized.getStatus().getCode());
         assertEquals(footer.getStatus().getMessage(), deserialized.getStatus().getMessage());
+        assertEquals(footer.getStatus().getException(), footer.getStatus().getException());
         // Result
         List<Integer> combinedData = new ArrayList<>();
         Stream.of(headerData, chunkData1, chunkData2).forEach(combinedData::addAll);
@@ -172,11 +175,13 @@ public class GraphBinaryMessageSerializerV4Test {
 
     // copy-paste because response format will be different
     private static void assertResponseEquals(final ResponseMessage expected, final ResponseMessage actual) {
-        assertEquals(expected.getRequestId(), actual.getRequestId());
+        assertNull(actual.getRequestId());
         // Status
-        assertEquals(expected.getStatus().getCode(), actual.getStatus().getCode());
-        assertEquals(expected.getStatus().getMessage(), actual.getStatus().getMessage());
-        assertEquals(expected.getStatus().getAttributes(), actual.getStatus().getAttributes());
+        if (expected.getStatus() != null && actual.getStatus() != null) {
+            assertEquals(expected.getStatus().getCode(), actual.getStatus().getCode());
+            assertEquals(expected.getStatus().getMessage(), actual.getStatus().getMessage());
+            assertEquals(expected.getStatus().getAttributes(), actual.getStatus().getAttributes());
+        }
         // Result
         // null == empty List
         if (!isEmptyData(expected) && !isEmptyData(actual)) {

@@ -20,36 +20,36 @@ package org.apache.tinkerpop.gremlin.server;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import nl.altindag.log.LogCaptor;
-import org.apache.tinkerpop.gremlin.driver.Channelizer;
-import org.apache.tinkerpop.gremlin.server.channel.HttpChannelizer;
-import org.apache.tinkerpop.gremlin.util.ExceptionHelper;
 import org.apache.tinkerpop.gremlin.TestHelper;
+import org.apache.tinkerpop.gremlin.driver.Channelizer;
 import org.apache.tinkerpop.gremlin.driver.Client;
 import org.apache.tinkerpop.gremlin.driver.Cluster;
 import org.apache.tinkerpop.gremlin.driver.RequestOptions;
 import org.apache.tinkerpop.gremlin.driver.Result;
 import org.apache.tinkerpop.gremlin.driver.ResultSet;
-import org.apache.tinkerpop.gremlin.util.Tokens;
 import org.apache.tinkerpop.gremlin.driver.exception.ConnectionException;
 import org.apache.tinkerpop.gremlin.driver.exception.NoHostAvailableException;
 import org.apache.tinkerpop.gremlin.driver.exception.ResponseException;
-import org.apache.tinkerpop.gremlin.driver.handler.WebSocketClientHandler;
-import org.apache.tinkerpop.gremlin.util.message.RequestMessage;
-import org.apache.tinkerpop.gremlin.util.message.ResponseStatusCode;
+import org.apache.tinkerpop.gremlin.driver.handler.GremlinResponseHandler;
 import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
-import org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV1;
-import org.apache.tinkerpop.gremlin.util.ser.Serializers;
 import org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin;
 import org.apache.tinkerpop.gremlin.process.traversal.Bytecode;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.server.channel.HttpChannelizer;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.Storage;
 import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedVertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerFactory;
+import org.apache.tinkerpop.gremlin.util.ExceptionHelper;
 import org.apache.tinkerpop.gremlin.util.TimeUtil;
+import org.apache.tinkerpop.gremlin.util.Tokens;
 import org.apache.tinkerpop.gremlin.util.function.FunctionUtils;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.apache.tinkerpop.gremlin.util.message.RequestMessageV4;
+import org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV1;
+import org.apache.tinkerpop.gremlin.util.ser.Serializers;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -59,9 +59,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.slf4j.LoggerFactory;
 
-import java.awt.Color;
+import java.awt.*;
 import java.net.ConnectException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -84,6 +83,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -98,7 +98,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -126,7 +125,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
     public void setupForEachTest() {
         if (name.getMethodName().equals("shouldKeepAliveForWebSockets") ||
                 name.getMethodName().equals("shouldKeepAliveForWebSocketsWithNoInFlightRequests")) {
-            final Logger webSocketClientHandlerLogger = (Logger) LoggerFactory.getLogger(WebSocketClientHandler.class);
+            final Logger webSocketClientHandlerLogger = (Logger) LoggerFactory.getLogger(GremlinResponseHandler.class);
             previousLogLevel = webSocketClientHandlerLogger.getLevel();
             webSocketClientHandlerLogger.setLevel(Level.DEBUG);
         }
@@ -138,7 +137,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
     public void afterEachTest() {
         if (name.getMethodName().equals("shouldKeepAliveForWebSockets") ||
                 name.getMethodName().equals("shouldKeepAliveForWebSocketsWithNoInFlightRequests")) {
-            final Logger webSocketClientHandlerLogger = (Logger) LoggerFactory.getLogger(WebSocketClientHandler.class);
+            final Logger webSocketClientHandlerLogger = (Logger) LoggerFactory.getLogger(GremlinResponseHandler.class);
             webSocketClientHandlerLogger.setLevel(previousLogLevel);
         }
     }
@@ -263,7 +262,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
             } catch (Exception ex) {
                 final Throwable inner = ExceptionHelper.getRootCause(ex);
                 assertThat(inner, instanceOf(ResponseException.class));
-                assertEquals(ResponseStatusCode.REQUEST_ERROR_SERIALIZATION, ((ResponseException) inner).getResponseStatusCode());
+                assertEquals(HttpResponseStatus.BAD_REQUEST, ((ResponseException) inner).getResponseStatusCode());
                 assertTrue(ex.getMessage().contains("An error occurred during serialization of this request"));
             }
 
@@ -276,7 +275,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
     }
 
     @Test
-    public void shouldProcessTraversalInterruption() throws Exception {
+    public void shouldProcessTraversalInterruption() {
         final Cluster cluster = TestClientFactory.open();
         final Client client = cluster.connect();
 
@@ -285,14 +284,14 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
             fail("Should have timed out");
         } catch (Exception ex) {
             final ResponseException re = (ResponseException) ex.getCause();
-            assertEquals(ResponseStatusCode.SERVER_ERROR_TIMEOUT, re.getResponseStatusCode());
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, re.getResponseStatusCode());
         } finally {
             cluster.close();
         }
     }
 
     @Test
-    public void shouldProcessEvalInterruption() throws Exception {
+    public void shouldProcessEvalInterruption() {
         final Cluster cluster = TestClientFactory.open();
         final Client client = cluster.connect();
 
@@ -301,7 +300,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
             fail("Should have timed out");
         } catch (Exception ex) {
             final ResponseException re = (ResponseException) ex.getCause();
-            assertEquals(ResponseStatusCode.SERVER_ERROR_TIMEOUT, re.getResponseStatusCode());
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, re.getResponseStatusCode());
         } finally {
             cluster.close();
         }
@@ -529,7 +528,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
             } catch (Exception ex) {
                 final Throwable inner = ExceptionHelper.getRootCause(ex);
                 assertThat(inner, instanceOf(ResponseException.class));
-                assertEquals(ResponseStatusCode.SERVER_ERROR_SERIALIZATION, ((ResponseException) inner).getResponseStatusCode());
+                assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, ((ResponseException) inner).getResponseStatusCode());
             }
 
             // should not die completely just because we had a bad serialization error.  that kind of stuff happens
@@ -660,7 +659,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
     }
 
     @Test
-    public void shouldStream() throws Exception {
+    public void shouldStream() {
         final Cluster cluster = TestClientFactory.open();
         final Client client = cluster.connect();
 
@@ -870,7 +869,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
             } catch (Exception ex) {
                 final Throwable inner = ExceptionHelper.getRootCause(ex);
                 assertTrue(inner instanceof ResponseException);
-                assertEquals(ResponseStatusCode.SERVER_ERROR_SERIALIZATION, ((ResponseException) inner).getResponseStatusCode());
+                assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, ((ResponseException) inner).getResponseStatusCode());
             }
 
             // should not die completely just because we had a bad serialization error.  that kind of stuff happens
@@ -958,75 +957,75 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
         }
     }
 
-    @Test
-    public void shouldWorkWithGraphSONExtendedV2Serialization() throws Exception {
-        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V2).create();
-        final Client client = cluster.connect();
-
-        try {
-            final List<Result> r = client.submit("java.time.Instant.EPOCH").all().join();
-            assertEquals(1, r.size());
-
-            final Instant then = r.get(0).get(Instant.class);
-            assertEquals(Instant.EPOCH, then);
-        } finally {
-            cluster.close();
-        }
-    }
-
-    @Test
-    public void shouldWorkWithGraphSONV3Serialization() throws Exception {
-        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V3).create();
-        final Client client = cluster.connect();
-
-        try {
-            final List<Result> r = client.submit("TinkerFactory.createModern().traversal().V(1)").all().join();
-            assertEquals(1, r.size());
-
-            final Vertex v = r.get(0).get(DetachedVertex.class);
-            assertEquals(1, v.id());
-            assertEquals("person", v.label());
-
-            assertEquals(2, IteratorUtils.count(v.properties()));
-            assertEquals("marko", v.value("name"));
-            assertEquals(29, Integer.parseInt(v.value("age").toString()));
-        } finally {
-            cluster.close();
-        }
-    }
-
-    @Test
-    public void shouldWorkWithGraphSONExtendedV3Serialization() throws Exception {
-        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V3).create();
-        final Client client = cluster.connect();
-
-        try {
-            final List<Result> r = client.submit("java.time.Instant.EPOCH").all().join();
-            assertEquals(1, r.size());
-
-            final Instant then = r.get(0).get(Instant.class);
-            assertEquals(Instant.EPOCH, then);
-        } finally {
-            cluster.close();
-        }
-    }
-
-    @Test
-    public void shouldWorkWithGraphBinaryV1Serialization() throws Exception {
-        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHBINARY_V1).create();
-        final Client client = cluster.connect();
-
-        try {
-            final List<Result> r = client.submit("TinkerFactory.createModern().traversal().V(1)").all().join();
-            assertEquals(1, r.size());
-
-            final Vertex v = r.get(0).get(DetachedVertex.class);
-            assertEquals(1, v.id());
-            assertEquals("person", v.label());
-        } finally {
-            cluster.close();
-        }
-    }
+//    @Test
+//    public void shouldWorkWithGraphSONExtendedV2Serialization() {
+//        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V2).create();
+//        final Client client = cluster.connect();
+//
+//        try {
+//            final List<Result> r = client.submit("java.time.Instant.EPOCH").all().join();
+//            assertEquals(1, r.size());
+//
+//            final Instant then = r.get(0).get(Instant.class);
+//            assertEquals(Instant.EPOCH, then);
+//        } finally {
+//            cluster.close();
+//        }
+//    }
+//
+//    @Test
+//    public void shouldWorkWithGraphSONV3Serialization() throws Exception {
+//        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V3).create();
+//        final Client client = cluster.connect();
+//
+//        try {
+//            final List<Result> r = client.submit("TinkerFactory.createModern().traversal().V(1)").all().join();
+//            assertEquals(1, r.size());
+//
+//            final Vertex v = r.get(0).get(DetachedVertex.class);
+//            assertEquals(1, v.id());
+//            assertEquals("person", v.label());
+//
+//            assertEquals(2, IteratorUtils.count(v.properties()));
+//            assertEquals("marko", v.value("name"));
+//            assertEquals(29, Integer.parseInt(v.value("age").toString()));
+//        } finally {
+//            cluster.close();
+//        }
+//    }
+//
+//    @Test
+//    public void shouldWorkWithGraphSONExtendedV3Serialization() throws Exception {
+//        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V3).create();
+//        final Client client = cluster.connect();
+//
+//        try {
+//            final List<Result> r = client.submit("java.time.Instant.EPOCH").all().join();
+//            assertEquals(1, r.size());
+//
+//            final Instant then = r.get(0).get(Instant.class);
+//            assertEquals(Instant.EPOCH, then);
+//        } finally {
+//            cluster.close();
+//        }
+//    }
+//
+//    @Test
+//    public void shouldWorkWithGraphBinaryV1Serialization() throws Exception {
+//        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHBINARY_V1).create();
+//        final Client client = cluster.connect();
+//
+//        try {
+//            final List<Result> r = client.submit("TinkerFactory.createModern().traversal().V(1)").all().join();
+//            assertEquals(1, r.size());
+//
+//            final Vertex v = r.get(0).get(DetachedVertex.class);
+//            assertEquals(1, v.id());
+//            assertEquals("person", v.label());
+//        } finally {
+//            cluster.close();
+//        }
+//    }
 
     @Test
     public void shouldFailClientSideWithTooLargeAResponse() {
@@ -1367,8 +1366,6 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
     @Test
     public void shouldBeThreadSafeToUseOneClient() throws Exception {
         final Cluster cluster = TestClientFactory.build().workerPoolSize(2)
-                .maxInProcessPerConnection(64)
-                .minInProcessPerConnection(32)
                 .maxConnectionPoolSize(16)
                 .minConnectionPoolSize(8).create();
         final Client client = cluster.connect();
@@ -1411,7 +1408,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
             final Throwable root = ExceptionHelper.getRootCause(ex);
             assertThat(root, instanceOf(ResponseException.class));
             final ResponseException re = (ResponseException) root;
-            assertEquals(ResponseStatusCode.REQUEST_ERROR_INVALID_REQUEST_ARGUMENTS, re.getResponseStatusCode());
+            assertEquals(HttpResponseStatus.BAD_REQUEST, re.getResponseStatusCode());
         } finally {
             cluster.close();
         }
@@ -1430,7 +1427,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
             final Throwable root = ExceptionHelper.getRootCause(ex);
             assertThat(root, instanceOf(ResponseException.class));
             final ResponseException re = (ResponseException) root;
-            assertEquals(ResponseStatusCode.REQUEST_ERROR_INVALID_REQUEST_ARGUMENTS, re.getResponseStatusCode());
+            assertEquals(HttpResponseStatus.BAD_REQUEST, re.getResponseStatusCode());
 
             final Client rebound = cluster.connect().alias("graph");
             final Vertex v = rebound.submit("g.addVertex(T.label,'person')").all().get().get(0).getVertex();
@@ -1452,7 +1449,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
             final Throwable root = ExceptionHelper.getRootCause(ex);
             assertThat(root, instanceOf(ResponseException.class));
             final ResponseException re = (ResponseException) root;
-            assertEquals(ResponseStatusCode.SERVER_ERROR_EVALUATION, re.getResponseStatusCode());
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, re.getResponseStatusCode());
 
             final Client rebound = cluster.connect().alias("graph");
             final Vertex v = rebound.submit("g.addVertex(label,'person','name','jason')").all().get().get(0).getVertex();
@@ -1474,7 +1471,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
                 final Throwable root = ExceptionHelper.getRootCause(ex);
                 assertThat(root, instanceOf(ResponseException.class));
                 final ResponseException re = (ResponseException) root;
-                assertEquals(ResponseStatusCode.SERVER_ERROR_EVALUATION, re.getResponseStatusCode());
+                assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, re.getResponseStatusCode());
             }
 
             final Client clientAliased = client.alias("g1");
@@ -1497,7 +1494,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
             final Throwable root = ExceptionHelper.getRootCause(ex);
             assertThat(root, instanceOf(ResponseException.class));
             final ResponseException re = (ResponseException) root;
-            assertEquals(ResponseStatusCode.SERVER_ERROR_EVALUATION, re.getResponseStatusCode());
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, re.getResponseStatusCode());
             client.close();
         }
 
@@ -1523,7 +1520,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
             final Throwable root = ExceptionHelper.getRootCause(ex);
             assertThat(root, instanceOf(ResponseException.class));
             final ResponseException re = (ResponseException) root;
-            assertEquals(ResponseStatusCode.SERVER_ERROR_EVALUATION, re.getResponseStatusCode());
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, re.getResponseStatusCode());
         }
 
         final Client clientAliased = client.alias("g1");
@@ -1628,7 +1625,7 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
         } catch (Exception ex) {
             final Throwable root = ExceptionHelper.getRootCause(ex);
             assertThat(root, instanceOf(ResponseException.class));
-            assertEquals(ResponseStatusCode.SERVER_ERROR_TIMEOUT, ((ResponseException) root).getResponseStatusCode());
+            assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR, ((ResponseException) root).getResponseStatusCode());
             assertThat(root.getMessage(), allOf(startsWith("Evaluation exceeded"), containsString("250 ms")));
         }
     }
@@ -1705,38 +1702,40 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
         cluster.close();
     }
 
-    @Test
-    public void shouldSendUserAgent() throws Exception {
-        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V3).create();
-        final Client client = Mockito.spy(cluster.connect().alias("g"));
-        client.submit("", RequestOptions.build().userAgent("test").create()).all().get();
-        cluster.close();
+//    TODO: should probably remove and deprecate this old user-agent.
+//    @Test
+//    public void shouldSendUserAgent() throws Exception {
+//        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V3).create();
+//        final Client client = Mockito.spy(cluster.connect().alias("g"));
+//        client.submit("", RequestOptions.build().userAgent("test").create()).all().get();
+//        cluster.close();
+//
+//        final ArgumentCaptor<RequestMessage> requestMessageCaptor = ArgumentCaptor.forClass(RequestMessage.class);
+//        verify(client).submitAsync(requestMessageCaptor.capture());
+//        final RequestMessage requestMessage = requestMessageCaptor.getValue();
+//        assertEquals("test", requestMessage.getArgs().get(Tokens.ARGS_USER_AGENT));
+//    }
 
-        final ArgumentCaptor<RequestMessage> requestMessageCaptor = ArgumentCaptor.forClass(RequestMessage.class);
-        verify(client).submitAsync(requestMessageCaptor.capture());
-        final RequestMessage requestMessage = requestMessageCaptor.getValue();
-        assertEquals("test", requestMessage.getArgs().get(Tokens.ARGS_USER_AGENT));
-    }
-
-    @Test
-    public void shouldSendUserAgentBytecode() {
-        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V3).create();
-        final Client client = Mockito.spy(cluster.connect().alias("g"));
-        Mockito.when(client.alias("g")).thenReturn(client);
-        final GraphTraversalSource g = traversal().withRemote(DriverRemoteConnection.using(client));
-        g.with(Tokens.ARGS_USER_AGENT, "test").V().iterate();
-        cluster.close();
-
-        final ArgumentCaptor<RequestOptions> requestOptionsCaptor = ArgumentCaptor.forClass(RequestOptions.class);
-        verify(client).submitAsync(Mockito.any(Bytecode.class), requestOptionsCaptor.capture());
-        final RequestOptions requestOptions = requestOptionsCaptor.getValue();
-        assertEquals("test", requestOptions.getUserAgent().get());
-
-        final ArgumentCaptor<RequestMessage> requestMessageCaptor = ArgumentCaptor.forClass(RequestMessage.class);
-        verify(client).submitAsync(requestMessageCaptor.capture());
-        final RequestMessage requestMessage = requestMessageCaptor.getValue();
-        assertEquals("test", requestMessage.getArgs().getOrDefault(Tokens.ARGS_USER_AGENT, null));
-    }
+//    TODO: should probably remove and deprecate this old user-agent.
+//    @Test
+//    public void shouldSendUserAgentBytecode() {
+//        final Cluster cluster = TestClientFactory.build().serializer(Serializers.GRAPHSON_V3).create();
+//        final Client client = Mockito.spy(cluster.connect().alias("g"));
+//        Mockito.when(client.alias("g")).thenReturn(client);
+//        final GraphTraversalSource g = traversal().withRemote(DriverRemoteConnection.using(client));
+//        g.with(Tokens.ARGS_USER_AGENT, "test").V().iterate();
+//        cluster.close();
+//
+//        final ArgumentCaptor<RequestOptions> requestOptionsCaptor = ArgumentCaptor.forClass(RequestOptions.class);
+//        verify(client).submitAsync(Mockito.any(Bytecode.class), requestOptionsCaptor.capture());
+//        final RequestOptions requestOptions = requestOptionsCaptor.getValue();
+//        assertEquals("test", requestOptions.getUserAgent().get());
+//
+//        final ArgumentCaptor<RequestMessage> requestMessageCaptor = ArgumentCaptor.forClass(RequestMessage.class);
+//        verify(client).submitAsync(requestMessageCaptor.capture());
+//        final RequestMessage requestMessage = requestMessageCaptor.getValue();
+//        assertEquals("test", requestMessage.getArgs().getOrDefault(Tokens.ARGS_USER_AGENT, null));
+//    }
 
     @Test
     public void shouldSendRequestIdBytecode() {
@@ -1754,9 +1753,9 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
         assertTrue(requestOptions.getOverrideRequestId().isPresent());
         assertEquals(overrideRequestId, requestOptions.getOverrideRequestId().get());
 
-        final ArgumentCaptor<RequestMessage> requestMessageCaptor = ArgumentCaptor.forClass(RequestMessage.class);
+        final ArgumentCaptor<RequestMessageV4> requestMessageCaptor = ArgumentCaptor.forClass(RequestMessageV4.class);
         verify(client).submitAsync(requestMessageCaptor.capture());
-        final RequestMessage requestMessage = requestMessageCaptor.getValue();
+        final RequestMessageV4 requestMessage = requestMessageCaptor.getValue();
         assertEquals(overrideRequestId, requestMessage.getRequestId());
     }
 
@@ -1803,10 +1802,6 @@ public class GremlinDriverIntegrateTest extends AbstractGremlinServerIntegration
                 .maxConnectionPoolSize(1)
                 .connectionSetupTimeoutMillis(100)
                 .maxWaitForConnection(150)
-                .minInProcessPerConnection(0)
-                .maxInProcessPerConnection(1)
-                .minSimultaneousUsagePerConnection(0)
-                .maxSimultaneousUsagePerConnection(1)
                 .create();
 
         final Client.ClusteredClient client = cluster.connect();
