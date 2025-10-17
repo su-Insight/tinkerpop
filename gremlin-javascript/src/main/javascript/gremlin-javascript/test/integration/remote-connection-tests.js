@@ -20,18 +20,17 @@
 /**
  * @author Jorge Bay Gondra
  */
-'use strict';
 
-const assert = require('assert');
-const Bytecode = require('../../lib/process/bytecode');
-const graphModule = require('../../lib/structure/graph');
-const helper = require('../helper');
+import assert from 'assert';
+import Bytecode from '../../lib/process/bytecode.js';
+import { Vertex } from '../../lib/structure/graph.js';
+import { getConnection } from '../helper.js';
 
 let connection;
 
 describe('DriverRemoteConnection', function () {
   before(function () {
-    connection = helper.getConnection('gmodern');
+    connection = getConnection('gmodern');
     return connection.open();
   });
   after(function () {
@@ -40,25 +39,23 @@ describe('DriverRemoteConnection', function () {
 
   describe('#submit()', function () {
     it('should send the request and parse the response', function () {
-      return connection.submit(new Bytecode().addStep('V', []).addStep('tail', []))
-        .then(function (response) {
-          assert.ok(response);
-          assert.ok(response.traversers);
-          assert.strictEqual(response.traversers.length, 1);
-          assert.ok(response.traversers[0].object instanceof graphModule.Vertex);
-        });
+      return connection.submit(new Bytecode().addStep('V', []).addStep('tail', [])).then(function (response) {
+        assert.ok(response);
+        assert.ok(response.traversers);
+        assert.strictEqual(response.traversers.length, 1);
+        assert.ok(response.traversers[0].object instanceof Vertex);
+      });
     });
     it('should send the request with syntax error and parse the response error', function () {
-      return connection.submit(new Bytecode().addStep('SYNTAX_ERROR'))
-        .catch(function (err) {
-          assert.ok(err);
-          assert.ok(err.message.indexOf('599') > 0);
-          assert.ok(err.statusCode === 599);
-          assert.ok(err.statusMessage === 'Could not locate method: GraphTraversalSource.SYNTAX_ERROR()');
-          assert.ok(err.statusAttributes);
-          assert.ok(err.statusAttributes.has('exceptions'));
-          assert.ok(err.statusAttributes.has('stackTrace'));
-        });
+      return connection.submit(new Bytecode().addStep('SYNTAX_ERROR')).catch(function (err) {
+        assert.ok(err);
+        assert.ok(err.message.indexOf('599') > 0);
+        assert.ok(err.statusCode === 599);
+        assert.ok(err.statusMessage === 'Could not locate method: GraphTraversalSource.SYNTAX_ERROR()');
+        assert.ok(err.statusAttributes);
+        assert.ok(err.statusAttributes.has('exceptions'));
+        assert.ok(err.statusAttributes.has('stackTrace'));
+      });
     });
   });
 });

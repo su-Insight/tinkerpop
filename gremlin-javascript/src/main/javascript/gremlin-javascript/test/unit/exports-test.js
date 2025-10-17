@@ -20,66 +20,66 @@
 /**
  * @author Jorge Bay Gondra
  */
-'use strict';
 
-const assert = require('assert');
-const glvModule = require('../../');
+import assert from 'assert';
+import * as glvModule from '../../lib/index.js';
+import { process, structure, driver } from '../../lib/index.js'
 
 describe('API', function () {
   it('should export fields under process', function () {
     assert.ok(glvModule);
-    assert.ok(glvModule.process);
-    assert.strictEqual(typeof glvModule.process.Bytecode, 'function');
-    assert.strictEqual(typeof glvModule.process.EnumValue, 'function');
-    assert.strictEqual(typeof glvModule.process.P, 'function');
-    assert.strictEqual(typeof glvModule.process.Traversal, 'function');
-    assert.strictEqual(typeof glvModule.process.TraversalSideEffects, 'function');
-    assert.strictEqual(typeof glvModule.process.TraversalStrategies, 'function');
-    assert.strictEqual(typeof glvModule.process.TraversalStrategy, 'function');
-    assert.strictEqual(typeof glvModule.process.Traverser, 'function');
-    assert.strictEqual(typeof glvModule.process.GraphTraversal, 'function');
-    assert.strictEqual(typeof glvModule.process.GraphTraversalSource, 'function');
-    assert.strictEqual(typeof glvModule.process.barrier, 'object');
-    assert.strictEqual(typeof glvModule.process.cardinality, 'object');
-    assert.strictEqual(typeof glvModule.process.column, 'object');
-    assert.strictEqual(typeof glvModule.process.direction, 'object');
-    assert.strictEqual(typeof glvModule.process.direction.both, 'object');
-    assert.strictEqual(glvModule.process.direction.both.elementName, 'BOTH');
-    assert.strictEqual(typeof glvModule.process.operator, 'object');
-    assert.strictEqual(typeof glvModule.process.order, 'object');
-    assert.strictEqual(typeof glvModule.process.pop, 'object');
-    assert.strictEqual(typeof glvModule.process.scope, 'object');
-    assert.strictEqual(typeof glvModule.process.t, 'object');
-    assert.ok(glvModule.process.statics);
-    validateConstructor(glvModule.process, 'AnonymousTraversalSource');
-    assert.strictEqual(typeof glvModule.process.traversal, 'function');
+    assert.ok(process);
+    assert.strictEqual(typeof process.Bytecode, 'function');
+    assert.strictEqual(typeof process.EnumValue, 'function');
+    assert.strictEqual(typeof process.P, 'function');
+    assert.strictEqual(typeof process.Traversal, 'function');
+    assert.strictEqual(typeof process.TraversalSideEffects, 'function');
+    assert.strictEqual(typeof process.TraversalStrategies, 'function');
+    assert.strictEqual(typeof process.TraversalStrategy, 'function');
+    assert.strictEqual(typeof process.Traverser, 'function');
+    assert.strictEqual(typeof process.GraphTraversal, 'function');
+    assert.strictEqual(typeof process.GraphTraversalSource, 'function');
+    assert.strictEqual(typeof process.barrier, 'object');
+    assert.strictEqual(typeof process.cardinality, 'object');
+    assert.strictEqual(typeof process.column, 'object');
+    assert.strictEqual(typeof process.direction, 'object');
+    assert.strictEqual(typeof process.direction.both, 'object');
+    assert.strictEqual(process.direction.both.elementName, 'BOTH');
+    assert.strictEqual(typeof process.operator, 'object');
+    assert.strictEqual(typeof process.order, 'object');
+    assert.strictEqual(typeof process.pop, 'object');
+    assert.strictEqual(typeof process.scope, 'object');
+    assert.strictEqual(typeof process.t, 'object');
+    assert.ok(process.statics);
+    validateConstructor(process, 'AnonymousTraversalSource');
+    assert.strictEqual(typeof process.traversal, 'function');
   });
   it('should expose fields under structure', function () {
-    assert.ok(glvModule.structure);
-    assert.ok(glvModule.structure.io);
-    assert.strictEqual(typeof glvModule.structure.io.GraphSONReader, 'function');
-    assert.strictEqual(typeof glvModule.structure.io.GraphSONWriter, 'function');
-    validateConstructor(glvModule.structure.io, 'GraphSON2Reader');
-    validateConstructor(glvModule.structure.io, 'GraphSON2Writer');
-    validateConstructor(glvModule.structure.io, 'GraphSON3Reader');
-    validateConstructor(glvModule.structure.io, 'GraphSON3Writer');
-    assert.strictEqual(glvModule.structure.io.GraphSONReader, glvModule.structure.io.GraphSON3Reader);
-    assert.strictEqual(glvModule.structure.io.GraphSONWriter, glvModule.structure.io.GraphSON3Writer);
-    assert.strictEqual(typeof glvModule.structure.Edge, 'function');
-    assert.strictEqual(typeof glvModule.structure.Graph, 'function');
-    assert.strictEqual(typeof glvModule.structure.Path, 'function');
-    assert.strictEqual(typeof glvModule.structure.Property, 'function');
-    assert.strictEqual(typeof glvModule.structure.Vertex, 'function');
-    assert.strictEqual(typeof glvModule.structure.VertexProperty, 'function');
+    assert.ok(structure);
+    assert.ok(structure.io);
+    assert.strictEqual(typeof structure.io.GraphSONReader, 'function');
+    assert.strictEqual(typeof structure.io.GraphSONWriter, 'function');
+    validateConstructor(structure.io, 'GraphSON2Reader');
+    validateConstructor(structure.io, 'GraphSON2Writer');
+    validateConstructor(structure.io, 'GraphSON3Reader');
+    validateConstructor(structure.io, 'GraphSON3Writer');
+    assert.strictEqual(structure.io.GraphSONReader, structure.io.GraphSON3Reader);
+    assert.strictEqual(structure.io.GraphSONWriter, structure.io.GraphSON3Writer);
+    assert.strictEqual(typeof structure.Edge, 'function');
+    assert.strictEqual(typeof structure.Graph, 'function');
+    assert.strictEqual(typeof structure.Path, 'function');
+    assert.strictEqual(typeof structure.Property, 'function');
+    assert.strictEqual(typeof structure.Vertex, 'function');
+    assert.strictEqual(typeof structure.VertexProperty, 'function');
   });
   it('should expose fields under driver', function () {
-    assert.ok(glvModule.driver);
-    validateConstructor(glvModule.driver, 'RemoteConnection');
-    validateConstructor(glvModule.driver, 'RemoteStrategy');
-    validateConstructor(glvModule.driver, 'RemoteTraversal');
-    validateConstructor(glvModule.driver, 'DriverRemoteConnection');
-    validateConstructor(glvModule.driver, 'Client');
-    validateConstructor(glvModule.driver, 'ResultSet');
+    assert.ok(driver);
+    validateConstructor(driver, 'RemoteConnection');
+    validateConstructor(driver, 'RemoteStrategy');
+    validateConstructor(driver, 'RemoteTraversal');
+    validateConstructor(driver, 'DriverRemoteConnection');
+    validateConstructor(driver, 'Client');
+    validateConstructor(driver, 'ResultSet');
   });
 });
 

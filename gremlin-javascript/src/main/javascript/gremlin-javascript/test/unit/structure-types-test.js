@@ -20,10 +20,9 @@
 /**
  * @author Jorge Bay Gondra
  */
-'use strict';
 
-const { assert } = require('chai');
-const { VertexProperty, Property, Vertex, Edge, Path } = require('../../lib/structure/graph');
+import { assert } from 'chai';
+import { VertexProperty, Property, Vertex, Edge, Path } from '../../lib/structure/graph.js';
 
 describe('Edge', () => {
   describe('#toString()', () => {
@@ -47,11 +46,11 @@ describe('VertexProperty', () => {
   describe('#toString()', () => {
     it('should return the string representation and summarize', () => {
       [
-        [ new VertexProperty(1, 'label1', 'value1'), 'vp[label1->value1]' ],
-        [ new VertexProperty(1, 'label2', null), 'vp[label2->null]' ],
-        [ new VertexProperty(1, 'label3', undefined), 'vp[label3->undefined]' ],
-        [ new VertexProperty(1, 'label4', 'abcdefghijklmnopqrstuvwxyz'), 'vp[label4->abcdefghijklmnopqrst]' ]
-      ].forEach(item => {
+        [new VertexProperty(1, 'label1', 'value1'), 'vp[label1->value1]'],
+        [new VertexProperty(1, 'label2', null), 'vp[label2->null]'],
+        [new VertexProperty(1, 'label3', undefined), 'vp[label3->undefined]'],
+        [new VertexProperty(1, 'label4', 'abcdefghijklmnopqrstuvwxyz'), 'vp[label4->abcdefghijklmnopqrst]'],
+      ].forEach((item) => {
         assert.strictEqual(item[0].toString(), item[1]);
       });
     });
@@ -62,11 +61,11 @@ describe('Property', () => {
   describe('#toString()', () => {
     it('should return the string representation and summarize', () => {
       [
-        [ new Property('key1', 'value1'), 'p[key1->value1]' ],
-        [ new Property('key2', null), 'p[key2->null]' ],
-        [ new Property('key3', undefined), 'p[key3->undefined]' ],
-        [ new Property('key4', 'abcdefghijklmnopqrstuvwxyz'), 'p[key4->abcdefghijklmnopqrst]' ]
-      ].forEach(item => {
+        [new Property('key1', 'value1'), 'p[key1->value1]'],
+        [new Property('key2', null), 'p[key2->null]'],
+        [new Property('key3', undefined), 'p[key3->undefined]'],
+        [new Property('key4', 'abcdefghijklmnopqrstuvwxyz'), 'p[key4->abcdefghijklmnopqrst]'],
+      ].forEach((item) => {
         assert.strictEqual(item[0].toString(), item[1]);
       });
     });
@@ -77,9 +76,9 @@ describe('Path', () => {
   describe('#toString()', () => {
     it('should return the string representation and summarize', () => {
       [
-        [ new Path(['a', 'b'], [1, 2]), 'path[1, 2]' ],
-        [ new Path(['a', 'b'], null), 'path[]' ]
-      ].forEach(item => {
+        [new Path(['a', 'b'], [1, 2]), 'path[1, 2]'],
+        [new Path(['a', 'b'], null), 'path[]'],
+      ].forEach((item) => {
         assert.strictEqual(item[0].toString(), item[1]);
       });
     });
