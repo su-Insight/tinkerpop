@@ -349,9 +349,9 @@ export class EdgeSerializer extends TypeSerializer<g.Edge> {
       [valueKey]: {
         id: this.writer.adaptObject(item.id),
         label: item.label,
-        outV: this.writer.adaptObject(item.outV.id),
+        outV: this.writer.adaptObject(item.outV?.id),
         outVLabel: item.outV.label,
-        inV: this.writer.adaptObject(item.inV.id),
+        inV: this.writer.adaptObject(item.inV?.id),
         inVLabel: item.inV.label,
       },
     };
