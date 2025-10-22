@@ -43,7 +43,7 @@ jobs:
       - name: Build with Maven
         run: mvn clean install -pl -:gremlin-javascript,-:gremlin-dotnet-source,-:gremlin-dotnet-tests,-:gremlin-go,-:gremlin-python -Dci --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -Dcoverage
       - name: Upload to Codecov
-        uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d
+        uses: codecov/codecov-action@54bcd8715eee62d40e33596ef5e8f0f48dbbccab
         with:
          directory: ./gremlin-tools/gremlin-coverage/target/site
   java-jdk8:
@@ -278,10 +278,10 @@ jobs:
         with:
           java-version: '11'
           distribution: 'temurin'
-      - name: Set up .NET 6.0.x
+      - name: Set up .NET 8.0.x
         uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3
         with:
-          dotnet-version: '6.0.x'
+          dotnet-version: '8.0.x'
       - name: Get Cached Server Base Image
         uses: actions/cache@v4
         id: gremlin-server-test-docker-image
@@ -345,7 +345,7 @@ jobs:
           mvn clean install -pl -:gremlin-python,-:gremlin-javascript,-:gremlin-dotnet,-:gremlin-dotnet-source,-:gremlin-dotnet-tests -q -DskipTests -Dci
           mvn verify -pl :gremlin-go
       - name: Upload to Codecov
-        uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d
+        uses: codecov/codecov-action@54bcd8715eee62d40e33596ef5e8f0f48dbbccab
         with:
           working-directory: ./gremlin-go
       - name: Go-Vet
