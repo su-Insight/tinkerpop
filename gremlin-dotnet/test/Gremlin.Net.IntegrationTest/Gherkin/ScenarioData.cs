@@ -52,8 +52,8 @@ namespace Gremlin.Net.IntegrationTest.Gherkin
         
         private readonly RemoteConnectionFactory _connectionFactory;
 
-        public Scenario CurrentScenario;
-        public Feature CurrentFeature;
+        public Scenario? CurrentScenario;
+        public Feature? CurrentFeature;
 
         public ScenarioDataPerGraph GetByGraphName(string name)
         {
@@ -70,14 +70,14 @@ namespace Gremlin.Net.IntegrationTest.Gherkin
 
         public void CleanEmptyData()
         {
-            var g = Traversal().WithRemote(GetByGraphName("empty").Connection);
+            var g = Traversal().With(GetByGraphName("empty").Connection);
             g.V().Drop().Iterate();
         }
 
         public void ReloadEmptyData()
         {
             var graphData = _dataPerGraph["empty"];
-            var g = Traversal().WithRemote(graphData.Connection);
+            var g = Traversal().With(graphData.Connection);
             graphData.Vertices = GetVertices(g);
             graphData.Edges = GetEdges(g);
             graphData.VertexProperties = GetVertexProperties(g);
@@ -99,7 +99,7 @@ namespace Gremlin.Net.IntegrationTest.Gherkin
             return GraphNames.Select(name =>
             {
                 var connection = _connectionFactory.CreateRemoteConnection($"g{name}");
-                var g = Traversal().WithRemote(connection);
+                var g = Traversal().With(connection);
                 return new ScenarioDataPerGraph(name, connection, GetVertices(g), GetEdges(g), GetVertexProperties(g));
             }).ToDictionary(x => x.Name);
         }
@@ -109,7 +109,7 @@ namespace Gremlin.Net.IntegrationTest.Gherkin
             // Property name might not exist and C# doesn't support "null" keys in Dictionary
             if (g.V().Count().Next() == g.V().Has("name").Count().Next())
             {
-                return g.V().Group<string, object>().By("name").By(__.Tail<Vertex>()).Next()
+                return g.V().Group<string, object>().By("name").By(__.Tail<Vertex>()).Next()!
                     .ToDictionary(kv => kv.Key, kv => (Vertex) kv.Value);
             }
             else
@@ -128,7 +128,7 @@ namespace Gremlin.Net.IntegrationTest.Gherkin
                 return g.E().Group<string, Edge>()
                     .By(lambda)
                     .By(__.Tail<object>())
-                    .Next();
+                    .Next()!;
             }
             catch (ResponseException)
             {
@@ -191,7 +191,7 @@ namespace Gremlin.Net.IntegrationTest.Gherkin
                 return g.V().Properties<VertexProperty>().Group<string, VertexProperty>()
                     .By(lambda)
                     .By(__.Tail<object>())
-                    .Next();
+                    .Next()!;
             }
             catch (ResponseException)
             {

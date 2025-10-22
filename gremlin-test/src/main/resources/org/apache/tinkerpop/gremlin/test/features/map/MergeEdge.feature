@@ -328,7 +328,7 @@ Feature: Step - mergeE()
       g.mergeE(xx1)
       """
     When iterated to list
-    Then the traversal will raise an error with message containing text of "Vertex id could not be resolved from mergeE"
+    Then the traversal will raise an error with message containing text of "Vertex does not exist for mergeE"
 
   @UserSuppliedVertexIds
   Scenario: g_mergeEXlabel_knows_out_marko_in_vadasX_optionXonCreate_created_YX_optionXonMatch_created_NX
@@ -341,7 +341,7 @@ Feature: Step - mergeE()
       g.mergeE(xx1).option(Merge.onCreate,xx2).option(Merge.onMatch,xx3)
       """
     When iterated to list
-    Then the traversal will raise an error with message containing text of "Vertex id could not be resolved from mergeE"
+    Then the traversal will raise an error with message containing text of "Vertex does not exist for mergeE"
 
   Scenario: g_mergeEXlabel_knows_out_marko_in_vadasX_optionXonCreate_created_YX_optionXonMatch_created_NX_exists
     Given the empty graph
@@ -619,7 +619,7 @@ Feature: Step - mergeE()
       """
       g.addV("person").property("name", "marko").as("a").
         addV("person").property("name", "vadas").as("b").
-        addE("knows").property("weight", 1).from("a").to("b")
+        addE("knows").property("weight", 1.0d).from("a").to("b")
       """
     And using the parameter xx1 defined as "m[{\"t[label]\": \"knows\", \"D[OUT]\":\"v[marko]\", \"D[IN]\":\"v[vadas]\"}]"
     And using the parameter xx2 defined as "m[{\"t[label]\": \"knows\", \"D[OUT]\":\"v[marko]\", \"D[IN]\":\"v[vadas]\",\"created\":\"Y\"}]"
@@ -857,7 +857,10 @@ Feature: Step - mergeE()
               option(Merge.onMatch, __.sideEffect(__.property("weight", 0)).constant([:]))
       """
     When iterated to list
-    Then the traversal will raise an error with message containing text of "The incoming traverser for MergeEdgeStep cannot be an Element"
+    Then the result should have a count of 2
+    And the graph should return 2 for count of "g.V()"
+    And the graph should return 1 for count of "g.E()"
+    And the graph should return 1 for count of "g.E().hasLabel(\"knows\").has(\"weight\",0)"
 
   Scenario: g_mergeEXlabel_knows_out_marko_in_vadasX_optionXonMatch_sideEffectXpropertyXweight_0XX_constantXemptyXX
     Given the empty graph
@@ -902,10 +905,10 @@ Feature: Step - mergeE()
     And the traversal of
       """
       g.inject(xx1, xx1, xx2).
-        fold().
-        mergeE(__.limit(Scope.local,1)).
-          option(Merge.onCreate, __.range(Scope.local, 1, 2)).
-          option(Merge.onMatch, __.tail(Scope.local))
+        fold().as("m").
+        mergeE(__.select("m").limit(Scope.local,1)).
+          option(Merge.onCreate, __.select("m").range(Scope.local, 1, 2)).
+          option(Merge.onMatch, __.select("m").tail(Scope.local))
       """
     When iterated to list
     Then the result should have a count of 1
@@ -936,10 +939,10 @@ Feature: Step - mergeE()
     And the traversal of
       """
       g.inject(xx1, xx1, xx2).
-        fold().
-        mergeE(__.limit(Scope.local,1)).
-          option(Merge.onCreate, __.range(Scope.local, 1, 2)).
-          option(Merge.onMatch, __.tail(Scope.local))
+        fold().as("m").
+        mergeE(__.select("m").limit(Scope.local,1)).
+          option(Merge.onCreate, __.select("m").range(Scope.local, 1, 2)).
+          option(Merge.onMatch, __.select("m").tail(Scope.local))
       """
     When iterated to list
     Then the result should have a count of 1

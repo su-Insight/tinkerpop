@@ -21,7 +21,7 @@ limitations under the License.
     <parent>
         <groupId>org.apache.tinkerpop</groupId>
         <artifactId>gremlin-dotnet</artifactId>
-        <version>3.6.8-SNAPSHOT</version>
+        <version>4.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>gremlin-dotnet-source</artifactId>
     <name>Apache TinkerPop :: Gremlin.Net - Source</name>
@@ -38,7 +38,7 @@ limitations under the License.
                 <artifactId>gmavenplus-plugin</artifactId>
                 <dependencies>
                     <dependency>
-                        <groupId>org.codehaus.groovy</groupId>
+                        <groupId>org.apache.groovy</groupId>
                         <artifactId>groovy-all</artifactId>
                         <version>${groovy.version}</version>
                         <type>pom</type>
@@ -363,7 +363,7 @@ limitations under the License.
                                 <scope>runtime</scope>
                             </dependency>
                             <dependency>
-                                <groupId>org.codehaus.groovy</groupId>
+                                <groupId>org.apache.groovy</groupId>
                                 <artifactId>groovy-all</artifactId>
                                 <version>${groovy.version}</version>
                                 <type>pom</type>

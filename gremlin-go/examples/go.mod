@@ -19,7 +19,7 @@ module example
 
 go 1.21
 
-require github.com/apache/tinkerpop/gremlin-go/v3 v3.6.6
+require github.com/apache/tinkerpop/gremlin-go/v3 v3.7.1
 
 require (
 	github.com/google/uuid v1.3.0 // indirect

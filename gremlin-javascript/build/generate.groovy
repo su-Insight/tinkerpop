@@ -89,12 +89,13 @@ radishGremlinFile.withWriter('UTF-8') { Writer writer ->
     writer.writeLine("//********************************************************************************\n\n")
 
     writer.writeLine(
-                    'const graphTraversalModule = require(\'../../lib/process/graph-traversal\');\n' +
-                    'const traversalModule = require(\'../../lib/process/traversal\');\n' +
-                    'const { TraversalStrategies, VertexProgramStrategy, OptionsStrategy, PartitionStrategy, ReadOnlyStrategy, SeedStrategy, SubgraphStrategy, ProductiveByStrategy } = require(\'../../lib/process/traversal-strategy\');\n' +
+                    'import * as graphTraversalModule from \'../../lib/process/graph-traversal.js\';\n' +
+                    'import * as traversalModule from \'../../lib/process/traversal.js\';\n' +
+                    'import { TraversalStrategies, VertexProgramStrategy, OptionsStrategy, PartitionStrategy, ReadOnlyStrategy, SeedStrategy, SubgraphStrategy, ProductiveByStrategy } from \'../../lib/process/traversal-strategy.js\';\n' +
                     'const __ = graphTraversalModule.statics;\n' +
                     'const Barrier = traversalModule.barrier\n' +
                     'const Cardinality = traversalModule.cardinality\n' +
+                    'const CardinalityValue = graphTraversalModule.CardinalityValue;\n' +
                     'const Column = traversalModule.column\n' +
                     'const Direction = {\n' +
                     '    BOTH: traversalModule.direction.both,\n' +
@@ -103,6 +104,7 @@ radishGremlinFile.withWriter('UTF-8') { Writer writer ->
                     '    from_: traversalModule.direction.out,\n' +
                     '    to: traversalModule.direction.in\n' +
                     '};\n' +
+                    'const DT = traversalModule.dt;\n' +
                     'const Merge = traversalModule.merge;\n' +
                     'const P = traversalModule.P;\n' +
                     'const Pick = traversalModule.pick\n' +
@@ -152,7 +154,7 @@ radishGremlinFile.withWriter('UTF-8') { Writer writer ->
     }
     writer.writeLine('}\n')
 
-    writer.writeLine('exports.gremlin = gremlins')
+    writer.writeLine('export const gremlin = gremlins')
 }
 
 

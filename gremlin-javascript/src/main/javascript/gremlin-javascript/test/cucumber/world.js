@@ -20,13 +20,12 @@
 /**
  * @author Jorge Bay Gondra
  */
-'use strict';
 
-const {setWorldConstructor, Before, BeforeAll, AfterAll} = require('cucumber');
-const helper = require('../helper');
-const traversal = require('../../lib/process/anonymous-traversal').traversal;
-const graphTraversalModule = require('../../lib/process/graph-traversal');
-const __ = graphTraversalModule.statics;
+import { setWorldConstructor, Before, BeforeAll, AfterAll } from '@cucumber/cucumber';
+import { getConnection } from '../helper.js';
+import anon from '../../lib/process/anonymous-traversal.js';
+import { statics } from '../../lib/process/graph-traversal.js';
+const __ = statics;
 
 const cache = {};
 
@@ -50,7 +49,7 @@ TinkerPopWorld.prototype.getData = function () {
 
 TinkerPopWorld.prototype.cleanEmptyGraph = function () {
   const connection = this.cache['empty'].connection;
-  const g = traversal().withRemote(connection);
+  const g = anon.traversal().withRemote(connection);
   return g.V().drop().toList();
 };
 
@@ -71,10 +70,10 @@ BeforeAll(function () {
   const promises = ['modern', 'classic', 'crew', 'grateful', 'sink', 'empty'].map(graphName => {
     let connection = null;
     if (graphName === 'empty') {
-      connection = helper.getConnection('ggraph');
+      connection = getConnection('ggraph');
       return connection.open().then(() => cache['empty'] = { connection: connection });
     }
-    connection = helper.getConnection('g' + graphName);
+    connection = getConnection('g' + graphName);
     return connection.open()
       .then(() => Promise.all([getVertices(connection), getEdges(connection), getVertexProperties(connection)]))
       .then(values => {
@@ -107,12 +106,20 @@ Before({tags: "@AllowNullPropertyValues"}, function() {
 })
 
 function getVertices(connection) {
-  const g = traversal().withRemote(connection);
-  return g.V().group().by('name').by(__.tail()).next().then(it => it.value);
+  const g = anon.traversal().withRemote(connection);
+  return g.V().group().by('name').by(__.tail()).next().then(it => {
+    // properties excluded from verification
+    if (it.value instanceof Map) {
+      for (const value of it.value.values()) {
+        value.properties = undefined
+      }
+    }
+    return it.value
+  });
 }
 
 function getEdges(connection) {
-  const g = traversal().withRemote(connection);
+  const g = anon.traversal().withRemote(connection);
   return g.E().group()
     .by(__.project("o", "l", "i").by(__.outV().values("name")).by(__.label()).by(__.inV().values("name")))
     .by(__.tail())
@@ -120,6 +127,8 @@ function getEdges(connection) {
     .then(it => {
       const edges = {};
       it.value.forEach((v, k) => {
+        // properties excluded from verification
+        v.properties = undefined
         edges[getEdgeKey(k)] = v;
       });
       return edges;
@@ -127,7 +136,7 @@ function getEdges(connection) {
 }
 
 function getVertexProperties(connection) {
-  const g = traversal().withRemote(connection);
+  const g = anon.traversal().withRemote(connection);
   return g.V().properties()
       .group()
       .by(__.project("n", "k", "v").by(__.element().values("name")).by(__.key()).by(__.value()))

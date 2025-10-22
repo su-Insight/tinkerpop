@@ -63,11 +63,12 @@ traversalSourceSelfMethod
     | traversalSourceSelfMethod_withSack
     | traversalSourceSelfMethod_withSideEffect
     | traversalSourceSelfMethod_withStrategies
+    | traversalSourceSelfMethod_withoutStrategies
     | traversalSourceSelfMethod_with
     ;
 
 traversalSourceSelfMethod_withBulk
-    : 'withBulk' LPAREN booleanLiteral RPAREN
+    : 'withBulk' LPAREN booleanArgument RPAREN
     ;
 
 traversalSourceSelfMethod_withPath
@@ -75,21 +76,25 @@ traversalSourceSelfMethod_withPath
     ;
 
 traversalSourceSelfMethod_withSack
-    : 'withSack' LPAREN genericLiteral RPAREN
-    | 'withSack' LPAREN genericLiteral COMMA traversalOperator RPAREN
+    : 'withSack' LPAREN genericLiteralArgument RPAREN
+    | 'withSack' LPAREN genericLiteralArgument COMMA traversalBiFunctionArgument RPAREN
     ;
 
 traversalSourceSelfMethod_withSideEffect
-    : 'withSideEffect' LPAREN stringBasedLiteral COMMA genericLiteral RPAREN
+    : 'withSideEffect' LPAREN stringArgument COMMA genericLiteralArgument RPAREN
     ;
 
 traversalSourceSelfMethod_withStrategies
     : 'withStrategies' LPAREN traversalStrategy (COMMA traversalStrategyList)? RPAREN
     ;
 
+traversalSourceSelfMethod_withoutStrategies
+    : 'withoutStrategies' LPAREN classType (COMMA classTypeList)? RPAREN
+    ;
+
 traversalSourceSelfMethod_with
-    : 'with' LPAREN stringBasedLiteral RPAREN
-    | 'with' LPAREN stringBasedLiteral COMMA genericLiteral RPAREN
+    : 'with' LPAREN stringArgument RPAREN
+    | 'with' LPAREN stringArgument COMMA genericLiteralArgument RPAREN
     ;
 
 traversalSourceSpawnMethod
@@ -102,51 +107,56 @@ traversalSourceSpawnMethod
     | traversalSourceSpawnMethod_inject
     | traversalSourceSpawnMethod_io
     | traversalSourceSpawnMethod_call
+    | traversalSourceSpawnMethod_union
     ;
 
 traversalSourceSpawnMethod_addE
-    : 'addE' LPAREN stringBasedLiteral RPAREN
+    : 'addE' LPAREN stringArgument RPAREN
     | 'addE' LPAREN nestedTraversal RPAREN
     ;
 
 traversalSourceSpawnMethod_addV
     : 'addV' LPAREN RPAREN
-    | 'addV' LPAREN stringBasedLiteral RPAREN
+    | 'addV' LPAREN stringArgument RPAREN
     | 'addV' LPAREN nestedTraversal RPAREN
     ;
 
 traversalSourceSpawnMethod_E
-    : 'E' LPAREN genericLiteralList RPAREN
+    : 'E' LPAREN genericLiteralVarargs RPAREN
     ;
 
 traversalSourceSpawnMethod_V
-    : 'V' LPAREN genericLiteralList RPAREN
+    : 'V' LPAREN genericLiteralVarargs RPAREN
     ;
 
 traversalSourceSpawnMethod_inject
-    : 'inject' LPAREN genericLiteralList RPAREN
+    : 'inject' LPAREN genericLiteralVarargs RPAREN
     ;
 
 traversalSourceSpawnMethod_io
-    : 'io' LPAREN stringBasedLiteral RPAREN
+    : 'io' LPAREN stringArgument RPAREN
     ;
 
 traversalSourceSpawnMethod_mergeV
-    : 'mergeV' LPAREN (genericLiteralMap | nullLiteral) RPAREN #traversalSourceSpawnMethod_mergeV_Map
+    : 'mergeV' LPAREN genericLiteralMapNullableArgument RPAREN #traversalSourceSpawnMethod_mergeV_Map
     | 'mergeV' LPAREN nestedTraversal RPAREN #traversalSourceSpawnMethod_mergeV_Traversal
     ;
 
 traversalSourceSpawnMethod_mergeE
-    : 'mergeE' LPAREN (genericLiteralMap | nullLiteral) RPAREN #traversalSourceSpawnMethod_mergeE_Map
+    : 'mergeE' LPAREN genericLiteralMapNullableArgument RPAREN #traversalSourceSpawnMethod_mergeE_Map
     | 'mergeE' LPAREN nestedTraversal RPAREN #traversalSourceSpawnMethod_mergeE_Traversal
     ;
 
 traversalSourceSpawnMethod_call
     : 'call' LPAREN RPAREN #traversalSourceSpawnMethod_call_empty
-    | 'call' LPAREN stringBasedLiteral RPAREN #traversalSourceSpawnMethod_call_string
-    | 'call' LPAREN stringBasedLiteral COMMA genericLiteralMap RPAREN #traversalSourceSpawnMethod_call_string_map
-    | 'call' LPAREN stringBasedLiteral COMMA nestedTraversal RPAREN #traversalSourceSpawnMethod_call_string_traversal
-    | 'call' LPAREN stringBasedLiteral COMMA genericLiteralMap COMMA nestedTraversal RPAREN #traversalSourceSpawnMethod_call_string_map_traversal
+    | 'call' LPAREN stringArgument RPAREN #traversalSourceSpawnMethod_call_string
+    | 'call' LPAREN stringArgument COMMA genericLiteralMapArgument RPAREN #traversalSourceSpawnMethod_call_string_map
+    | 'call' LPAREN stringArgument COMMA nestedTraversal RPAREN #traversalSourceSpawnMethod_call_string_traversal
+    | 'call' LPAREN stringArgument COMMA genericLiteralMapArgument COMMA nestedTraversal RPAREN #traversalSourceSpawnMethod_call_string_map_traversal
+    ;
+
+traversalSourceSpawnMethod_union
+    : 'union' LPAREN nestedTraversalList RPAREN
     ;
 
 chainedTraversal
@@ -170,18 +180,17 @@ terminatedTraversal
     : rootTraversal DOT traversalTerminalMethod
     ;
 
-/*********************************************
-    GENERATED GRAMMAR - DO NOT CHANGE
-**********************************************/
-
 traversalMethod
     : traversalMethod_V
+    | traversalMethod_E
     | traversalMethod_addE
     | traversalMethod_addV
     | traversalMethod_mergeE
     | traversalMethod_mergeV
     | traversalMethod_aggregate
+    | traversalMethod_all
     | traversalMethod_and
+    | traversalMethod_any
     | traversalMethod_as
     | traversalMethod_barrier
     | traversalMethod_both
@@ -193,11 +202,14 @@ traversalMethod
     | traversalMethod_choose
     | traversalMethod_coalesce
     | traversalMethod_coin
+    | traversalMethod_conjoin
     | traversalMethod_connectedComponent
     | traversalMethod_constant
     | traversalMethod_count
     | traversalMethod_cyclicPath
     | traversalMethod_dedup
+    | traversalMethod_difference
+    | traversalMethod_disjunct
     | traversalMethod_drop
     | traversalMethod_elementMap
     | traversalMethod_emit
@@ -217,6 +229,7 @@ traversalMethod
     | traversalMethod_identity
     | traversalMethod_in
     | traversalMethod_inE
+    | traversalMethod_intersect
     | traversalMethod_inV
     | traversalMethod_index
     | traversalMethod_inject
@@ -232,6 +245,7 @@ traversalMethod
     | traversalMethod_max
     | traversalMethod_mean
     | traversalMethod_min
+    | traversalMethod_none
     | traversalMethod_not
     | traversalMethod_option
     | traversalMethod_optional
@@ -255,6 +269,9 @@ traversalMethod
     | traversalMethod_sack
     | traversalMethod_sample
     | traversalMethod_select
+    | traversalMethod_combine
+    | traversalMethod_product
+    | traversalMethod_merge
     | traversalMethod_shortestPath
     | traversalMethod_sideEffect
     | traversalMethod_simplePath
@@ -281,59 +298,88 @@ traversalMethod
     | traversalMethod_write
     | traversalMethod_element
     | traversalMethod_call
+    | traversalMethod_concat
+    | traversalMethod_asString
+    | traversalMethod_format
+    | traversalMethod_toUpper
+    | traversalMethod_toLower
+    | traversalMethod_length
+    | traversalMethod_trim
+    | traversalMethod_lTrim
+    | traversalMethod_rTrim
+    | traversalMethod_reverse
+    | traversalMethod_replace
+    | traversalMethod_split
+    | traversalMethod_substring
+    | traversalMethod_asDate
+    | traversalMethod_dateAdd
+    | traversalMethod_dateDiff
     ;
+
 traversalMethod_V
-    : 'V' LPAREN genericLiteralList RPAREN
+    : 'V' LPAREN genericLiteralVarargs RPAREN
+    ;
+
+traversalMethod_E
+    : 'E' LPAREN genericLiteralVarargs RPAREN
     ;
 
 traversalMethod_addE
-    : 'addE' LPAREN stringBasedLiteral RPAREN #traversalMethod_addE_String
+    : 'addE' LPAREN stringArgument RPAREN #traversalMethod_addE_String
     | 'addE' LPAREN nestedTraversal RPAREN #traversalMethod_addE_Traversal
     ;
 
 traversalMethod_addV
     : 'addV' LPAREN RPAREN #traversalMethod_addV_Empty
-    | 'addV' LPAREN stringBasedLiteral RPAREN #traversalMethod_addV_String
+    | 'addV' LPAREN stringArgument RPAREN #traversalMethod_addV_String
     | 'addV' LPAREN nestedTraversal RPAREN #traversalMethod_addV_Traversal
     ;
 
 traversalMethod_mergeV
     : 'mergeV' LPAREN RPAREN #traversalMethod_mergeV_empty
-    | 'mergeV' LPAREN (genericLiteralMap | nullLiteral) RPAREN #traversalMethod_mergeV_Map
+    | 'mergeV' LPAREN genericLiteralMapNullableArgument RPAREN #traversalMethod_mergeV_Map
     | 'mergeV' LPAREN nestedTraversal RPAREN #traversalMethod_mergeV_Traversal
     ;
 
 traversalMethod_mergeE
     : 'mergeE' LPAREN RPAREN #traversalMethod_mergeE_empty
-    | 'mergeE' LPAREN (genericLiteralMap | nullLiteral) RPAREN #traversalMethod_mergeE_Map
+    | 'mergeE' LPAREN genericLiteralMapNullableArgument RPAREN #traversalMethod_mergeE_Map
     | 'mergeE' LPAREN nestedTraversal RPAREN #traversalMethod_mergeE_Traversal
     ;
 
 traversalMethod_aggregate
-    : 'aggregate' LPAREN traversalScope COMMA stringBasedLiteral RPAREN #traversalMethod_aggregate_Scope_String
-    | 'aggregate' LPAREN stringBasedLiteral RPAREN #traversalMethod_aggregate_String
+    : 'aggregate' LPAREN traversalScopeArgument COMMA stringArgument RPAREN #traversalMethod_aggregate_Scope_String
+    | 'aggregate' LPAREN stringArgument RPAREN #traversalMethod_aggregate_String
+    ;
+
+traversalMethod_all
+    : 'all' LPAREN traversalPredicate RPAREN #traversalMethod_all_P
     ;
 
 traversalMethod_and
     : 'and' LPAREN nestedTraversalList RPAREN
     ;
 
+traversalMethod_any
+    : 'any' LPAREN traversalPredicate RPAREN #traversalMethod_any_P
+    ;
+
 traversalMethod_as
-    : 'as' LPAREN stringBasedLiteral (COMMA stringLiteralList)? RPAREN
+    : 'as' LPAREN stringArgument (COMMA stringLiteralVarargs)? RPAREN
     ;
 
 traversalMethod_barrier
-    : 'barrier' LPAREN traversalSackMethod RPAREN #traversalMethod_barrier_Consumer
+    : 'barrier' LPAREN traversalSackMethodArgument RPAREN #traversalMethod_barrier_Consumer
     | 'barrier' LPAREN RPAREN #traversalMethod_barrier_Empty
-    | 'barrier' LPAREN integerLiteral RPAREN #traversalMethod_barrier_int
+    | 'barrier' LPAREN integerArgument RPAREN #traversalMethod_barrier_int
     ;
 
 traversalMethod_both
-    : 'both' LPAREN stringLiteralList RPAREN
+    : 'both' LPAREN stringLiteralVarargs RPAREN
     ;
 
 traversalMethod_bothE
-    : 'bothE' LPAREN stringLiteralList RPAREN
+    : 'bothE' LPAREN stringLiteralVarargs RPAREN
     ;
 
 traversalMethod_bothV
@@ -345,24 +391,24 @@ traversalMethod_branch
     ;
 
 traversalMethod_by
-    : 'by' LPAREN traversalComparator RPAREN #traversalMethod_by_Comparator
+    : 'by' LPAREN traversalComparatorArgument RPAREN #traversalMethod_by_Comparator
     | 'by' LPAREN RPAREN #traversalMethod_by_Empty
-    | 'by' LPAREN traversalFunction RPAREN #traversalMethod_by_Function
-    | 'by' LPAREN traversalFunction COMMA traversalComparator RPAREN #traversalMethod_by_Function_Comparator
-    | 'by' LPAREN traversalOrder RPAREN #traversalMethod_by_Order
-    | 'by' LPAREN stringBasedLiteral RPAREN #traversalMethod_by_String
-    | 'by' LPAREN stringBasedLiteral COMMA traversalComparator RPAREN #traversalMethod_by_String_Comparator
-    | 'by' LPAREN traversalToken RPAREN #traversalMethod_by_T
+    | 'by' LPAREN traversalFunctionArgument RPAREN #traversalMethod_by_Function
+    | 'by' LPAREN traversalFunctionArgument COMMA traversalComparatorArgument RPAREN #traversalMethod_by_Function_Comparator
+    | 'by' LPAREN traversalOrderArgument RPAREN #traversalMethod_by_Order
+    | 'by' LPAREN stringArgument RPAREN #traversalMethod_by_String
+    | 'by' LPAREN stringArgument COMMA traversalComparatorArgument RPAREN #traversalMethod_by_String_Comparator
+    | 'by' LPAREN traversalTokenArgument RPAREN #traversalMethod_by_T
     | 'by' LPAREN nestedTraversal RPAREN #traversalMethod_by_Traversal
-    | 'by' LPAREN nestedTraversal COMMA traversalComparator RPAREN #traversalMethod_by_Traversal_Comparator
+    | 'by' LPAREN nestedTraversal COMMA traversalComparatorArgument RPAREN #traversalMethod_by_Traversal_Comparator
     ;
 
 traversalMethod_cap
-    : 'cap' LPAREN stringBasedLiteral (COMMA stringLiteralList)? RPAREN
+    : 'cap' LPAREN stringArgument (COMMA stringLiteralVarargs)? RPAREN
     ;
 
 traversalMethod_choose
-    : 'choose' LPAREN traversalFunction RPAREN #traversalMethod_choose_Function
+    : 'choose' LPAREN traversalFunctionArgument RPAREN #traversalMethod_choose_Function
     | 'choose' LPAREN traversalPredicate COMMA nestedTraversal RPAREN #traversalMethod_choose_Predicate_Traversal
     | 'choose' LPAREN traversalPredicate COMMA nestedTraversal COMMA nestedTraversal RPAREN #traversalMethod_choose_Predicate_Traversal_Traversal
     | 'choose' LPAREN nestedTraversal RPAREN #traversalMethod_choose_Traversal
@@ -375,7 +421,11 @@ traversalMethod_coalesce
     ;
 
 traversalMethod_coin
-    : 'coin' LPAREN floatLiteral RPAREN
+    : 'coin' LPAREN floatArgument RPAREN
+    ;
+
+traversalMethod_combine
+    : 'combine' LPAREN genericLiteralArgument RPAREN #traversalMethod_combine_Object
     ;
 
 traversalMethod_connectedComponent
@@ -383,12 +433,12 @@ traversalMethod_connectedComponent
     ;
 
 traversalMethod_constant
-    : 'constant' LPAREN genericLiteral RPAREN
+    : 'constant' LPAREN genericLiteralArgument RPAREN
     ;
 
 traversalMethod_count
     : 'count' LPAREN RPAREN #traversalMethod_count_Empty
-    | 'count' LPAREN traversalScope RPAREN #traversalMethod_count_Scope
+    | 'count' LPAREN traversalScopeArgument RPAREN #traversalMethod_count_Scope
     ;
 
 traversalMethod_cyclicPath
@@ -396,8 +446,16 @@ traversalMethod_cyclicPath
     ;
 
 traversalMethod_dedup
-    : 'dedup' LPAREN traversalScope (COMMA stringLiteralList)? RPAREN #traversalMethod_dedup_Scope_String
-    | 'dedup' LPAREN stringLiteralList RPAREN #traversalMethod_dedup_String
+    : 'dedup' LPAREN traversalScopeArgument (COMMA stringLiteralVarargs)? RPAREN #traversalMethod_dedup_Scope_String
+    | 'dedup' LPAREN stringLiteralVarargs RPAREN #traversalMethod_dedup_String
+    ;
+
+traversalMethod_difference
+    : 'difference' LPAREN genericLiteralArgument RPAREN #traversalMethod_difference_Object
+    ;
+
+traversalMethod_disjunct
+    : 'disjunct' LPAREN genericLiteralArgument RPAREN #traversalMethod_disjunct_Object
     ;
 
 traversalMethod_drop
@@ -405,7 +463,7 @@ traversalMethod_drop
     ;
 
 traversalMethod_elementMap
-    : 'elementMap' LPAREN stringLiteralList RPAREN
+    : 'elementMap' LPAREN stringLiteralVarargs RPAREN
     ;
 
 traversalMethod_emit
@@ -425,58 +483,58 @@ traversalMethod_flatMap
 
 traversalMethod_fold
     : 'fold' LPAREN RPAREN #traversalMethod_fold_Empty
-    | 'fold' LPAREN genericLiteral COMMA traversalBiFunction RPAREN #traversalMethod_fold_Object_BiFunction
+    | 'fold' LPAREN genericLiteralArgument COMMA traversalBiFunctionArgument RPAREN #traversalMethod_fold_Object_BiFunction
     ;
 
 traversalMethod_from
-    : 'from' LPAREN stringBasedLiteral RPAREN #traversalMethod_from_String
-    | 'from' LPAREN structureVertex RPAREN #traversalMethod_from_Vertex
+    : 'from' LPAREN stringArgument RPAREN #traversalMethod_from_String
+    | 'from' LPAREN structureVertexArgument RPAREN #traversalMethod_from_Vertex
     | 'from' LPAREN nestedTraversal RPAREN #traversalMethod_from_Traversal
     ;
 
 traversalMethod_group
     : 'group' LPAREN RPAREN #traversalMethod_group_Empty
-    | 'group' LPAREN stringBasedLiteral RPAREN #traversalMethod_group_String
+    | 'group' LPAREN stringArgument RPAREN #traversalMethod_group_String
     ;
 
 traversalMethod_groupCount
     : 'groupCount' LPAREN RPAREN #traversalMethod_groupCount_Empty
-    | 'groupCount' LPAREN stringBasedLiteral RPAREN #traversalMethod_groupCount_String
+    | 'groupCount' LPAREN stringArgument RPAREN #traversalMethod_groupCount_String
     ;
 
 traversalMethod_has
-    : 'has' LPAREN stringBasedLiteral RPAREN #traversalMethod_has_String
-    | 'has' LPAREN stringBasedLiteral COMMA genericLiteral RPAREN #traversalMethod_has_String_Object
-    | 'has' LPAREN stringBasedLiteral COMMA traversalPredicate RPAREN #traversalMethod_has_String_P
-    | 'has' LPAREN stringBasedLiteral COMMA stringBasedLiteral COMMA genericLiteral RPAREN #traversalMethod_has_String_String_Object
-    | 'has' LPAREN stringBasedLiteral COMMA stringBasedLiteral COMMA traversalPredicate RPAREN #traversalMethod_has_String_String_P
-    | 'has' LPAREN stringBasedLiteral COMMA nestedTraversal RPAREN #traversalMethod_has_String_Traversal
-    | 'has' LPAREN traversalToken COMMA genericLiteral RPAREN #traversalMethod_has_T_Object
-    | 'has' LPAREN traversalToken COMMA traversalPredicate RPAREN #traversalMethod_has_T_P
-    | 'has' LPAREN traversalToken COMMA nestedTraversal RPAREN #traversalMethod_has_T_Traversal
+    : 'has' LPAREN stringNullableArgument RPAREN #traversalMethod_has_String
+    | 'has' LPAREN stringNullableArgument COMMA genericLiteralArgument RPAREN #traversalMethod_has_String_Object
+    | 'has' LPAREN stringNullableArgument COMMA traversalPredicate RPAREN #traversalMethod_has_String_P
+    | 'has' LPAREN stringNullableArgument COMMA stringNullableArgument COMMA genericLiteralArgument RPAREN #traversalMethod_has_String_String_Object
+    | 'has' LPAREN stringNullableArgument COMMA stringNullableArgument COMMA traversalPredicate RPAREN #traversalMethod_has_String_String_P
+    | 'has' LPAREN stringNullableArgument COMMA nestedTraversal RPAREN #traversalMethod_has_String_Traversal
+    | 'has' LPAREN traversalTokenArgument COMMA genericLiteralArgument RPAREN #traversalMethod_has_T_Object
+    | 'has' LPAREN traversalTokenArgument COMMA traversalPredicate RPAREN #traversalMethod_has_T_P
+    | 'has' LPAREN traversalTokenArgument COMMA nestedTraversal RPAREN #traversalMethod_has_T_Traversal
     ;
 
 traversalMethod_hasId
-    : 'hasId' LPAREN genericLiteral (COMMA genericLiteralList)? RPAREN #traversalMethod_hasId_Object_Object
+    : 'hasId' LPAREN genericLiteralArgument (COMMA genericLiteralVarargs)? RPAREN #traversalMethod_hasId_Object_Object
     | 'hasId' LPAREN traversalPredicate RPAREN #traversalMethod_hasId_P
     ;
 
 traversalMethod_hasKey
     : 'hasKey' LPAREN traversalPredicate RPAREN #traversalMethod_hasKey_P
-    | 'hasKey' LPAREN stringBasedLiteral (COMMA stringLiteralList)? RPAREN #traversalMethod_hasKey_String_String
+    | 'hasKey' LPAREN stringNullableArgument (COMMA stringLiteralVarargs)? RPAREN #traversalMethod_hasKey_String_String
     ;
 
 traversalMethod_hasLabel
     : 'hasLabel' LPAREN traversalPredicate RPAREN #traversalMethod_hasLabel_P
-    | 'hasLabel' LPAREN stringBasedLiteral (COMMA stringLiteralList)? RPAREN #traversalMethod_hasLabel_String_String
+    | 'hasLabel' LPAREN stringNullableArgument (COMMA stringLiteralVarargs)? RPAREN #traversalMethod_hasLabel_String_String
     ;
 
 traversalMethod_hasNot
-    : 'hasNot' LPAREN stringBasedLiteral RPAREN
+    : 'hasNot' LPAREN stringNullableArgument RPAREN
     ;
 
 traversalMethod_hasValue
-    : 'hasValue' LPAREN genericLiteral (COMMA genericLiteralList)? RPAREN #traversalMethod_hasValue_Object_Object
+    : 'hasValue' LPAREN genericLiteralArgument (COMMA genericLiteralVarargs)? RPAREN #traversalMethod_hasValue_Object_Object
     | 'hasValue' LPAREN traversalPredicate RPAREN #traversalMethod_hasValue_P
     ;
 
@@ -489,11 +547,15 @@ traversalMethod_identity
     ;
 
 traversalMethod_in
-    : 'in' LPAREN stringLiteralList RPAREN
+    : 'in' LPAREN stringLiteralVarargs RPAREN
     ;
 
 traversalMethod_inE
-    : 'inE' LPAREN stringLiteralList RPAREN
+    : 'inE' LPAREN stringLiteralVarargs RPAREN
+    ;
+
+traversalMethod_intersect
+    : 'intersect' LPAREN genericLiteralArgument RPAREN #traversalMethod_intersect_Object
     ;
 
 traversalMethod_inV
@@ -505,12 +567,16 @@ traversalMethod_index
     ;
 
 traversalMethod_inject
-    : 'inject' LPAREN genericLiteralList RPAREN
+    : 'inject' LPAREN genericLiteralVarargs RPAREN
     ;
 
 traversalMethod_is
-    : 'is' LPAREN genericLiteral RPAREN #traversalMethod_is_Object
+    : 'is' LPAREN genericLiteralArgument RPAREN #traversalMethod_is_Object
     | 'is' LPAREN traversalPredicate RPAREN #traversalMethod_is_P
+    ;
+
+traversalMethod_conjoin
+    : 'conjoin' LPAREN stringArgument RPAREN #traversalMethod_conjoin_String
     ;
 
 traversalMethod_key
@@ -522,8 +588,8 @@ traversalMethod_label
     ;
 
 traversalMethod_limit
-    : 'limit' LPAREN traversalScope COMMA integerLiteral RPAREN #traversalMethod_limit_Scope_long
-    | 'limit' LPAREN integerLiteral RPAREN #traversalMethod_limit_long
+    : 'limit' LPAREN traversalScopeArgument COMMA integerArgument RPAREN #traversalMethod_limit_Scope_long
+    | 'limit' LPAREN integerArgument RPAREN #traversalMethod_limit_long
     ;
 
 traversalMethod_local
@@ -532,7 +598,7 @@ traversalMethod_local
 
 traversalMethod_loops
     : 'loops' LPAREN RPAREN #traversalMethod_loops_Empty
-    | 'loops' LPAREN stringBasedLiteral RPAREN #traversalMethod_loops_String
+    | 'loops' LPAREN stringArgument RPAREN #traversalMethod_loops_String
     ;
 
 traversalMethod_map
@@ -544,22 +610,30 @@ traversalMethod_match
     ;
 
 traversalMethod_math
-    : 'math' LPAREN stringBasedLiteral RPAREN
+    : 'math' LPAREN stringArgument RPAREN
     ;
 
 traversalMethod_max
     : 'max' LPAREN RPAREN #traversalMethod_max_Empty
-    | 'max' LPAREN traversalScope RPAREN #traversalMethod_max_Scope
+    | 'max' LPAREN traversalScopeArgument RPAREN #traversalMethod_max_Scope
     ;
 
 traversalMethod_mean
     : 'mean' LPAREN RPAREN #traversalMethod_mean_Empty
-    | 'mean' LPAREN traversalScope RPAREN #traversalMethod_mean_Scope
+    | 'mean' LPAREN traversalScopeArgument RPAREN #traversalMethod_mean_Scope
+    ;
+
+traversalMethod_merge
+    : 'merge' LPAREN genericLiteralArgument RPAREN #traversalMethod_merge_Object
     ;
 
 traversalMethod_min
     : 'min' LPAREN RPAREN #traversalMethod_min_Empty
-    | 'min' LPAREN traversalScope RPAREN #traversalMethod_min_Scope
+    | 'min' LPAREN traversalScopeArgument RPAREN #traversalMethod_min_Scope
+    ;
+
+traversalMethod_none
+    : 'none' LPAREN traversalPredicate RPAREN #traversalMethod_none_P
     ;
 
 traversalMethod_not
@@ -568,9 +642,10 @@ traversalMethod_not
 
 traversalMethod_option
     : 'option' LPAREN traversalPredicate COMMA nestedTraversal RPAREN #traversalMethod_option_Predicate_Traversal
-    | 'option' LPAREN traversalMerge COMMA (genericLiteralMap | nullLiteral) RPAREN #traversalMethod_option_Merge_Map
-    | 'option' LPAREN traversalMerge COMMA nestedTraversal RPAREN #traversalMethod_option_Merge_Traversal
-    | 'option' LPAREN genericLiteral COMMA nestedTraversal RPAREN #traversalMethod_option_Object_Traversal
+    | 'option' LPAREN traversalMergeArgument COMMA genericLiteralMapNullableArgument RPAREN #traversalMethod_option_Merge_Map
+    | 'option' LPAREN traversalMergeArgument COMMA genericLiteralMapNullableArgument COMMA traversalCardinality RPAREN #traversalMethod_option_Merge_Map_Cardinality
+    | 'option' LPAREN traversalMergeArgument COMMA nestedTraversal RPAREN #traversalMethod_option_Merge_Traversal
+    | 'option' LPAREN genericLiteralArgument COMMA nestedTraversal RPAREN #traversalMethod_option_Object_Traversal
     | 'option' LPAREN nestedTraversal RPAREN #traversalMethod_option_Traversal
     ;
 
@@ -584,7 +659,7 @@ traversalMethod_or
 
 traversalMethod_order
     : 'order' LPAREN RPAREN #traversalMethod_order_Empty
-    | 'order' LPAREN traversalScope RPAREN #traversalMethod_order_Scope
+    | 'order' LPAREN traversalScopeArgument RPAREN #traversalMethod_order_Scope
     ;
 
 traversalMethod_otherV
@@ -592,11 +667,11 @@ traversalMethod_otherV
     ;
 
 traversalMethod_out
-    : 'out' LPAREN stringLiteralList RPAREN
+    : 'out' LPAREN stringLiteralVarargs RPAREN
     ;
 
 traversalMethod_outE
-    : 'outE' LPAREN stringLiteralList RPAREN
+    : 'outE' LPAREN stringLiteralVarargs RPAREN
     ;
 
 traversalMethod_outV
@@ -605,7 +680,7 @@ traversalMethod_outV
 
 traversalMethod_pageRank
     : 'pageRank' LPAREN RPAREN #traversalMethod_pageRank_Empty
-    | 'pageRank' LPAREN floatLiteral RPAREN #traversalMethod_pageRank_double
+    | 'pageRank' LPAREN floatArgument RPAREN #traversalMethod_pageRank_double
     ;
 
 traversalMethod_path
@@ -616,33 +691,37 @@ traversalMethod_peerPressure
     : 'peerPressure' LPAREN RPAREN
     ;
 
+traversalMethod_product
+    : 'product' LPAREN genericLiteralArgument RPAREN #traversalMethod_product_Object
+    ;
+
 traversalMethod_profile
     : 'profile' LPAREN RPAREN #traversalMethod_profile_Empty
-    | 'profile' LPAREN stringBasedLiteral RPAREN #traversalMethod_profile_String
+    | 'profile' LPAREN stringArgument RPAREN #traversalMethod_profile_String
     ;
 
 traversalMethod_project
-    : 'project' LPAREN stringBasedLiteral (COMMA stringLiteralList)? RPAREN
+    : 'project' LPAREN stringArgument (COMMA stringLiteralVarargs)? RPAREN
     ;
 
 traversalMethod_properties
-    : 'properties' LPAREN stringLiteralList RPAREN
+    : 'properties' LPAREN stringLiteralVarargs RPAREN
     ;
 
 traversalMethod_property
-    : 'property' LPAREN traversalCardinality COMMA genericLiteral COMMA genericLiteral (COMMA genericLiteralList)? RPAREN #traversalMethod_property_Cardinality_Object_Object_Object
-    | 'property' LPAREN genericLiteral COMMA genericLiteral (COMMA genericLiteralList)? RPAREN #traversalMethod_property_Object_Object_Object
-    | 'property' LPAREN (genericLiteralMap | nullLiteral) RPAREN # traversalMethod_property_Object
-    | 'property' LPAREN traversalCardinality COMMA (genericLiteralMap | nullLiteral) RPAREN # traversalMethod_property_Cardinality_Object
+    : 'property' LPAREN traversalCardinalityArgument COMMA genericLiteralArgument COMMA genericLiteralArgument (COMMA genericLiteralVarargs)? RPAREN #traversalMethod_property_Cardinality_Object_Object_Object
+    | 'property' LPAREN genericLiteralArgument COMMA genericLiteralArgument (COMMA genericLiteralVarargs)? RPAREN #traversalMethod_property_Object_Object_Object
+    | 'property' LPAREN genericLiteralMapNullableArgument RPAREN # traversalMethod_property_Object
+    | 'property' LPAREN traversalCardinalityArgument COMMA genericLiteralMapNullableArgument RPAREN # traversalMethod_property_Cardinality_Object
     ;
 
 traversalMethod_propertyMap
-    : 'propertyMap' LPAREN stringLiteralList RPAREN
+    : 'propertyMap' LPAREN stringLiteralVarargs RPAREN
     ;
 
 traversalMethod_range
-    : 'range' LPAREN traversalScope COMMA integerLiteral COMMA integerLiteral RPAREN #traversalMethod_range_Scope_long_long
-    | 'range' LPAREN integerLiteral COMMA integerLiteral RPAREN #traversalMethod_range_long_long
+    : 'range' LPAREN traversalScopeArgument COMMA integerArgument COMMA integerArgument RPAREN #traversalMethod_range_Scope_long_long
+    | 'range' LPAREN integerArgument COMMA integerArgument RPAREN #traversalMethod_range_long_long
     ;
 
 traversalMethod_read
@@ -650,27 +729,31 @@ traversalMethod_read
     ;
 
 traversalMethod_repeat
-    : 'repeat' LPAREN stringBasedLiteral COMMA nestedTraversal RPAREN #traversalMethod_repeat_String_Traversal
+    : 'repeat' LPAREN stringArgument COMMA nestedTraversal RPAREN #traversalMethod_repeat_String_Traversal
     | 'repeat' LPAREN nestedTraversal RPAREN #traversalMethod_repeat_Traversal
     ;
 
+traversalMethod_reverse
+    : 'reverse' LPAREN RPAREN #traversalMethod_reverse_Empty
+    ;
+
 traversalMethod_sack
-    : 'sack' LPAREN traversalBiFunction RPAREN #traversalMethod_sack_BiFunction
+    : 'sack' LPAREN traversalBiFunctionArgument RPAREN #traversalMethod_sack_BiFunction
     | 'sack' LPAREN RPAREN #traversalMethod_sack_Empty
     ;
 
 traversalMethod_sample
-    : 'sample' LPAREN traversalScope COMMA integerLiteral RPAREN #traversalMethod_sample_Scope_int
-    | 'sample' LPAREN integerLiteral RPAREN #traversalMethod_sample_int
+    : 'sample' LPAREN traversalScopeArgument COMMA integerArgument RPAREN #traversalMethod_sample_Scope_int
+    | 'sample' LPAREN integerArgument RPAREN #traversalMethod_sample_int
     ;
 
 traversalMethod_select
-    : 'select' LPAREN traversalColumn RPAREN #traversalMethod_select_Column
-    | 'select' LPAREN traversalPop COMMA stringBasedLiteral RPAREN #traversalMethod_select_Pop_String
-    | 'select' LPAREN traversalPop COMMA stringBasedLiteral COMMA stringBasedLiteral (COMMA stringLiteralList)? RPAREN #traversalMethod_select_Pop_String_String_String
-    | 'select' LPAREN traversalPop COMMA nestedTraversal RPAREN #traversalMethod_select_Pop_Traversal
-    | 'select' LPAREN stringBasedLiteral RPAREN #traversalMethod_select_String
-    | 'select' LPAREN stringBasedLiteral COMMA stringBasedLiteral (COMMA stringLiteralList)? RPAREN #traversalMethod_select_String_String_String
+    : 'select' LPAREN traversalColumnArgument RPAREN #traversalMethod_select_Column
+    | 'select' LPAREN traversalPopArgument COMMA stringArgument RPAREN #traversalMethod_select_Pop_String
+    | 'select' LPAREN traversalPopArgument COMMA stringArgument COMMA stringArgument (COMMA stringLiteralVarargs)? RPAREN #traversalMethod_select_Pop_String_String_String
+    | 'select' LPAREN traversalPopArgument COMMA nestedTraversal RPAREN #traversalMethod_select_Pop_Traversal
+    | 'select' LPAREN stringArgument RPAREN #traversalMethod_select_String
+    | 'select' LPAREN stringArgument COMMA stringArgument (COMMA stringLiteralVarargs)? RPAREN #traversalMethod_select_String_String_String
     | 'select' LPAREN nestedTraversal RPAREN #traversalMethod_select_Traversal
     ;
 
@@ -687,61 +770,61 @@ traversalMethod_simplePath
     ;
 
 traversalMethod_skip
-    : 'skip' LPAREN traversalScope COMMA integerLiteral RPAREN #traversalMethod_skip_Scope_long
-    | 'skip' LPAREN integerLiteral RPAREN #traversalMethod_skip_long
+    : 'skip' LPAREN traversalScopeArgument COMMA integerArgument RPAREN #traversalMethod_skip_Scope_long
+    | 'skip' LPAREN integerArgument RPAREN #traversalMethod_skip_long
     ;
 
 traversalMethod_store
-    : 'store' LPAREN stringBasedLiteral RPAREN
+    : 'store' LPAREN stringArgument RPAREN
     ;
 
 traversalMethod_subgraph
-    : 'subgraph' LPAREN stringBasedLiteral RPAREN
+    : 'subgraph' LPAREN stringArgument RPAREN
     ;
 
 traversalMethod_sum
     : 'sum' LPAREN RPAREN #traversalMethod_sum_Empty
-    | 'sum' LPAREN traversalScope RPAREN #traversalMethod_sum_Scope
+    | 'sum' LPAREN traversalScopeArgument RPAREN #traversalMethod_sum_Scope
     ;
 
 traversalMethod_tail
     : 'tail' LPAREN RPAREN #traversalMethod_tail_Empty
-    | 'tail' LPAREN traversalScope RPAREN #traversalMethod_tail_Scope
-    | 'tail' LPAREN traversalScope COMMA integerLiteral RPAREN #traversalMethod_tail_Scope_long
-    | 'tail' LPAREN integerLiteral RPAREN #traversalMethod_tail_long
+    | 'tail' LPAREN traversalScopeArgument RPAREN #traversalMethod_tail_Scope
+    | 'tail' LPAREN traversalScopeArgument COMMA integerArgument RPAREN #traversalMethod_tail_Scope_long
+    | 'tail' LPAREN integerArgument RPAREN #traversalMethod_tail_long
     ;
 
 traversalMethod_fail
     : 'fail' LPAREN RPAREN #traversalMethod_fail_Empty
-    | 'fail' LPAREN stringBasedLiteral RPAREN #traversalMethod_fail_String
+    | 'fail' LPAREN stringArgument RPAREN #traversalMethod_fail_String
     ;
 
 traversalMethod_timeLimit
-    : 'timeLimit' LPAREN integerLiteral RPAREN
+    : 'timeLimit' LPAREN integerArgument RPAREN
     ;
 
 traversalMethod_times
-    : 'times' LPAREN integerLiteral RPAREN
+    : 'times' LPAREN integerArgument RPAREN
     ;
 
 traversalMethod_to
-    : 'to' LPAREN traversalDirection (COMMA stringLiteralList)? RPAREN #traversalMethod_to_Direction_String
-    | 'to' LPAREN stringBasedLiteral RPAREN #traversalMethod_to_String
-    | 'to' LPAREN structureVertex RPAREN #traversalMethod_to_Vertex
+    : 'to' LPAREN traversalDirectionArgument (COMMA stringLiteralVarargs)? RPAREN #traversalMethod_to_Direction_String
+    | 'to' LPAREN stringArgument RPAREN #traversalMethod_to_String
+    | 'to' LPAREN structureVertexArgument RPAREN #traversalMethod_to_Vertex
     | 'to' LPAREN nestedTraversal RPAREN #traversalMethod_to_Traversal
     ;
 
 traversalMethod_toE
-    : 'toE' LPAREN traversalDirection (COMMA stringLiteralList)? RPAREN
+    : 'toE' LPAREN traversalDirectionArgument (COMMA stringLiteralVarargs)? RPAREN
     ;
 
 traversalMethod_toV
-    : 'toV' LPAREN traversalDirection RPAREN
+    : 'toV' LPAREN traversalDirectionArgument RPAREN
     ;
 
 traversalMethod_tree
     : 'tree' LPAREN RPAREN #traversalMethod_tree_Empty
-    | 'tree' LPAREN stringBasedLiteral RPAREN #traversalMethod_tree_String
+    | 'tree' LPAREN stringArgument RPAREN #traversalMethod_tree_String
     ;
 
 traversalMethod_unfold
@@ -762,23 +845,23 @@ traversalMethod_value
     ;
 
 traversalMethod_valueMap
-    : 'valueMap' LPAREN stringLiteralList RPAREN #traversalMethod_valueMap_String
-    | 'valueMap' LPAREN booleanLiteral (COMMA stringLiteralList)? RPAREN #traversalMethod_valueMap_boolean_String
+    : 'valueMap' LPAREN stringLiteralVarargs RPAREN #traversalMethod_valueMap_String
+    | 'valueMap' LPAREN booleanArgument (COMMA stringLiteralVarargs)? RPAREN #traversalMethod_valueMap_boolean_String
     ;
 
 traversalMethod_values
-    : 'values' LPAREN stringLiteralList RPAREN
+    : 'values' LPAREN stringLiteralVarargs RPAREN
     ;
 
 traversalMethod_where
     : 'where' LPAREN traversalPredicate RPAREN #traversalMethod_where_P
-    | 'where' LPAREN stringBasedLiteral COMMA traversalPredicate RPAREN #traversalMethod_where_String_P
+    | 'where' LPAREN stringArgument COMMA traversalPredicate RPAREN #traversalMethod_where_String_P
     | 'where' LPAREN nestedTraversal RPAREN #traversalMethod_where_Traversal
     ;
 
 traversalMethod_with
-    : 'with' LPAREN stringBasedLiteral RPAREN #traversalMethod_with_String
-    | 'with' LPAREN stringBasedLiteral COMMA genericLiteral RPAREN #traversalMethod_with_String_Object
+    : 'with' LPAREN (withOptionKeys | stringArgument) RPAREN #traversalMethod_with_String
+    | 'with' LPAREN (withOptionKeys | stringArgument) COMMA (withOptionsValues | ioOptionsValues | genericLiteralArgument) RPAREN #traversalMethod_with_String_Object
     ;
 
 traversalMethod_write
@@ -790,12 +873,85 @@ traversalMethod_element
     ;
 
 traversalMethod_call
-    : 'call' LPAREN stringBasedLiteral RPAREN #traversalMethod_call_string
-    | 'call' LPAREN stringBasedLiteral COMMA genericLiteralMap RPAREN #traversalMethod_call_string_map
-    | 'call' LPAREN stringBasedLiteral COMMA nestedTraversal RPAREN #traversalMethod_call_string_traversal
-    | 'call' LPAREN stringBasedLiteral COMMA genericLiteralMap COMMA nestedTraversal RPAREN #traversalMethod_call_string_map_traversal
+    : 'call' LPAREN stringArgument RPAREN #traversalMethod_call_string
+    | 'call' LPAREN stringArgument COMMA genericLiteralMapArgument RPAREN #traversalMethod_call_string_map
+    | 'call' LPAREN stringArgument COMMA nestedTraversal RPAREN #traversalMethod_call_string_traversal
+    | 'call' LPAREN stringArgument COMMA genericLiteralMapArgument COMMA nestedTraversal RPAREN #traversalMethod_call_string_map_traversal
     ;
 
+traversalMethod_concat
+    : 'concat' LPAREN nestedTraversal (COMMA nestedTraversalList)? RPAREN #traversalMethod_concat_Traversal_Traversal
+    | 'concat' LPAREN stringLiteralVarargs RPAREN #traversalMethod_concat_String
+    ;
+
+traversalMethod_asString
+    : 'asString' LPAREN RPAREN #traversalMethod_asString_Empty
+    | 'asString' LPAREN traversalScopeArgument RPAREN #traversalMethod_asString_Scope
+    ;
+
+traversalMethod_format
+    : 'format' LPAREN stringArgument RPAREN #traversalMethod_format_String
+    ;
+
+traversalMethod_toUpper
+    : 'toUpper' LPAREN RPAREN #traversalMethod_toUpper_Empty
+    | 'toUpper' LPAREN traversalScopeArgument RPAREN #traversalMethod_toUpper_Scope
+    ;
+
+traversalMethod_toLower
+    : 'toLower' LPAREN RPAREN #traversalMethod_toLower_Empty
+    | 'toLower' LPAREN traversalScopeArgument RPAREN #traversalMethod_toLower_Scope
+    ;
+
+traversalMethod_length
+    : 'length' LPAREN RPAREN #traversalMethod_length_Empty
+    | 'length' LPAREN traversalScopeArgument RPAREN #traversalMethod_length_Scope
+    ;
+
+traversalMethod_trim
+    : 'trim' LPAREN RPAREN #traversalMethod_trim_Empty
+    | 'trim' LPAREN traversalScopeArgument RPAREN #traversalMethod_trim_Scope
+    ;
+
+traversalMethod_lTrim
+    : 'lTrim' LPAREN RPAREN #traversalMethod_lTrim_Empty
+    | 'lTrim' LPAREN traversalScopeArgument RPAREN #traversalMethod_lTrim_Scope
+    ;
+
+traversalMethod_rTrim
+    : 'rTrim' LPAREN RPAREN #traversalMethod_rTrim_Empty
+    | 'rTrim' LPAREN traversalScopeArgument RPAREN #traversalMethod_rTrim_Scope
+    ;
+
+traversalMethod_replace
+    : 'replace' LPAREN stringNullableArgument COMMA stringNullableArgument RPAREN #traversalMethod_replace_String_String
+    | 'replace' LPAREN traversalScopeArgument COMMA stringNullableArgument COMMA stringNullableArgument RPAREN #traversalMethod_replace_Scope_String_String
+    ;
+
+traversalMethod_split
+    : 'split' LPAREN stringNullableArgument RPAREN #traversalMethod_split_String
+    | 'split' LPAREN traversalScopeArgument COMMA stringNullableArgument RPAREN #traversalMethod_split_Scope_String
+    ;
+
+traversalMethod_substring
+    : 'substring' LPAREN integerArgument RPAREN #traversalMethod_substring_int
+    | 'substring' LPAREN traversalScopeArgument COMMA integerArgument RPAREN #traversalMethod_substring_Scope_int
+    | 'substring' LPAREN integerArgument COMMA integerArgument RPAREN #traversalMethod_substring_int_int
+    | 'substring' LPAREN traversalScopeArgument COMMA integerArgument COMMA integerArgument RPAREN #traversalMethod_substring_Scope_int_int
+    ;
+
+traversalMethod_asDate
+    : 'asDate' LPAREN RPAREN
+    ;
+
+traversalMethod_dateAdd
+    : 'dateAdd' LPAREN traversalDTArgument COMMA integerArgument RPAREN
+    ;
+
+traversalMethod_dateDiff
+    : 'dateDiff' LPAREN nestedTraversal RPAREN #traversalMethod_dateDiff_Traversal
+    | 'dateDiff' LPAREN dateArgument RPAREN #traversalMethod_dateDiff_Date
+    ;
 
 /*********************************************
     ARGUMENT AND TERMINAL RULES
@@ -806,74 +962,16 @@ traversalMethod_call
 // fail fast scenarios in that processing model. It is not relevant to the grammar however when a user is creating
 // the Vertex to be used in a Traversal and therefore both id and label are required.
 structureVertex
-    : NEW ('Vertex'|'ReferenceVertex') LPAREN genericLiteral COMMA stringBasedLiteral RPAREN
+    : NEW? ('Vertex'|'ReferenceVertex') LPAREN genericLiteralArgument COMMA stringArgument RPAREN
     ;
 
 traversalStrategy
-//  : 'ConnectiveStrategy' - not supported as it is a default strategy and we don't allow removal at this time
-//  | 'ElementIdStrategy' - not supported as the configuration takes a lambda
-//  | 'EventStrategy' - not supported as there is no way to send events back to the client
-//  | 'HaltedTraverserStrategy' - not supported as it is not typically relevant to OLTP
-//  | 'OptionsStrategy' - not supported as it's internal to with()
-    : NEW 'PartitionStrategy' LPAREN traversalStrategyArgs_PartitionStrategy? (COMMA traversalStrategyArgs_PartitionStrategy)* RPAREN
-//  | 'RequirementStrategy' - not supported as it's internally relevant only
-//  | 'SackStrategy' - not supported directly as it's internal to withSack()
-    | NEW 'SeedStrategy' LPAREN 'seed' COLON integerLiteral RPAREN
-//  | 'SideEffectStrategy' - not supported directly as it's internal to withSideEffect()
-    | NEW 'SubgraphStrategy' LPAREN traversalStrategyArgs_SubgraphStrategy? (COMMA traversalStrategyArgs_SubgraphStrategy)* RPAREN
-//  | 'MatchAlgorithmStrategy' - not supported directly as it's internal to match()
-//  | 'ProfileStrategy' - not supported directly as it's internal to profile()
-//  | 'ReferenceElementStrategy' - not supported directly as users really can't/shouldn't change this in our context of a remote Gremlin provider
-//  | 'AdjacentToIncidentStrategy' - not supported as it is a default strategy and we don't allow removal at this time
-//  | 'ByModulatorOptimizationStrategy' - not supported as it is a default strategy and we don't allow removal at this time
-    | NEW? 'ProductiveByStrategy' (LPAREN traversalStrategyArgs_ProductiveByStrategy? RPAREN)?
-//  | 'CountStrategy' - not supported as it is a default strategy and we don't allow removal at this time
-//  | 'EarlyLimitStrategy' - not supported as it is a default strategy and we don't allow removal at this time
-//  | 'FilterRankingStrategy' - not supported as it is a default strategy and we don't allow removal at this time
-//  | 'IdentityRemovalStrategy' - not supported as it is a default strategy and we don't allow removal at this time
-//  | 'IncidentToAdjacentStrategy' - not supported as it is a default strategy and we don't allow removal at this time
-//  | 'InlineFilterStrategy' - not supported as it is a default strategy and we don't allow removal at this time
-//  | 'LazyBarrierStrategy' - not supported as it is a default strategy and we don't allow removal at this time
-//  | 'MatchPredicateStrategy' - not supported as it is a default strategy and we don't allow removal at this time
-//  | 'OrderLimitStrategy' - not supported as it is a default strategy and we don't allow removal at this time
-//  | 'PathProcessorStrategy' - not supported as it is a default strategy and we don't allow removal at this time
-//  | 'PathRetractionStrategy' - not supported as it is a default strategy and we don't allow removal at this time
-//  | 'RepeatUnrollStrategy' - not supported as it is a default strategy and we don't allow removal at this time
-//  | 'ComputerVerificationStrategy' - not supported since it's GraphComputer related
-    | NEW 'EdgeLabelVerificationStrategy' LPAREN traversalStrategyArgs_EdgeLabelVerificationStrategy? (COMMA traversalStrategyArgs_EdgeLabelVerificationStrategy)* RPAREN
-//  | 'LambdaRestrictionStrategy' - not supported as we don't support lambdas in any situation
-    | 'ReadOnlyStrategy'
-    | NEW 'ReservedKeysVerificationStrategy' LPAREN traversalStrategyArgs_ReservedKeysVerificationStrategy? (COMMA traversalStrategyArgs_ReservedKeysVerificationStrategy)* RPAREN
-//  | 'StandardVerificationStrategy' - not supported since this is an interal strategy
+    : NEW? classType (LPAREN (configuration (COMMA configuration)*)? RPAREN)?
     ;
 
-traversalStrategyArgs_ProductiveByStrategy
-    : 'productiveKeys' COLON stringLiteralList
-    ;
-
-traversalStrategyArgs_PartitionStrategy
-    : 'includeMetaProperties' COLON booleanLiteral
-    | 'writePartition' COLON stringBasedLiteral
-    | 'partitionKey' COLON stringBasedLiteral
-    | 'readPartitions' COLON stringLiteralList
-    ;
-
-traversalStrategyArgs_SubgraphStrategy
-    : 'vertices' COLON nestedTraversal
-    | 'edges' COLON nestedTraversal
-    | 'vertexProperties' COLON nestedTraversal
-    | 'checkAdjacentVertices' COLON booleanLiteral
-    ;
-
-traversalStrategyArgs_EdgeLabelVerificationStrategy
-    : 'throwException' COLON booleanLiteral
-    | 'logWarning' COLON booleanLiteral
-    ;
-
-traversalStrategyArgs_ReservedKeysVerificationStrategy
-    : 'keys' COLON stringLiteralList
-    | 'throwException' COLON booleanLiteral
-    | 'logWarning' COLON booleanLiteral
+configuration
+    : keyword COLON genericLiteralArgument
+    | Identifier COLON genericLiteralArgument
     ;
 
 traversalScope
@@ -910,14 +1008,20 @@ traversalDirection
     ;
 
 traversalCardinality
-    : 'single' | 'Cardinality.single'
+    : 'Cardinality.single' LPAREN genericLiteral RPAREN
+    | 'Cardinality.set' LPAREN genericLiteral RPAREN
+    | 'Cardinality.list' LPAREN genericLiteral RPAREN
+    | 'single' LPAREN genericLiteral RPAREN
+    | 'set' LPAREN genericLiteral RPAREN
+    | 'list' LPAREN genericLiteral RPAREN
+    | 'single' | 'Cardinality.single'
     | 'set' | 'Cardinality.set'
     | 'list' | 'Cardinality.list'
     ;
 
 traversalColumn
-    : 'keys' | 'Column.keys'
-    | 'values' | 'Column.values'
+    : KEYS | 'Column.keys'
+    | VALUES | 'Column.values'
     ;
 
 traversalPop
@@ -944,6 +1048,13 @@ traversalOperator
 traversalPick
     : 'any' | 'Pick.any'
     | 'none' | 'Pick.none'
+    ;
+
+traversalDT
+    : 'second' | 'DT.second'
+    | 'minute' | 'DT.minute'
+    | 'hour' | 'DT.hour'
+    | 'day' | 'DT.day'
     ;
 
 traversalPredicate
@@ -988,7 +1099,7 @@ traversalSackMethod
     ;
 
 traversalSelfMethod
-    : traversalSelfMethod_none
+    : traversalSelfMethod_discard
     ;
 
 // Additional special rules that are derived from above
@@ -1008,49 +1119,49 @@ traversalBiFunction
     ;
 
 traversalPredicate_eq
-    : ('P.eq' | 'eq') LPAREN genericLiteral RPAREN
+    : ('P.eq' | 'eq') LPAREN genericLiteralArgument RPAREN
     ;
 
 traversalPredicate_neq
-    : ('P.neq' | 'neq') LPAREN genericLiteral RPAREN
+    : ('P.neq' | 'neq') LPAREN genericLiteralArgument RPAREN
     ;
 
 traversalPredicate_lt
-    : ('P.lt' | 'lt') LPAREN genericLiteral RPAREN
+    : ('P.lt' | 'lt') LPAREN genericLiteralArgument RPAREN
     ;
 
 traversalPredicate_lte
-    : ('P.lte' | 'lte') LPAREN genericLiteral RPAREN
+    : ('P.lte' | 'lte') LPAREN genericLiteralArgument RPAREN
     ;
 
 traversalPredicate_gt
-    : ('P.gt' | 'gt') LPAREN genericLiteral RPAREN
+    : ('P.gt' | 'gt') LPAREN genericLiteralArgument RPAREN
     ;
 
 traversalPredicate_gte
-    : ('P.gte' | 'gte') LPAREN genericLiteral RPAREN
+    : ('P.gte' | 'gte') LPAREN genericLiteralArgument RPAREN
     ;
 
 traversalPredicate_inside
-    : ('P.inside' | 'inside') LPAREN genericLiteral COMMA genericLiteral RPAREN
+    : ('P.inside' | 'inside') LPAREN genericLiteralArgument COMMA genericLiteralArgument RPAREN
     ;
 
 traversalPredicate_outside
-    : ('P.outside' | 'outside') LPAREN genericLiteral COMMA genericLiteral RPAREN
+    : ('P.outside' | 'outside') LPAREN genericLiteralArgument COMMA genericLiteralArgument RPAREN
     ;
 
 traversalPredicate_between
-    : ('P.between' | 'between') LPAREN genericLiteral COMMA genericLiteral RPAREN
+    : ('P.between' | 'between') LPAREN genericLiteralArgument COMMA genericLiteralArgument RPAREN
     ;
 
 traversalPredicate_within
     : ('P.within' | 'within') LPAREN RPAREN
-    | ('P.within' | 'within') LPAREN genericLiteralList RPAREN
+    | ('P.within' | 'within') LPAREN genericLiteralListArgument RPAREN
     ;
 
 traversalPredicate_without
     : ('P.without' | 'without') LPAREN RPAREN
-    | ('P.without' | 'without') LPAREN genericLiteralList RPAREN
+    | ('P.without' | 'without') LPAREN genericLiteralListArgument RPAREN
     ;
 
 traversalPredicate_not
@@ -1058,35 +1169,35 @@ traversalPredicate_not
     ;
 
 traversalPredicate_containing
-    : ('TextP.containing' | 'containing') LPAREN stringBasedLiteral RPAREN
+    : ('TextP.containing' | 'containing') LPAREN stringArgument RPAREN
     ;
 
 traversalPredicate_notContaining
-    : ('TextP.notContaining' | 'notContaining') LPAREN stringBasedLiteral RPAREN
+    : ('TextP.notContaining' | 'notContaining') LPAREN stringArgument RPAREN
     ;
 
 traversalPredicate_startingWith
-    : ('TextP.startingWith' | 'startingWith') LPAREN stringBasedLiteral RPAREN
+    : ('TextP.startingWith' | 'startingWith') LPAREN stringArgument RPAREN
     ;
 
 traversalPredicate_notStartingWith
-    : ('TextP.notStartingWith' | 'notStartingWith') LPAREN stringBasedLiteral RPAREN
+    : ('TextP.notStartingWith' | 'notStartingWith') LPAREN stringArgument RPAREN
     ;
 
 traversalPredicate_endingWith
-    : ('TextP.endingWith' | 'endingWith') LPAREN stringBasedLiteral RPAREN
+    : ('TextP.endingWith' | 'endingWith') LPAREN stringArgument RPAREN
     ;
 
 traversalPredicate_notEndingWith
-    : ('TextP.notEndingWith' | 'notEndingWith') LPAREN stringBasedLiteral RPAREN
+    : ('TextP.notEndingWith' | 'notEndingWith') LPAREN stringArgument RPAREN
     ;
 
 traversalPredicate_regex
-    : ('TextP.regex' | 'regex') LPAREN stringBasedLiteral RPAREN
+    : ('TextP.regex' | 'regex') LPAREN stringArgument RPAREN
     ;
 
 traversalPredicate_notRegex
-    : ('TextP.notRegex' | 'notRegex') LPAREN stringBasedLiteral RPAREN
+    : ('TextP.notRegex' | 'notRegex') LPAREN stringArgument RPAREN
     ;
 
 traversalTerminalMethod_explain
@@ -1122,181 +1233,184 @@ traversalTerminalMethod_toBulkSet
     : 'toBulkSet' LPAREN RPAREN
     ;
 
-traversalSelfMethod_none
-    : 'none' LPAREN RPAREN
+traversalSelfMethod_discard
+    : 'discard' LPAREN RPAREN
     ;
 
 // Gremlin specific lexer rules
 
-gremlinStringConstants
-    : withOptionsStringConstants
-    | shortestPathStringConstants
+withOptionKeys
+    : shortestPathConstants
     | connectedComponentConstants
-    | pageRankStringConstants
-    | peerPressureStringConstants
-    | ioOptionsStringConstants
+    | pageRankConstants
+    | peerPressureConstants
+    | ioOptionsKeys
+    | withOptionsConstants_tokens
+    | withOptionsConstants_indexer
     ;
 
 connectedComponentConstants
-    : gremlinStringConstants_connectedComponentStringConstants_component
-    | gremlinStringConstants_connectedComponentStringConstants_edges
-    | gremlinStringConstants_connectedComponentStringConstants_propertyName
+    : connectedComponentConstants_component
+    | connectedComponentConstants_edges
+    | connectedComponentConstants_propertyName
     ;
 
-pageRankStringConstants
-    : gremlinStringConstants_pageRankStringConstants_edges
-    | gremlinStringConstants_pageRankStringConstants_times
-    | gremlinStringConstants_pageRankStringConstants_propertyName
+pageRankConstants
+    : pageRankConstants_edges
+    | pageRankConstants_times
+    | pageRankConstants_propertyName
     ;
 
-peerPressureStringConstants
-    : gremlinStringConstants_peerPressureStringConstants_edges
-    | gremlinStringConstants_peerPressureStringConstants_times
-    | gremlinStringConstants_peerPressureStringConstants_propertyName
+peerPressureConstants
+    : peerPressureConstants_edges
+    | peerPressureConstants_times
+    | peerPressureConstants_propertyName
     ;
 
-shortestPathStringConstants
-    : gremlinStringConstants_shortestPathStringConstants_target
-    | gremlinStringConstants_shortestPathStringConstants_edges
-    | gremlinStringConstants_shortestPathStringConstants_distance
-    | gremlinStringConstants_shortestPathStringConstants_maxDistance
-    | gremlinStringConstants_shortestPathStringConstants_includeEdges
+shortestPathConstants
+    : shortestPathConstants_target
+    | shortestPathConstants_edges
+    | shortestPathConstants_distance
+    | shortestPathConstants_maxDistance
+    | shortestPathConstants_includeEdges
     ;
 
-withOptionsStringConstants
-    : gremlinStringConstants_withOptionsStringConstants_tokens
-    | gremlinStringConstants_withOptionsStringConstants_none
-    | gremlinStringConstants_withOptionsStringConstants_ids
-    | gremlinStringConstants_withOptionsStringConstants_labels
-    | gremlinStringConstants_withOptionsStringConstants_keys
-    | gremlinStringConstants_withOptionsStringConstants_values
-    | gremlinStringConstants_withOptionsStringConstants_all
-    | gremlinStringConstants_withOptionsStringConstants_indexer
-    | gremlinStringConstants_withOptionsStringConstants_list
-    | gremlinStringConstants_withOptionsStringConstants_map
+withOptionsValues
+    : withOptionsConstants_tokens
+    | withOptionsConstants_none
+    | withOptionsConstants_ids
+    | withOptionsConstants_labels
+    | withOptionsConstants_keys
+    | withOptionsConstants_values
+    | withOptionsConstants_all
+    | withOptionsConstants_list
+    | withOptionsConstants_map
     ;
 
-ioOptionsStringConstants
-    : gremlinStringConstants_ioOptionsStringConstants_reader
-    | gremlinStringConstants_ioOptionsStringConstants_writer
-    | gremlinStringConstants_ioOptionsStringConstants_gryo
-    | gremlinStringConstants_ioOptionsStringConstants_graphson
-    | gremlinStringConstants_ioOptionsStringConstants_graphml
+ioOptionsKeys
+    : ioOptionsConstants_reader
+    | ioOptionsConstants_writer
     ;
 
-gremlinStringConstants_connectedComponentStringConstants_component
+ioOptionsValues
+    : ioOptionsConstants_gryo
+    | ioOptionsConstants_graphson
+    | ioOptionsConstants_graphml
+    ;
+
+connectedComponentConstants_component
     : connectedComponentStringConstant DOT 'component'
     ;
 
-gremlinStringConstants_connectedComponentStringConstants_edges
-    : connectedComponentStringConstant DOT 'edges'
+connectedComponentConstants_edges
+    : connectedComponentStringConstant DOT EDGES
     ;
 
-gremlinStringConstants_connectedComponentStringConstants_propertyName
+connectedComponentConstants_propertyName
     : connectedComponentStringConstant DOT 'propertyName'
     ;
 
-gremlinStringConstants_pageRankStringConstants_edges
-    : pageRankStringConstant DOT 'edges'
+pageRankConstants_edges
+    : pageRankStringConstant DOT EDGES
     ;
 
-gremlinStringConstants_pageRankStringConstants_times
+pageRankConstants_times
     : pageRankStringConstant DOT 'times'
     ;
 
-gremlinStringConstants_pageRankStringConstants_propertyName
+pageRankConstants_propertyName
     : pageRankStringConstant DOT 'propertyName'
     ;
 
-gremlinStringConstants_peerPressureStringConstants_edges
-    : peerPressureStringConstant DOT 'edges'
+peerPressureConstants_edges
+    : peerPressureStringConstant DOT EDGES
     ;
 
-gremlinStringConstants_peerPressureStringConstants_times
+peerPressureConstants_times
     : peerPressureStringConstant DOT 'times'
     ;
 
-gremlinStringConstants_peerPressureStringConstants_propertyName
+peerPressureConstants_propertyName
     : peerPressureStringConstant DOT 'propertyName'
     ;
 
-gremlinStringConstants_shortestPathStringConstants_target
+shortestPathConstants_target
     : shortestPathStringConstant DOT 'target'
     ;
 
-gremlinStringConstants_shortestPathStringConstants_edges
-    : shortestPathStringConstant DOT 'edges'
+shortestPathConstants_edges
+    : shortestPathStringConstant DOT EDGES
     ;
 
-gremlinStringConstants_shortestPathStringConstants_distance
+shortestPathConstants_distance
     : shortestPathStringConstant DOT 'distance'
     ;
 
-gremlinStringConstants_shortestPathStringConstants_maxDistance
+shortestPathConstants_maxDistance
     : shortestPathStringConstant DOT 'maxDistance'
     ;
 
-gremlinStringConstants_shortestPathStringConstants_includeEdges
+shortestPathConstants_includeEdges
     : shortestPathStringConstant DOT 'includeEdges'
     ;
 
-gremlinStringConstants_withOptionsStringConstants_tokens
+withOptionsConstants_tokens
     : withOptionsStringConstant DOT 'tokens'
     ;
 
-gremlinStringConstants_withOptionsStringConstants_none
+withOptionsConstants_none
     : withOptionsStringConstant DOT 'none'
     ;
 
-gremlinStringConstants_withOptionsStringConstants_ids
+withOptionsConstants_ids
     : withOptionsStringConstant DOT 'ids'
     ;
 
-gremlinStringConstants_withOptionsStringConstants_labels
+withOptionsConstants_labels
     : withOptionsStringConstant DOT 'labels'
     ;
 
-gremlinStringConstants_withOptionsStringConstants_keys
+withOptionsConstants_keys
     : withOptionsStringConstant DOT 'keys'
     ;
 
-gremlinStringConstants_withOptionsStringConstants_values
+withOptionsConstants_values
     : withOptionsStringConstant DOT 'values'
     ;
 
-gremlinStringConstants_withOptionsStringConstants_all
+withOptionsConstants_all
     : withOptionsStringConstant DOT 'all'
     ;
 
-gremlinStringConstants_withOptionsStringConstants_indexer
+withOptionsConstants_indexer
     : withOptionsStringConstant DOT 'indexer'
     ;
 
-gremlinStringConstants_withOptionsStringConstants_list
+withOptionsConstants_list
     : withOptionsStringConstant DOT 'list'
     ;
 
-gremlinStringConstants_withOptionsStringConstants_map
+withOptionsConstants_map
     : withOptionsStringConstant DOT 'map'
     ;
 
-gremlinStringConstants_ioOptionsStringConstants_reader
+ioOptionsConstants_reader
     : ioOptionsStringConstant DOT 'reader'
     ;
 
-gremlinStringConstants_ioOptionsStringConstants_writer
+ioOptionsConstants_writer
     : ioOptionsStringConstant DOT 'writer'
     ;
 
-gremlinStringConstants_ioOptionsStringConstants_gryo
+ioOptionsConstants_gryo
     : ioOptionsStringConstant DOT 'gryo'
     ;
 
-gremlinStringConstants_ioOptionsStringConstants_graphson
+ioOptionsConstants_graphson
     : ioOptionsStringConstant DOT 'graphson'
     ;
 
-gremlinStringConstants_ioOptionsStringConstants_graphml
+ioOptionsConstants_graphml
     : ioOptionsStringConstant DOT 'graphml'
     ;
 
@@ -1324,6 +1438,127 @@ ioOptionsStringConstant
     : 'IO'
     ;
 
+booleanArgument
+    : booleanLiteral
+    | variable
+    ;
+
+integerArgument
+    : integerLiteral
+    | variable
+    ;
+
+floatArgument
+    : floatLiteral
+    | variable
+    ;
+
+stringArgument
+    : stringLiteral
+    | variable
+    ;
+
+stringNullableArgument
+    : stringNullableLiteral
+    | variable
+    ;
+
+dateArgument
+    : dateLiteral
+    | variable
+    ;
+
+genericLiteralArgument
+    : genericLiteral
+    | variable
+    ;
+
+genericLiteralListArgument
+    : genericLiteralList
+    | variable
+    ;
+
+genericLiteralMapArgument
+    : genericLiteralMap
+    | variable
+    ;
+
+genericLiteralMapNullableArgument
+    : genericLiteralMap
+    | nullLiteral
+    | variable
+    ;
+
+structureVertexArgument
+    : structureVertex
+    | variable
+    ;
+
+traversalCardinalityArgument
+    : traversalCardinality
+    | variable
+    ;
+
+traversalColumnArgument
+    : traversalColumn
+    | variable
+    ;
+
+traversalDirectionArgument
+    : traversalDirection
+    | variable
+    ;
+
+traversalMergeArgument
+    : traversalMerge
+    | variable
+    ;
+
+traversalOrderArgument
+    : traversalOrder
+    | variable
+    ;
+
+traversalPopArgument
+    : traversalPop
+    | variable
+    ;
+
+traversalSackMethodArgument
+    : traversalSackMethod
+    | variable
+    ;
+
+traversalScopeArgument
+    : traversalScope
+    | variable
+    ;
+
+traversalTokenArgument
+    : traversalToken
+    | variable
+    ;
+
+traversalComparatorArgument
+    : traversalComparator
+    | variable
+    ;
+
+traversalFunctionArgument
+    : traversalFunction
+    | variable
+    ;
+
+traversalBiFunctionArgument
+    : traversalBiFunction
+    | variable
+    ;
+
+traversalDTArgument
+    : traversalDT
+    | variable
+    ;
+
 traversalStrategyList
     : traversalStrategyExpr?
     ;
@@ -1332,12 +1567,24 @@ traversalStrategyExpr
     : traversalStrategy (COMMA traversalStrategy)*
     ;
 
+classTypeList
+    : classTypeExpr?
+    ;
+
+classTypeExpr
+    : classType (COMMA classType)*
+    ;
+
 nestedTraversalList
     : nestedTraversalExpr?
     ;
 
 nestedTraversalExpr
     : nestedTraversal (COMMA nestedTraversal)*
+    ;
+
+genericLiteralVarargs
+    : (genericLiteralArgument (COMMA genericLiteralArgument)*)?
     ;
 
 genericLiteralList
@@ -1357,19 +1604,23 @@ genericLiteralCollection
     : LBRACK (genericLiteral (COMMA genericLiteral)*)? RBRACK
     ;
 
+stringLiteralVarargs
+    : (stringNullableArgument (COMMA stringNullableArgument)*)?
+    ;
+
 stringLiteralList
     : stringLiteralExpr?
     | LBRACK stringLiteralExpr? RBRACK
     ;
 
 stringLiteralExpr
-    : stringBasedLiteral (COMMA stringBasedLiteral)*
+    : stringNullableLiteral (COMMA stringNullableLiteral)*
     ;
 
 genericLiteral
     : numericLiteral
     | booleanLiteral
-    | stringBasedLiteral
+    | stringLiteral
     | dateLiteral
     | nullLiteral
     | nanLiteral
@@ -1380,6 +1631,7 @@ genericLiteral
     | traversalDirection
     | traversalMerge
     | traversalPick
+    | traversalDT
     | structureVertex
     | genericLiteralCollection
     | genericLiteralRange
@@ -1393,21 +1645,27 @@ genericLiteralMap
     | LBRACK mapEntry (COMMA mapEntry)* RBRACK
     ;
 
-// allow builds of Map that sorta make sense in the Gremlin context
+// allow builds of Map that sorta make sense in the Gremlin context.
 mapEntry
-    : NEW COLON genericLiteral  // explicit for [new: true] - if we had other keywords like that maybe we'd group them up?
-    | (LPAREN stringLiteral RPAREN | stringLiteral) COLON genericLiteral
+    : (LPAREN stringLiteral RPAREN | stringLiteral) COLON genericLiteral
     | (LPAREN numericLiteral RPAREN | numericLiteral) COLON genericLiteral
     | (LPAREN traversalToken RPAREN | traversalToken) COLON genericLiteral
     | (LPAREN traversalDirection RPAREN | traversalDirection) COLON genericLiteral
     | (LPAREN genericLiteralCollection RPAREN | genericLiteralCollection) COLON genericLiteral
     | (LPAREN genericLiteralMap RPAREN | genericLiteralMap) COLON genericLiteral
+    | keyword COLON genericLiteral
     | Identifier COLON genericLiteral
     ;
 
 stringLiteral
     : EmptyStringLiteral
     | NonEmptyStringLiteral
+    ;
+
+stringNullableLiteral
+    : EmptyStringLiteral
+    | NonEmptyStringLiteral
+    | NullLiteral
     ;
 
 integerLiteral
@@ -1427,15 +1685,9 @@ booleanLiteral
     : BooleanLiteral
     ;
 
-stringBasedLiteral
-    : EmptyStringLiteral
-    | NonEmptyStringLiteral
-    | NullLiteral
-    | gremlinStringConstants
-    ;
-
 dateLiteral
-    : 'datetime' LPAREN stringLiteral RPAREN
+    : 'datetime' LPAREN stringArgument RPAREN
+    | 'datetime' LPAREN RPAREN
     ;
 
 nullLiteral
@@ -1450,6 +1702,23 @@ infLiteral
     : SignedInfLiteral
     ;
 
+classType
+    : Identifier
+    ;
+
+variable
+    : Identifier
+    ;
+
+// need to complete this list to fix https://issues.apache.org/jira/browse/TINKERPOP-3047 but this much proves the
+// approach works and allows the TraversalStrategy work to be complete.
+keyword
+    : EDGES
+    | KEYS
+    | NEW
+    | VALUES
+    ;
+
 /*********************************************
     LEXER RULES
 **********************************************/
@@ -1460,192 +1729,194 @@ infLiteral
 
 // §3.9 Keywords
 
+EDGES: 'edges';
+KEYS: 'keys';
 NEW : 'new';
+VALUES: 'values';
 
 // Integer Literals
 
 IntegerLiteral
-    :    Sign? DecimalIntegerLiteral
-    |    Sign? HexIntegerLiteral
-    |    Sign? OctalIntegerLiteral
+    : Sign? DecimalIntegerLiteral
+    | Sign? HexIntegerLiteral
+    | Sign? OctalIntegerLiteral
     ;
 
 fragment
 DecimalIntegerLiteral
-    :    DecimalNumeral IntegerTypeSuffix?
+    : DecimalNumeral IntegerTypeSuffix?
     ;
 
 fragment
 HexIntegerLiteral
-    :    HexNumeral IntegerTypeSuffix?
+    : HexNumeral IntegerTypeSuffix?
     ;
 
 fragment
 OctalIntegerLiteral
-    :    OctalNumeral IntegerTypeSuffix?
+    : OctalNumeral IntegerTypeSuffix?
     ;
 
 fragment
 IntegerTypeSuffix
-    :    [bBsSnNiIlL]
+    : [bBsSnNiIlL]
     ;
 
 fragment
 DecimalNumeral
-    :    '0'
-    |    NonZeroDigit (Digits? | Underscores Digits)
+    : '0'
+    | NonZeroDigit (Digits? | Underscores Digits)
     ;
 
 fragment
 Digits
-    :    Digit (DigitsAndUnderscores? Digit)?
+    : Digit (DigitsAndUnderscores? Digit)?
     ;
 
 fragment
 Digit
-    :    '0'
-    |    NonZeroDigit
+    : '0'
+    | NonZeroDigit
     ;
 
 fragment
 NonZeroDigit
-    :    [1-9]
+    : [1-9]
     ;
 
 fragment
 DigitsAndUnderscores
-    :    DigitOrUnderscore+
+    : DigitOrUnderscore+
     ;
 
 fragment
 DigitOrUnderscore
-    :    Digit
-    |    '_'
+    : Digit
+    | '_'
     ;
 
 fragment
 Underscores
-    :    '_'+
+    : '_'+
     ;
 
 fragment
 HexNumeral
-    :    '0' [xX] HexDigits
+    : '0' [xX] HexDigits
     ;
 
 fragment
 HexDigits
-    :    HexDigit (HexDigitsAndUnderscores? HexDigit)?
+    : HexDigit (HexDigitsAndUnderscores? HexDigit)?
     ;
 
 fragment
 HexDigit
-    :    [0-9a-fA-F]
+    : [0-9a-fA-F]
     ;
 
 fragment
 HexDigitsAndUnderscores
-    :    HexDigitOrUnderscore+
+    : HexDigitOrUnderscore+
     ;
 
 fragment
 HexDigitOrUnderscore
-    :    HexDigit
-    |    '_'
+    : HexDigit
+    | '_'
     ;
 
 fragment
 OctalNumeral
-    :    '0' Underscores? OctalDigits
+    : '0' Underscores? OctalDigits
     ;
 
 fragment
 OctalDigits
-    :    OctalDigit (OctalDigitsAndUnderscores? OctalDigit)?
+    : OctalDigit (OctalDigitsAndUnderscores? OctalDigit)?
     ;
 
 fragment
 OctalDigit
-    :    [0-7]
+    : [0-7]
     ;
 
 fragment
 OctalDigitsAndUnderscores
-    :    OctalDigitOrUnderscore+
+    : OctalDigitOrUnderscore+
     ;
 
 fragment
 OctalDigitOrUnderscore
-    :    OctalDigit
-    |    '_'
+    : OctalDigit
+    | '_'
     ;
 
 // Floating-Point Literals
 
 FloatingPointLiteral
-    :    Sign? DecimalFloatingPointLiteral
+    : Sign? DecimalFloatingPointLiteral
     ;
 
 fragment
 DecimalFloatingPointLiteral
-    :   Digits ('.' Digits ExponentPart? | ExponentPart) FloatTypeSuffix?
-    |    Digits FloatTypeSuffix
+    : Digits ('.' Digits ExponentPart? | ExponentPart) FloatTypeSuffix?
+    | Digits FloatTypeSuffix
     ;
 
 fragment
 ExponentPart
-    :    ExponentIndicator SignedInteger
+    : ExponentIndicator SignedInteger
     ;
 
 fragment
 ExponentIndicator
-    :    [eE]
+    : [eE]
     ;
 
 fragment
 SignedInteger
-    :    Sign? Digits
+    : Sign? Digits
     ;
 
 fragment
 Sign
-    :    [+-]
+    : [+-]
     ;
 
 fragment
 FloatTypeSuffix
-    :    [fFdDmM]
+    : [fFdDmM]
     ;
 
 // Boolean Literals
 
 BooleanLiteral
-    :    'true'
-    |    'false'
+    : 'true'
+    | 'false'
     ;
 
 // Null Literal
 
 NullLiteral
-    :    'null'
+    : 'null'
     ;
 
 // NaN Literal
 
 NaNLiteral
-    :    'NaN'
+    : 'NaN'
     ;
 
 // Inf Literal
 
 SignedInfLiteral
-    :    Sign? InfLiteral
+    : Sign? InfLiteral
     ;
 
 InfLiteral
-    :    'Infinity'
+    : 'Infinity'
     ;
-
 
 // String Literals
 
@@ -1653,38 +1924,38 @@ InfLiteral
 // literals also. A side effect of this is ANTLR will not be able to parse single character string literals with
 // single quoted so we instead remove char literal altogether and only have string literal in lexer tokens.
 NonEmptyStringLiteral
-    :   '"' DoubleQuotedStringCharacters '"'
-    |   '\'' SingleQuotedStringCharacters '\''
+    : '"' DoubleQuotedStringCharacters '"'
+    | '\'' SingleQuotedStringCharacters '\''
     ;
 
 // We define NonEmptyStringLiteral and EmptyStringLiteral separately so that we can unambiguously handle empty queries
 EmptyStringLiteral
-    :   '""'
-    |   '\'\''
+    : '""'
+    | '\'\''
     ;
 
 fragment
 DoubleQuotedStringCharacters
-    :    DoubleQuotedStringCharacter+
+    : DoubleQuotedStringCharacter+
     ;
 
 fragment
 DoubleQuotedStringCharacter
-    :    ~('"' | '\\')
-    |   JoinLineEscape
-    |    EscapeSequence
+    : ~('"' | '\\')
+    | JoinLineEscape
+    | EscapeSequence
     ;
 
 fragment
 SingleQuotedStringCharacters
-    :    SingleQuotedStringCharacter+
+    : SingleQuotedStringCharacter+
     ;
 
 fragment
 SingleQuotedStringCharacter
-    :    ~('\'' | '\\')
-    |   JoinLineEscape
-    |    EscapeSequence
+    : ~('\'' | '\\')
+    | JoinLineEscape
+    | EscapeSequence
     ;
 
 // Escape Sequences for Character and String Literals
@@ -1694,21 +1965,21 @@ fragment JoinLineEscape
 
 fragment
 EscapeSequence
-    :    '\\' [btnfr"'\\]
-    |    OctalEscape
-    |   UnicodeEscape // This is not in the spec but prevents having to preprocess the input
+    : '\\' [btnfr"'\\]
+    | OctalEscape
+    | UnicodeEscape // This is not in the spec but prevents having to preprocess the input
     ;
 
 fragment
 OctalEscape
-    :    '\\' OctalDigit
-    |    '\\' OctalDigit OctalDigit
-    |    '\\' ZeroToThree OctalDigit OctalDigit
+    : '\\' OctalDigit
+    | '\\' OctalDigit OctalDigit
+    | '\\' ZeroToThree OctalDigit OctalDigit
     ;
 
 fragment
 ZeroToThree
-    :    [0-3]
+    : [0-3]
     ;
 
 // This is not in the spec but prevents having to preprocess the input

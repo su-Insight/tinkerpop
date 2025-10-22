@@ -37,7 +37,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.select;
-import static org.apache.tinkerpop.gremlin.util.tools.CollectionFactory.asMap;
+import static org.apache.tinkerpop.gremlin.util.CollectionUtil.asMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringEndsWith.endsWith;
 import static org.junit.Assert.assertEquals;
@@ -122,7 +122,7 @@ public abstract class MergeEdgeTest extends AbstractGremlinTest {
             traversal.next();
             fail("Should have failed as vertices are not created");
         } catch (Exception ex) {
-            assertThat(ex.getMessage(), endsWith("Vertex id could not be resolved from mergeE: 100"));
+            assertThat(ex.getMessage(), endsWith("Vertex does not exist for mergeE: 100"));
         }
         assertEquals(0, IteratorUtils.count(g.E()));
     }

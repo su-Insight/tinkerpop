@@ -75,7 +75,7 @@ class Traversal(object):
         return set(iter(self))
 
     def iterate(self):
-        self.bytecode.add_step("none")
+        self.bytecode.add_step("discard")
         while True:
             try: self.next_traverser()
             except StopIteration: return self
@@ -193,6 +193,13 @@ GryoVersion = Enum('GryoVersion', ' V1_0 V3_0')
 
 statics.add_static('V1_0', GryoVersion.V1_0)
 statics.add_static('V3_0', GryoVersion.V3_0)
+
+DT = Enum('DT', ' second minute hour day')
+
+statics.add_static('second', DT.second)
+statics.add_static('minute', DT.minute)
+statics.add_static('hour', DT.hour)
+statics.add_static('day', DT.day)
 
 Merge = Enum('Merge', ' on_create on_match out_v in_v')
 
@@ -681,7 +688,6 @@ TRAVERSAL STRATEGIES
 
 
 class TraversalStrategies(object):
-    global_cache = {}
 
     def __init__(self, traversal_strategies=None):
         self.traversal_strategies = traversal_strategies.traversal_strategies if traversal_strategies is not None else []
@@ -815,6 +821,24 @@ class Bytecode(object):
         @staticmethod
         def rollback():
             return Bytecode._create_graph_op("tx", "rollback")
+
+
+class CardinalityValue(Bytecode):
+    def __init__(self, cardinality, val):
+        super().__init__()
+        self.add_source("CardinalityValueTraversal", cardinality, val)
+
+    @classmethod
+    def single(cls, val):
+        return CardinalityValue(Cardinality.single, val)
+
+    @classmethod
+    def list_(cls, val):
+        return CardinalityValue(Cardinality.list_, val)
+
+    @classmethod
+    def set_(cls, val):
+        return CardinalityValue(Cardinality.set_, val)
 
 
 '''

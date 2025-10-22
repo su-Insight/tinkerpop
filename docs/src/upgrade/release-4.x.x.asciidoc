@@ -1,0 +1,143 @@
+////
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+////
+
+= TinkerPop 4.0.0
+
+image::https://raw.githubusercontent.com/apache/tinkerpop/master/docs/static/images/gremlin-standing.png[width=185]
+
+*4.0.0*
+
+== TinkerPop 4.0.0
+
+*Release Date: NOT OFFICIALLY RELEASED YET*
+
+Please see the link:https://github.com/apache/tinkerpop/blob/4.0.0/CHANGELOG.asciidoc#release-4-0-0[changelog] for a
+complete list of all the modifications that are part of this release.
+
+=== Upgrading for Users
+
+==== Simplification to g creation
+
+The creation of "g" is the start point to writing Gremlin. There are a number of ways to create it, but TinkerPop has
+long recommended the use of the anonymous `traversal()` function for this creation.
+
+[source,groovy]
+----
+// for embedded cases
+graph = TinkerGraph.open()
+g = traversal().withEmbedded(graph)
+
+// for remote cases
+g = traversal().withRemote(DriverRemoteConnection.using(...)))
+----
+
+As of this release, those two methods have been deprecated in favor of just `with()` which means you could simply write:
+
+[source,groovy]
+----
+// for embedded cases
+graph = TinkerGraph.open()
+g = traversal().with(graph)
+
+// for remote cases
+g = traversal().with(DriverRemoteConnection.using(...)))
+----
+
+That's a bit less to type, but also removes need to programmatically decide which function to call which hopefully
+strengthens the abstraction further. To demonstrate this further consider this next example:
+
+[source,groovy]
+----
+g = traversal().with("config.properties")
+----
+
+The properties file in the above example can either point to a remote configuration or a embedded configuration allowing
+"g" to be switched as needed without code changes.
+
+See: link:https://issues.apache.org/jira/browse/TINKERPOP-3017[TINKERPOP-3017]
+
+==== Changes to deserialization for gremlin-javascript
+
+Starting from this version, `gremlin-javascript` will deserialize `Set` data into a ECMAScript 2015 Set. Previously,
+these were deserialized into arrays.
+
+==== Gremlin Grammar Changes
+
+A number of changes have been introduce to the Gremlin grammar to help make it be more consistent and easier to use.
+
+*`new` keyword is now optional*
+
+The `new` keyword is now optional in all cases where it was previously used. Both of the following examples are now
+valid syntax with the second being the preferred form going forward:
+
+[source,groovy]
+----
+g.V().withStrategies(new SubgraphStrategy(vertices: __.hasLabel('person')))
+
+g.V().withStrategies(SubgraphStrategy(vertices: __.hasLabel('person')))
+----
+
+In a future version, it is likely that the `new` keyword will be removed entirely from the grammar.
+
+*Supports withoutStrategies()*
+
+The `withoutStrategies()` configuration step is now supported syntax for the grammar. While this option is not commonly
+used it is still a part of the Gremlin language and there are times where it is helpful to have this fine grained
+control over how a traversal works.
+
+[source,groovy]
+----
+g.V().withoutStrategies(CountStrategy)
+----
+
+See: link:https://issues.apache.org/jira/browse/TINKERPOP-2862[TINKERPOP-2862],
+link:https://issues.apache.org/jira/browse/TINKERPOP-3046[TINKERPOP-3046]
+
+==== Renaming none() to discard()
+
+The `none()` step, which was primarily used by `iterate()` to discard traversal results in remote contexts, has been
+renamed to `discard()`. In its place is a new list filtering step `none()`, which takes a predicate as an argument and
+passes lists with no elements matching the predicate.
+
+==== Improved handling of integer overflows
+
+Integer overflows caused by addition and multiplication operations will throw an exception instead of being silently
+skipped with incorrect result.
+
+==== Removal of `gremlin-archetype`
+
+`gremlin-archetype`, which contained example projects demonstrating the use cases of TinkerPop, has been removed in
+favor of newer sample applications which can be found in each GLV's `examples` folder.
+
+
+=== Upgrading for Providers
+
+==== Renaming NoneStep to DiscardStep
+NoneStep, which was primarily used by `iterate()` to discard traversal results in remote contexts, has been renamed to
+DiscardStep. In its place is a new list filtering NoneStep, which takes a predicate as an argument and passes lists with
+no elements matching the predicate.
+
+==== Graph System Providers
+
+===== AbstractAuthenticatorHandler Constructor
+
+The deprecated one-arg constructor for `AbstractAuthenticationHandler` has been removed along with two-arg constructors
+for the implementations. Gremlin Server formerly supported the two-arg `Authenticator`, and `Settings` constructor for
+instantiating new custom instances. It now expects implementations of `AbstractAuthenticationHandler` to use a
+three-arg constructor that takes `Authenticator`, `Authorizer`, and `Settings`.
+
+==== Graph Driver Providers

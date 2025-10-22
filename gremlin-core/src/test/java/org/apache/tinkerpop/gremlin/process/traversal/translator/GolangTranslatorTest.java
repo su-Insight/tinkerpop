@@ -32,7 +32,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.Read
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
 import org.apache.tinkerpop.gremlin.util.function.Lambda;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -64,6 +63,12 @@ public class GolangTranslatorTest {
         final String gremlinAsGo = translator.translate(
                 g.addV("person").property(VertexProperty.Cardinality.list, "name", "marko").asAdmin().getBytecode()).getScript();
         assertEquals("g.AddV(\"person\").Property(gremlingo.Cardinality.List, \"name\", \"marko\")", gremlinAsGo);
+    }
+
+    @Test
+    public void shouldTranslateCardinalityValue() {
+        assertEquals("g.Inject(gremlingo.CardinalityValue.Set(\"test\"))", translator.translate(
+                g.inject(VertexProperty.Cardinality.set("test")).asAdmin().getBytecode()).getScript());
     }
 
     @Test
