@@ -199,24 +199,11 @@ public class HttpGremlinEndpointHandler extends ChannelInboundHandlerAdapter {
             final FullHttpRequest req = (FullHttpRequest) msg;
             final boolean keepAlive = HttpUtil.isKeepAlive(req);
 
-            // Chunked transfer encoding is used to stream back results so only accept HTTP/1.1 requests.
-            if (req.protocolVersion() != HTTP_1_1) {
-                HttpHandlerUtil.sendError(ctx, HTTP_VERSION_NOT_SUPPORTED, "Only HTTP/1.1 is supported.", keepAlive);
-                ReferenceCountUtil.release(msg);
-                return;
-            }
-
-            if ("/favicon.ico".equals(req.uri())) {
-                HttpHandlerUtil.sendError(ctx, NOT_FOUND, "Gremlin Server doesn't have a favicon.ico", keepAlive);
-                ReferenceCountUtil.release(msg);
-                return;
-            }
-
             if (HttpUtil.is100ContinueExpected(req)) {
                 ctx.write(new DefaultFullHttpResponse(HTTP_1_1, CONTINUE));
             }
 
-            if (req.method() != GET && req.method() != POST) {
+            if (req.method() != POST) {
                 HttpHandlerUtil.sendError(ctx, METHOD_NOT_ALLOWED, METHOD_NOT_ALLOWED.toString(), keepAlive);
                 ReferenceCountUtil.release(msg);
                 return;
@@ -225,7 +212,7 @@ public class HttpGremlinEndpointHandler extends ChannelInboundHandlerAdapter {
             final RequestMessage requestMessage;
             try {
                 requestMessage = HttpHandlerUtil.getRequestMessageFromHttpRequest(req, serializers);
-            } catch (IllegalArgumentException|SerializationException ex) {
+            } catch (IllegalArgumentException|SerializationException|NullPointerException ex) {
                 HttpHandlerUtil.sendError(ctx, BAD_REQUEST, ex.getMessage(), keepAlive);
                 ReferenceCountUtil.release(msg);
                 return;
@@ -832,7 +819,14 @@ public class HttpGremlinEndpointHandler extends ChannelInboundHandlerAdapter {
                     case NOT_STARTED:
                         if (code == ResponseStatusCode.SUCCESS) {
                             ctx.setRequestState(FINISHED);
-                            return new Frame(chunkSerializer.writeHeader(responseMessage, nettyContext.alloc()));
+
+                            return new Frame(serializer.serializeResponseAsBinary(ResponseMessage.buildV4(msg.getRequestId())
+                                    .statusAttributes(statusAttributes)
+                                    .responseMetaData(responseMetaData)
+                                    .result(aggregate)
+                                    .code(ResponseStatusCode.SUCCESS)
+                                    .statusMessage("OK")
+                                    .create(), nettyContext.alloc()));
                         }
 
                         ctx.setRequestState(STREAMING);
