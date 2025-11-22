@@ -35,6 +35,10 @@ public final class SerTokens {
     public static final String TOKEN_PROCESSOR = "processor";
     public static final String TOKEN_OP = "op";
     public static final String TOKEN_ARGS = "args";
+    public static final String TOKEN_GREMLIN = "gremlin";
+    public static final String TOKEN_LANGUAGE = "language";
+    public static final String TOKEN_BINDINGS = "bindings";
+    public static final String TOKEN_G = "g";
 
     public static final String MIME_JSON = "application/json";
     public static final String MIME_GRAPHSON_V1 = "application/vnd.gremlin-v1.0+json";
@@ -44,6 +48,7 @@ public final class SerTokens {
     public static final String MIME_GRAPHSON_V3 = "application/vnd.gremlin-v3.0+json";
     public static final String MIME_GRAPHSON_V3_UNTYPED = "application/vnd.gremlin-v3.0+json;types=false";
     public static final String MIME_GRAPHSON_V4 = "application/vnd.gremlin-v4.0+json";
+    public static final String MIME_GRAPHSON_V4_UNTYPED = "application/vnd.gremlin-v4.0+json;types=false";
     public static final String MIME_GRAPHBINARY_V1 = "application/vnd.graphbinary-v1.0";
     public static final String MIME_GRAPHBINARY_V4 = "application/vnd.graphbinary-v4.0";
 }
