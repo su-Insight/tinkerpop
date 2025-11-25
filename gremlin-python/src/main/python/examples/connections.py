@@ -14,17 +14,24 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+import sys
+
+sys.path.append("..")
 
 from gremlin_python.process.anonymous_traversal import traversal
+from gremlin_python.process.strategies import *
 from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
-import json
-
-
-to_string = json.dumps
+from gremlin_python.driver.serializer import GraphBinarySerializersV1
 
 
 def main():
+    with_remote()
+    with_auth()
+    with_kerberos()
+    with_configs()
 
+
+def with_remote():
     # connect to a remote server that is compatible with the Gremlin Server protocol. for those who
     # downloaded and are using Gremlin Server directly be sure that it is running locally with:
     #
@@ -32,20 +39,38 @@ def main():
     #
     # which starts it in "console" mode with an empty in-memory TinkerGraph ready to go bound to a
     # variable named "g" as referenced in the following line.
-    g = traversal().with_remote(DriverRemoteConnection('ws://localhost:8182/gremlin', 'g'))
+    rc = DriverRemoteConnection('ws://localhost:8182/gremlin', 'g')
+    g = traversal().with_remote(rc)
 
-    # add some data - be sure to use a terminating step like iterate() so that the traversal
-    # "executes". iterate() does not return any data and is used to just generate side-effects
-    # (i.e. write data to the database)
-    g.add_v('person').property('name', 'marko').as_('m'). \
-        add_v('person').property('name', 'vadas').as_('v'). \
-        add_e('knows').from_('m').to('v').iterate()
+    # cleanup
+    rc.close()
 
-    # retrieve the data from the "marko" vertex
-    print("marko: " + to_string(g.V().has('person', 'name', 'marko').value_map().next()))
 
-    # find the "marko" vertex and then traverse to the people he "knows" and return their data
-    print("who marko knows: " + to_string(g.V().has('person', 'name', 'marko').out('knows').value_map().next()))
+# connecting with plain text authentication
+def with_auth():
+    rc = DriverRemoteConnection('ws://localhost:8182/gremlin', 'g', username='stephen', password='password')
+    g = traversal().with_remote(rc)
+    rc.close()
+
+
+# connecting with Kerberos SASL authentication
+def with_kerberos():
+    rc = DriverRemoteConnection('ws://localhost:8182/gremlin', 'g', kerberized_service='gremlin@hostname.your.org')
+    g = traversal().with_remote(rc)
+    rc.close()
+
+
+# connecting with customized configurations
+def with_configs():
+    rc = DriverRemoteConnection(
+        'ws://localhost:8182/gremlin', 'g',
+        username="", password="", kerberized_service='',
+        message_serializer=GraphBinarySerializersV1(), graphson_reader=None,
+        graphson_writer=None, headers=None, session=None,
+        enable_user_agent_on_connect=True
+    )
+    g = traversal().with_remote(rc)
+    rc.close()
 
 
 if __name__ == "__main__":
