@@ -63,11 +63,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.filter.AnyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.CoinStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.ConnectiveStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DedupGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DiscardStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DropStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.IsStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.LambdaFilterStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.NoneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.NotStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.PathFilterStep;
@@ -2006,11 +2006,11 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
      * signal to remote servers that {@link #iterate()} was called. While it may be directly used, it is often a sign
      * that a traversal should be re-written in another form.
      *
-     * @return the updated traversal with respective {@link NoneStep}.
+     * @return the updated traversal with respective {@link DiscardStep}.
      */
     @Override
-    default GraphTraversal<S, E> none() {
-        return (GraphTraversal<S, E>) Traversal.super.none();
+    default GraphTraversal<S, E> discard() {
+        return (GraphTraversal<S, E>) Traversal.super.discard();
     }
 
     /**
@@ -2139,6 +2139,11 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
      * @since 3.0.0-incubating
      */
     public default GraphTraversal<S, E> has(final String propertyKey, final P<?> predicate) {
+        // Groovy can get the overload wrong for has(T, null) which should probably go at has(T,Object). users could
+        // explicit cast but a redirect here makes this a bit more seamless
+        if (null == predicate)
+            return has(propertyKey, (Object) null);
+
         this.asAdmin().getBytecode().addStep(Symbols.has, propertyKey, predicate);
         return TraversalHelper.addHasContainer(this.asAdmin(), new HasContainer(propertyKey, predicate));
     }
@@ -2285,6 +2290,13 @@ public interface GraphTraversal<S, E> extends Traversal<S, E> {
      * @since 3.0.0-incubating
      */
     public default GraphTraversal<S, E> has(final String propertyKey, final Traversal<?, ?> propertyTraversal) {
+        // the translation here of null to has(String, Object) is likely what was intended. a null Traversal doesn't
+        // really make much sense. this should resolve issues with JavaTranslator grabbing this method when bytecode
+        // uses null as the second argument. we've taken this tactic for other overloads of has() as well, so just
+        // continuing with that pattern.
+        if (null == propertyTraversal)
+            return has(propertyKey, (Object) null);
+
         this.asAdmin().getBytecode().addStep(Symbols.has, propertyKey, propertyTraversal);
         return this.asAdmin().addStep(
                 new TraversalFilterStep<>(this.asAdmin(), propertyTraversal.asAdmin().addStep(0,
