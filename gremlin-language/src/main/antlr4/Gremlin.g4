@@ -240,6 +240,7 @@ traversalMethod
     | traversalMethod_max
     | traversalMethod_mean
     | traversalMethod_min
+    | traversalMethod_none
     | traversalMethod_not
     | traversalMethod_option
     | traversalMethod_optional
@@ -624,6 +625,10 @@ traversalMethod_merge
 traversalMethod_min
     : 'min' LPAREN RPAREN #traversalMethod_min_Empty
     | 'min' LPAREN traversalScopeArgument RPAREN #traversalMethod_min_Scope
+    ;
+
+traversalMethod_none
+    : 'none' LPAREN traversalPredicate RPAREN #traversalMethod_none_P
     ;
 
 traversalMethod_not
@@ -1147,7 +1152,7 @@ traversalSackMethod
     ;
 
 traversalSelfMethod
-    : traversalSelfMethod_none
+    : traversalSelfMethod_discard
     ;
 
 // Additional special rules that are derived from above
@@ -1281,8 +1286,8 @@ traversalTerminalMethod_toBulkSet
     : 'toBulkSet' LPAREN RPAREN
     ;
 
-traversalSelfMethod_none
-    : 'none' LPAREN RPAREN
+traversalSelfMethod_discard
+    : 'discard' LPAREN RPAREN
     ;
 
 // Gremlin specific lexer rules

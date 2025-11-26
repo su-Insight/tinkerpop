@@ -19,10 +19,6 @@
 
 package org.apache.tinkerpop.gremlin.process.traversal.util;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.ConnectedComponentVertexProgramStep;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.PageRankVertexProgramStep;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.PeerPressureVertexProgramStep;
@@ -47,11 +43,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.filter.AndStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.AnyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.CoinStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DedupGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DiscardStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DropStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.IsStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.LambdaFilterStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.NoneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.NotStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.PathFilterStep;
@@ -169,8 +165,12 @@ import org.apache.tinkerpop.gremlin.util.function.Lambda;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -248,6 +248,7 @@ public final class BytecodeHelper {
             put(GraphTraversal.Symbols.dateDiff, Collections.singletonList(DateDiffStep.class));
             put(GraphTraversal.Symbols.all, Collections.singletonList(AllStep.class));
             put(GraphTraversal.Symbols.any, Collections.singletonList(AnyStep.class));
+            put(GraphTraversal.Symbols.none, Collections.singletonList(NoneStep.class));
             put(GraphTraversal.Symbols.combine, Collections.singletonList(CombineStep.class));
             put(GraphTraversal.Symbols.difference, Collections.singletonList(DifferenceStep.class));
             put(GraphTraversal.Symbols.disjunct, Collections.singletonList(DisjunctStep.class));
@@ -322,7 +323,7 @@ public final class BytecodeHelper {
             put(GraphTraversal.Symbols.as, Collections.emptyList());
             put(GraphTraversal.Symbols.option, Collections.emptyList());
             put(Traversal.Symbols.profile, Collections.singletonList(ProfileStep.class));
-            put(Traversal.Symbols.none, Collections.singletonList(NoneStep.class));
+            put(Traversal.Symbols.discard, Collections.singletonList(DiscardStep.class));
             put(TraversalSource.Symbols.withSack, Collections.emptyList());
             put(TraversalSource.Symbols.withoutStrategies, Collections.emptyList());
             put(TraversalSource.Symbols.withStrategies, Collections.emptyList());

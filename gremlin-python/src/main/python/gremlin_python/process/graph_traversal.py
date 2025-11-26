@@ -35,7 +35,7 @@ __author__ = 'Stephen Mallette (http://stephen.genoprime.com), Lyndon Bauto (lyn
 
 
 class GraphTraversalSource(object):
-    def __init__(self, graph, traversal_strategies, bytecode=None):
+    def __init__(self, graph, traversal_strategies, bytecode=None, remote_connection=None):
         log.info("Creating GraphTraversalSource.")
         self.graph = graph
         self.traversal_strategies = traversal_strategies
@@ -43,7 +43,9 @@ class GraphTraversalSource(object):
             bytecode = Bytecode()
         self.bytecode = bytecode
         self.graph_traversal = GraphTraversal
-        self.remote_connection = None
+        if remote_connection:
+            self.traversal_strategies.add_strategies([RemoteStrategy(remote_connection)])
+        self.remote_connection = remote_connection
 
     def __repr__(self):
         return "graphtraversalsource[" + str(self.graph) + "]"
@@ -138,19 +140,6 @@ class GraphTraversalSource(object):
         else:
             options_strategy[1].configuration[k] = val
 
-        return source
-
-    def withRemote(self, remote_connection):
-        warnings.warn(
-            "gremlin_python.process.GraphTraversalSource.withRemote will be replaced by "
-            "gremlin_python.process.GraphTraversalSource.with_remote.",
-            DeprecationWarning)
-        return self.with_remote(remote_connection)
-
-    def with_remote(self, remote_connection):
-        source = self.get_graph_traversal_source()
-        source.traversal_strategies.add_strategies([RemoteStrategy(remote_connection)])
-        self.remote_connection = remote_connection
         return source
 
     def tx(self):
@@ -449,6 +438,10 @@ class GraphTraversal(Traversal):
         self.bytecode.add_step("difference", *args)
         return self
 
+    def discard(self, *args):
+        self.bytecode.add_step("discard", *args)
+        return self
+
     def disjunct(self, *args):
         self.bytecode.add_step("disjunct", *args)
         return self
@@ -693,10 +686,6 @@ class GraphTraversal(Traversal):
 
     def min_(self, *args):
         self.bytecode.add_step("min", *args)
-        return self
-
-    def none(self, *args):
-        self.bytecode.add_step("none", *args)
         return self
 
     def not_(self, *args):
@@ -1452,6 +1441,10 @@ class __(object, metaclass=MagicType):
         return cls.graph_traversal(None, None, Bytecode()).min_(*args)
 
     @classmethod
+    def none(cls, *args):
+        return cls.graph_traversal(None, None, Bytecode()).none(*args)
+
+    @classmethod
     def not_(cls, *args):
         return cls.graph_traversal(None, None, Bytecode()).not_(*args)
 
@@ -1751,7 +1744,7 @@ class Transaction:
     def rollback(self):
         with self.__mutex:
             # Verify transaction is open, close session and return result of transaction's rollback.
-            self.__verify_transaction_state(True, "Cannot commit a transaction that is not started.")
+            self.__verify_transaction_state(True, "Cannot rollback a transaction that is not started.")
             return self.__close_session(self._session_based_connection.rollback())
 
     # Commits the current transaction.

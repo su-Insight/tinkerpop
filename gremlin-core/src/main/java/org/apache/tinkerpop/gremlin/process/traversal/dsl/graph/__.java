@@ -25,7 +25,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.Scope;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.FormatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.Tree;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
 import org.apache.tinkerpop.gremlin.structure.Column;
@@ -807,6 +806,13 @@ public class __ {
     }
 
     /**
+     * @see GraphTraversal#discard()
+     */
+    public static <A> GraphTraversal<A, A> discard() {
+        return __.<A>start().discard();
+    }
+
+    /**
      * @see GraphTraversal#disjunct(Object)
      */
     public static <A> GraphTraversal<A, Set<?>> disjunct(final Object values) {
@@ -1188,6 +1194,11 @@ public class __ {
      * @see GraphTraversal#any(P)
      */
     public static <A> GraphTraversal<A, A> any(final P<A> predicate) { return __.<A>start().any(predicate); }
+
+    /**
+     * @see GraphTraversal#none(P)
+     */
+    public static <A> GraphTraversal<A, A> none(final P<A> predicate) { return __.<A>start().none(predicate); }
 
     ///////////////////// SIDE-EFFECT STEPS /////////////////////
 
