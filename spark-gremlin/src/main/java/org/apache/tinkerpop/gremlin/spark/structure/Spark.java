@@ -48,7 +48,11 @@ public class Spark {
 
     public static SparkContext create(final SparkConf sparkConf) {
         if (isContextNullOrStopped()) {
-            sparkConf.setAppName("Apache TinkerPop's Spark-Gremlin");
+            String defaultAppName = "Apache TinkerPop's Spark-Gremlin";
+            // Set the default app name if it is not specified
+            if (sparkConf.get("spark.app.name", defaultAppName).equals(defaultAppName)) {
+                sparkConf.setAppName(defaultAppName);
+            }
             CONTEXT = SparkContext.getOrCreate(sparkConf);
         }
         return CONTEXT;
