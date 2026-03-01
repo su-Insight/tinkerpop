@@ -25,12 +25,12 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.Parameters;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.CallbackRegistry;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.Event;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.ListCallbackRegistry;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+
+import static org.apache.tinkerpop.gremlin.process.traversal.step.util.event.RemovedEventUtil.registerElementRemoval;
+import static org.apache.tinkerpop.gremlin.process.traversal.step.util.event.RemovedEventUtil.registerPropertyRemoval;
+import static org.apache.tinkerpop.gremlin.process.traversal.step.util.event.RemovedEventUtil.hasAnyCallbacks;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -38,7 +38,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
  */
 public class DropStep<S> extends FilterStep<S> implements Deleting<Event> {
 
-    private CallbackRegistry<Event> callbackRegistry;
+    protected CallbackRegistry<Event> callbackRegistry;
 
     public DropStep(final Traversal.Admin traversal) {
         super(traversal);
@@ -49,35 +49,15 @@ public class DropStep<S> extends FilterStep<S> implements Deleting<Event> {
         final S s = traverser.get();
         if (s instanceof Element) {
             final Element toRemove = (Element) s;
-            if (callbackRegistry != null && !callbackRegistry.getCallbacks().isEmpty()) {
-                final EventStrategy eventStrategy = getTraversal().getStrategies().getStrategy(EventStrategy.class).get();
-                final Event removeEvent;
-                if (s instanceof Vertex)
-                    removeEvent = new Event.VertexRemovedEvent(eventStrategy.detach((Vertex) s));
-                else if (s instanceof Edge)
-                    removeEvent = new Event.EdgeRemovedEvent(eventStrategy.detach((Edge) s));
-                else if (s instanceof VertexProperty)
-                    removeEvent = new Event.VertexPropertyRemovedEvent(eventStrategy.detach((VertexProperty) s));
-                else
-                    throw new IllegalStateException("The incoming object is not removable: " + s);
-
-                callbackRegistry.getCallbacks().forEach(c -> c.accept(removeEvent));
+            if (hasAnyCallbacks(callbackRegistry)) {
+                registerElementRemoval(callbackRegistry, getTraversal(), toRemove);
             }
 
             toRemove.remove();
         } else if (s instanceof Property) {
             final Property toRemove = (Property) s;
-            if (callbackRegistry != null && !callbackRegistry.getCallbacks().isEmpty()) {
-                final EventStrategy eventStrategy = getTraversal().getStrategies().getStrategy(EventStrategy.class).get();
-                final Event.ElementPropertyEvent removeEvent;
-                if (toRemove.element() instanceof Edge)
-                    removeEvent = new Event.EdgePropertyRemovedEvent(eventStrategy.detach((Edge) toRemove.element()), eventStrategy.detach(toRemove));
-                else if (toRemove.element() instanceof VertexProperty)
-                    removeEvent = new Event.VertexPropertyPropertyRemovedEvent(eventStrategy.detach((VertexProperty) toRemove.element()), eventStrategy.detach(toRemove));
-                else
-                    throw new IllegalStateException("The incoming object is not removable: " + s);
-
-                callbackRegistry.getCallbacks().forEach(c -> c.accept(removeEvent));
+            if (hasAnyCallbacks(callbackRegistry)) {
+                registerPropertyRemoval(callbackRegistry, getTraversal(), toRemove);
             }
             toRemove.remove();
         } else
